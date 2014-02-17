@@ -1,0 +1,1 @@
+;dutils.conf.urls = {"api-root": "/api/", "order-list": "/api/order/", "order-detail": "/api/order/<pk>/", "orderinfo-list": "/api/orderinfo/", "orderinfo-detail": "/api/orderinfo/<id>/"};

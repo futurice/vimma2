@@ -1,0 +1,27 @@
+generate:
+
+- js/base.js:
+    source:
+    - vmm/static/js/jquery-1.10.2.js
+    - vmm/static/js/jquery.cookie.js
+    - vmm/static/js/base.js
+    - vmm/static/js/bootstrap.js
+    - vmm/static/js/jquery-ui-1.10.3.custom.js
+    - vmm/static/js/dutils.js
+    - vmm/static/js/dutils.conf.urls.js
+    - vmm/static/js/csrf.js
+    uglify.bin: jsmin
+
+- css/base.css:
+    source:
+    - vmm/static/css/base.less
+    - vmm/static/css/bootstrap.css
+    - vmm/static/css/smoothness/jquery-ui-1.10.3.custom.css
+
+output.directory: vmm/static
+output.hashed: true
+output.manifest: assets.json
+
+profile.dev:
+    css.compress: false
+    js.compress: false

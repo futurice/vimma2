@@ -1,0 +1,5 @@
+.DS_Store
+*~
+local_settings.py
+*.pyc
+DEADJOE
