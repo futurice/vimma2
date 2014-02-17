@@ -12,7 +12,7 @@
 
         {% for vm in virtual_machines %} 
         <tr data-pk="{{virtual_machines.pk}}">
-            <td>{{vm.primary_name}}</td>
+            <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}</td>
             <td>{{vm.creation_date}}</td>
             <td class="value">{{vm.status}}</td>
         </tr>
