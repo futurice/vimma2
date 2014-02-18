@@ -1,0 +1,24 @@
+{% extends "common/base.html" %}
+
+{% block body %}
+
+<form class="form-signin">
+    <table class="table table-striped orders">
+        <tr>
+            <th>Virtual Machine</th>
+            <th>Created</th>
+            <th>Status</th>
+        </tr>
+
+        {% for vm in virtual_machines %} 
+        <tr data-pk="{{virtual_machines.pk}}">
+            <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}</td>
+            <td>{{vm.creation_date}}</td>
+            <td class="value">{{vm.status}}</td>
+        </tr>
+        {% endfor %} 
+    </table>
+
+</form>
+
+{% endblock %}
