@@ -25,7 +25,7 @@ def detail(request, primary_name=None):
     c = {
      'virtual_machines' : [vm]
     }
-    return render(request, template_name='common/index.html', dictionary=c)
+    return render(request, template_name='common/detail.html', dictionary=c)
 
 def create(request, virtualmachine_id=None):
     cresult = tasks.add.delay("abc", virtualmachine_id)
