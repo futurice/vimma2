@@ -28,14 +28,15 @@ def detail(request, primary_name=None):
     return render(request, template_name='common/detail.html', dictionary=c)
 
 def create(request, virtualmachine_id=None):
-    cresult = tasks.add.delay("abc", virtualmachine_id)
+    #cresult = tasks.create_vm.delay()
+    cresult = tasks.create_vm.delay()
 
-    result = "Cresult: %s<br />" % cresult
-    
+    result = ""
+
     while not cresult.ready():
         result += "Waiting for task to complete ..."
 
     result += "<br />"
     
-    result += "Cresult.result: %s <br />" % cresult.result 
+    result += "Cresult.result: %s <br />" % cresult.result
     return HttpResponse(result)

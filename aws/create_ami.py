@@ -12,6 +12,7 @@ def main():
     print "Instance details: "
     pp.pprint( instance.__dict__ )
     print "Instance listening at: %s" % (instance.ip_address)
+    return instance.__dict__
     
 if __name__ == "__main__":
     main()
