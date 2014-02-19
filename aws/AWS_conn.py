@@ -42,6 +42,9 @@ class EC2Conn:
 
                 print "Instance details: %s" % (instance)
                 print "Instance %s done!" % (instance.id)
+                
+                # Set delete on termination
+                instance.modify_attribute('blockDeviceMapping', { '/dev/sda1' : True })
 
                 if address:
                         success = self.link_instance_and_ip(instance.id, address)
