@@ -22,6 +22,13 @@ def create_vm():
     vm_name = "demovm" + str(int(time.time()))
     vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
     vm_obj.save()
-    vm_dict = aws.create_ami.main(instance_name=vm_name)
-    #vm_dict = {}
+
+    try:
+        vm_dict = aws.create_ami.main(instance_name=vm_name)
+    except:
+        VirtualMachine.objects.filter(primary_name=vm_name).delete()
+    else:
+        setattr(vm_obj, 'instance_id', vm_dict['id'])
+        setattr(vm_obj, 'status', 'launched')
+        vm_obj.save()
     return vm_dict

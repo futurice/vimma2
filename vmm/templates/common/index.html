@@ -7,6 +7,7 @@
         <tr>
             <th>Virtual Machine</th>
             <th>Created</th>
+            <th>Instance Id</th>
             <th>Status</th>
         </tr>
 
@@ -14,6 +15,7 @@
         <tr data-pk="{{virtual_machines.pk}}">
             <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}</td>
             <td>{{vm.creation_date}}</td>
+            <td>{{vm.instance_id}}</td>
             <td class="value">{{vm.status}}</td>
         </tr>
         {% endfor %} 
