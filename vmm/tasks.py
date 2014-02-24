@@ -22,6 +22,6 @@ def create_vm():
     vm_name = "demovm" + str(int(time.time()))
     vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
     vm_obj.save()
-    vm_dict = aws.create_ami.main()
+    vm_dict = aws.create_ami.main(instance_name=vm_name)
     #vm_dict = {}
     return vm_dict

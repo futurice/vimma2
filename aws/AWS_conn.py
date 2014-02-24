@@ -15,6 +15,7 @@ SERVER_TYPES = {
                        'instance_type' : 't1.micro',
                        'security_groups' : [DEFAULT_SECURITYGROUP],
                        'key_name' : DEFAULT_KEYPAIR_NAME,
+                       'instance_initiated_shutdown_behavior' : 'stop',
                         },
 }
 
@@ -30,7 +31,7 @@ class EC2Conn:
                 self.conn = EC2Connection(aws_access_key_id=self.access_key, aws_secret_access_key=self.secret_key, region=self.region)
                 print "Connection: %s" % self.conn
 
-        def create_instance(self, instance_type='vmm01', address=None):
+        def create_instance(self, instance_type='vmm01', instance_name=None, address=None):
                 reservation = self.conn.run_instances( **SERVER_TYPES[instance_type])
                 print reservation
                 instance = reservation.instances[0]
@@ -45,6 +46,9 @@ class EC2Conn:
                 
                 # Set delete on termination
                 instance.modify_attribute('blockDeviceMapping', { '/dev/sda1' : True })
+
+                # Set instance name
+                self.conn.create_tags([instance.id], {"Name": instance_name})
 
                 if address:
                         success = self.link_instance_and_ip(instance.id, address)
