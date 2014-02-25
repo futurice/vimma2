@@ -28,15 +28,26 @@ def detail(request, primary_name=None):
     return render(request, template_name='common/detail.html', dictionary=c)
 
 def create(request, virtualmachine_id=None):
-    #cresult = tasks.create_vm.delay()
-    cresult = tasks.create_vm.delay()
+    task_result = tasks.create_vm.delay()
 
     result = ""
 
-    while not cresult.ready():
+    while not task_result.ready():
         result += "Waiting for task to complete ..."
 
     result += "<br />"
     
-    result += "Cresult.result: %s <br />" % cresult.result
+    result += "task_result.result: %s <br />" % task_result.result
+    return HttpResponse(result)
+
+def terminate(request, instance_id):
+    result = ""
+    task_result = tasks.terminate_vm.delay(instance_id)
+
+    while not task_result.ready():
+        result += "Waiting for task to complete ..."
+
+    result += "<br />"
+    
+    result += "task_result.result: %s <br />" % task_result.result
     return HttpResponse(result)

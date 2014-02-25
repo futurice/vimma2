@@ -60,6 +60,24 @@ class EC2Conn:
 
                 return instance
 
+        def terminate_instance(self, instance_id):
+            self.conn.terminate_instances(instance_ids=[instance_id])
+            """
+            try:
+                self.conn.terminate_instance(instance_id)
+            except:
+                return False;
+            return True;
+            """
+
+        def stop_instance(self, instance_id):
+            try:
+                self.conn.stop_instance(instance_id)
+            except:
+                return False;
+            return True;
+
+
         def link_instance_and_ip(self, instance_id, ip=None):
                 success = self.conn.associate_address(instance_id=instance_id, public_ip=ip)
                 if success:
