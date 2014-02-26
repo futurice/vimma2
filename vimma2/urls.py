@@ -14,5 +14,7 @@ urlpatterns = patterns('',
     url(r'^vmm/', include('vmm.urls')),
     url(r'^$', include('vmm.urls')),
     url(r'', include('vmm.urls')),
+    # Not sure if the djcelery urls are worth using or not
+    #url('^tasks/', include('djcelery.urls')),
 )
 

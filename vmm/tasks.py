@@ -29,6 +29,7 @@ def create_vm():
     logger.warning('Creating instance with name: %r' % vm_name)
 
     vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
+    setattr(vm_obj, 'status', 'creating')
     vm_obj.save()
 
     try:
@@ -39,7 +40,7 @@ def create_vm():
         return dict()
     else:
         setattr(vm_obj, 'instance_id', vm_dict['id'])
-        setattr(vm_obj, 'status', 'launched')
+        setattr(vm_obj, 'status', 'created')
         vm_obj.save()
         return vm_dict
 
