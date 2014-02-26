@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.http import HttpResponse
 from django.core import serializers
+from django.core.exceptions import ObjectDoesNotExist
 
 from vmm.models import VirtualMachine
 
@@ -71,11 +72,14 @@ def vmstatus(request, primary_name=None, format="json"):
     if primary_name == None:
         vm_list = VirtualMachine.objects.order_by('-creation_date')
     else:
-        vm_list = [ VirtualMachine.objects.get(primary_name=primary_name) ]
+        try:
+            vm_list = [ VirtualMachine.objects.get(primary_name=primary_name) ]
+        except ObjectDoesNotExist:
+            vm_list = []
 
     if format in ("json", "md5"):
         result = serializers.serialize("json", vm_list)
-        if format == "md5":
+        if format == "md5" and vm_list:
             result = hashlib.md5(result).hexdigest()
 
     return HttpResponse(result)
