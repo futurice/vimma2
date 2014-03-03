@@ -1,9 +1,11 @@
 import hashlib
+import time
 
 from django.shortcuts import render
 from django.views.generic import TemplateView
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core import serializers
+from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
 from vmm.models import VirtualMachine
@@ -37,30 +39,38 @@ def detail(request, primary_name=None):
 
 def create(request, virtualmachine_id=None):
     """ Create a new virtual machine. """
-    task_result = tasks.create_vm.delay()
+    vm_name = "demovm" + str(int(time.time()))
+
+    # We synchronously add an entry to our local DB to make
+    # sure it is there when returning to the page
+    vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
+    setattr(vm_obj, 'status', 'creating')
+    vm_obj.save()
+
+    task_result = tasks.create_vm.delay(vm_name)
 
     result = ""
 
-    while not task_result.ready():
-        result += "Waiting for task to complete ..."
+    #while not task_result.ready():
+    #    result += "Waiting for task to complete ..."
 
     result += "<br />"
     
     result += "task_result.result: %s <br />" % task_result.result
-    return HttpResponse(result)
+    return HttpResponseRedirect("/")
 
 def terminate(request, instance_id):
     """ Destroy a virtual machine. """
     result = ""
     task_result = tasks.terminate_vm.delay(instance_id)
 
-    while not task_result.ready():
-        result += "Waiting for task to complete ..."
+    #while not task_result.ready():
+    #    result += "Waiting for task to complete ..."
 
     result += "<br />"
     
     result += "task_result.result: %s <br />" % task_result.result
-    return HttpResponse(result)
+    return HttpResponseRedirect("/")
 
 # Ajax helper views
 def vmstatus(request, primary_name=None, format="json"):

@@ -17,7 +17,7 @@
             <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}</td>
             <td>{{vm.creation_date}}</td>
             <td>{{vm.instance_id}}</td>
-            <td>{{vm.status}}</td>
+            <td><span class="{{vm.status}}">{{vm.status}}</span></td>
             <td><a href="{% url 'terminate' vm.instance_id %}">Terminate<a/></td>
         </tr>
         {% endfor %} 

@@ -51,13 +51,22 @@ try { console.assert(1); } catch(e) { console = { log: function() {}, assert: fu
 var URLS_BASE='{{settings.URLS_BASE}}';
 </script>
 
-<script type="text/javascript" src="static/js/a8686d608e551358584b2c79e60e508ba2eee700-base.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/jquery-1.10.2.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/jquery.cookie.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/base.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/bootstrap.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/jquery-ui-1.10.3.custom.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/dutils.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/dutils.conf.urls.js" charset="utf-8"></script>
+<script type="text/javascript" src="static/js/csrf.js" charset="utf-8"></script>
+<!-- WARNING: still testing, move reloadify out of base -->
+<script type="text/javascript" src="static/js/jquery.reloadify.min.js" charset="utf-8"></script>
 
 {% block extra %}
 
 <script>
-$(document).ready(function() {
-    voucher_iama();
+jQuery(function($) {
+      $.reloadify('/vmstatus/?format=md5');
 });
 </script>
 

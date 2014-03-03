@@ -20,17 +20,18 @@ app.config_from_object('django.conf:settings')
 logger = get_task_logger(__name__)
 
 @app.task
-def create_vm():
+def create_vm(vm_name):
     logger.warning('Starting to create instance.')
     aws_conn = aws.AWS_conn.EC2Conn()
     aws_conn.connect()
 
-    vm_name = "demovm" + str(int(time.time()))
+    #vm_name = "demovm" + str(int(time.time()))
     logger.warning('Creating instance with name: %r' % vm_name)
 
-    vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
-    setattr(vm_obj, 'status', 'creating')
-    vm_obj.save()
+    # moved to view
+    #vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
+    #setattr(vm_obj, 'status', 'creating')
+    #vm_obj.save()
 
     try:
         vm_dict = aws_conn.create_instance(instance_name=vm_name).__dict__
@@ -39,6 +40,7 @@ def create_vm():
         VirtualMachine.objects.filter(primary_name=vm_name).delete()
         return dict()
     else:
+        vm_obj = VirtualMachine.objects.get(primary_name=vm_name)
         setattr(vm_obj, 'instance_id', vm_dict['id'])
         setattr(vm_obj, 'status', 'created')
         vm_obj.save()
