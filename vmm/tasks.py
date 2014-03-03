@@ -19,6 +19,12 @@ app = Celery('tasks')
 app.config_from_object('django.conf:settings')
 logger = get_task_logger(__name__)
 
+def create_cname(vm_name, public_dns_name):
+    route53_conn = aws.AWS_conn.Route53Conn()
+    route53_conn.connect()
+    logger.warning
+    route53_conn.create_cname(vm_name + ".dev.futurice.com", public_dns_name)
+
 @app.task
 def create_vm(vm_name):
     logger.warning('Starting to create instance.')
@@ -44,6 +50,11 @@ def create_vm(vm_name):
         setattr(vm_obj, 'instance_id', vm_dict['id'])
         setattr(vm_obj, 'status', 'created')
         vm_obj.save()
+
+        # Create CNAME to Route53
+        # WARNING: NOTICE: Perhaps move to own task?
+        create_cname(vm_name, vm_dict['dns_name'])
+        logger.warning("VM creation result dict: %r" % vm_dict)
         return vm_dict
 
 @app.task
