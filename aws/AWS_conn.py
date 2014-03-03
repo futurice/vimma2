@@ -36,7 +36,7 @@ class Route53Conn:
 
     def create_cname(self, vm_name, public_dns_name):
         changes = ResourceRecordSets(self.conn, self.hosted_zone_id)
-        change = changes.add_change("CREATE", vm_name, "CNAME")
+        change = changes.add_change("CREATE", vm_name + DOMAIN_SUFFIX, "CNAME")
         change.add_value(public_dns_name)
         result = changes.commit()
         return result

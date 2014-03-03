@@ -23,7 +23,7 @@ def create_cname(vm_name, public_dns_name):
     route53_conn = aws.AWS_conn.Route53Conn()
     route53_conn.connect()
     logger.warning
-    route53_conn.create_cname(vm_name + ".dev.futurice.com", public_dns_name)
+    route53_conn.create_cname(vm_name, public_dns_name)
 
 @app.task
 def create_vm(vm_name):
