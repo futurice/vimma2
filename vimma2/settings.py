@@ -92,6 +92,7 @@ USE_TZ = True
 CELERY_IMPORTS = ("vmm.tasks", )
 CELERY_RESULT_BACKEND = "amqp"
 BROKER_URL = "amqp://guest@localhost//"
+CELERYD_LOG_LEVEL = "INFO"
 #BROKER_URL = "amqp://guest:guest@localhost:5672//"
 #CELERY_RESULT_BACKEND = 'amqp://guest@localhost//'
 

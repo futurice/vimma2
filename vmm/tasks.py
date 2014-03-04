@@ -42,7 +42,7 @@ def create_vm(vm_name):
     try:
         vm_dict = aws_conn.create_instance(instance_name=vm_name).__dict__
     except:
-        logger.warning('Instance creation failed for instance name: %r' % vm_name)
+        logger.info('Instance creation failed for instance name: %r' % vm_name)
         VirtualMachine.objects.filter(primary_name=vm_name).delete()
         return dict()
     else:
@@ -54,14 +54,26 @@ def create_vm(vm_name):
         # Create CNAME to Route53
         # WARNING: NOTICE: Perhaps move to own task?
         create_cname(vm_name, vm_dict['dns_name'])
-        logger.warning("VM creation result dict: %r" % vm_dict)
+        logger.info("VM creation result dict: %r" % vm_dict)
         return vm_dict
 
 @app.task
 def terminate_vm(instance_id):
-    logger.warning('Terminating instance id: %r' % instance_id)
+    logger.info('Terminating instance id: %r' % instance_id)
     aws_conn = aws.AWS_conn.EC2Conn()
     aws_conn.connect()
+
+    instance_dict = aws_conn.describe_instance(instance_id).__dict__
+    (vm_name, public_dns_name) = (instance_dict['tags']['Name'], instance_dict['public_dns_name'])
+
+    try:
+        route53_conn = aws.AWS_conn.Route53Conn()
+        route53_conn.connect()
+        route53_conn.remove_cname(vm_name, public_dns_name)
+    except: # DNSServerError
+        logger.error("Failure deleting DNS CNAME record: %s - %s" % (vm_name, public_dns_name))
+    else:
+        logger.info("Deleted DNS CNAME record: %s - %s" % (vm_name, public_dns_name))
 
     try:
         aws_conn.terminate_instance(instance_id=instance_id)

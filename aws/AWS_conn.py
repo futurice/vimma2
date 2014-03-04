@@ -34,12 +34,20 @@ class Route53Conn:
         self.conn = Route53Connection(aws_access_key_id=self.access_key, aws_secret_access_key=self.secret_key)
         print "Connection: %s" % self.conn
 
-    def create_cname(self, vm_name, public_dns_name):
+    def alter_cname(self, vm_name, public_dns_name, action):
         changes = ResourceRecordSets(self.conn, self.hosted_zone_id)
-        change = changes.add_change("CREATE", vm_name + DOMAIN_SUFFIX, "CNAME")
+        change = changes.add_change(action, vm_name + DOMAIN_SUFFIX, "CNAME")
         change.add_value(public_dns_name)
         result = changes.commit()
         return result
+
+    def create_cname(self, vm_name, public_dns_name):
+        return self.alter_cname(vm_name, public_dns_name, "CREATE")
+
+    def remove_cname(self, vm_name, public_dns_name):
+        return self.alter_cname(vm_name, public_dns_name, "DELETE")
+
+
 
 class EC2Conn:
     def __init__(self):
@@ -51,6 +59,11 @@ class EC2Conn:
     def connect(self):
         self.conn = EC2Connection(aws_access_key_id=self.access_key, aws_secret_access_key=self.secret_key, region=self.region)
         print "Connection: %s" % self.conn
+
+    def describe_instance(self, instance_id):
+        reservations = self.conn.get_all_instances(instance_ids=[instance_id])
+        instance = reservations[0].instances[0]
+        return instance
 
     def create_instance(self, instance_type='vmm01', instance_name=None, address=None):
         reservation = self.conn.run_instances( **SERVER_TYPES[instance_type])
@@ -66,7 +79,7 @@ class EC2Conn:
         print "Instance details: %s" % (instance)
         print "Instance %s done!" % (instance.id)
 
-        # Set delete on termination
+        # Set delete on termination to True
         instance.modify_attribute('blockDeviceMapping', { '/dev/sda1' : True })
 
         # Set instance name
