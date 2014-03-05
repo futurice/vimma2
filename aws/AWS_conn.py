@@ -1,3 +1,9 @@
+"""
+ Portions copyright: Jeff Hull, http://engineerwithoutacause.com/amazon-ec2-deployment-with-boto.html
+ Used with permission :"Feel free to use as you want. Would appreciate a name reference in case 
+ someone wants to find original source!"
+"""
+
 import sys
 import time
 
