@@ -14,7 +14,7 @@
 
         {% for vm in virtual_machines %} 
         <tr data-pk="{{virtual_machines.pk}}">
-            <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}</td>
+            <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}.dev.futurice.com</td>
             <td>{{vm.creation_date}}</td>
             <td>{{vm.instance_id}}</td>
             <td><span class="{{vm.status}}">{{vm.status}}</span></td>
