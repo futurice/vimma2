@@ -6,10 +6,10 @@ admin.autodiscover()
 from vmm import views
 
 urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'vimma2.views.home', name='home'),
-    # url(r'^blog/', include('blog.urls')),
-
+    # Login logout placeholder functionality
+    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'common/login.html'}, name='login'),
+    url(r'^logout/$', 'django.contrib.auth.views.logout_then_login', {}, name='logout'),
+    #
     url(r'^admin/', include(admin.site.urls)),
     url(r'^vmm/', include('vmm.urls')),
     url(r'^$', include('vmm.urls')),
@@ -17,4 +17,3 @@ urlpatterns = patterns('',
     # Not sure if the djcelery urls are worth using or not
     #url('^tasks/', include('djcelery.urls')),
 )
-

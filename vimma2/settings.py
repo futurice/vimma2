@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'south',
     'vmm',
     'djcelery',
+    'stronghold',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -51,12 +52,23 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'stronghold.middleware.LoginRequiredMiddleware',
 )
 
 ROOT_URLCONF = 'vimma2.urls'
 
 WSGI_APPLICATION = 'vimma2.wsgi.application'
 
+STRONGHOLD_DEFAULTS = True
+
+LOGIN_URL = '/login'
+LOGOUT_URL = '/logout'
+
+# For Stronghold
+STRONGHOLD_PUBLIC_NAMED_URLS = (
+  'login',
+  'logout',
+)
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
