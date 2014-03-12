@@ -39,7 +39,7 @@ def detail(request, primary_name=None):
 
 def create(request, virtualmachine_id=None):
     """ Create a new virtual machine. """
-    vm_name = "demovm" + str(int(time.time())*100)
+    vm_name = "demovm" + str(int(time.time()*100))
 
     # We synchronously add an entry to our local DB to make
     # sure it is there when returning to the page
