@@ -128,7 +128,7 @@ vmm@vmm:~/vmm_test/futurice_vimma2$ . ~/.virtualenvs/vmmtest/bin/activate
 # Migrate db changes
 (vmmtest)vmm@vmm:~/vmm_test/futurice_vimma2$ python manage.py migrate
 
-# Insert an initial schedule:
+# Insert an initial schedule (optionally through django admin view):
 
 vmmtest=> INSERT INTO vmm_schedule VALUES (1, 'Eight-to-Eight', '08:00:00', '20:00:00', 'tttttff');
 INSERT 0 1
