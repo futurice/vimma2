@@ -134,4 +134,4 @@ vmmtest=> INSERT INTO vmm_schedule VALUES (1, 'Eight-to-Eight', '08:00:00', '20:
 INSERT 0 1
 ```
 
-- Upstart script examples available under extras/
+- Upstart script examples available under https://code.futurice.com/futurice_vimma2/tree/master/extras
