@@ -22,6 +22,15 @@ Additionally:
 
 It will run inside as an EC2 instance in the same account.
 
+Some URLs of interest
+---------------------
+
+- /vmcreatedtime/ - is a public view (no login required) that can be
+  polled to check the creation time of a vm in optional format=epoch|iso
+  returns "0" on failure or non-existent VM. should be polled by the puppetmaster
+  cert signing script.
+  eg. http://localhost:8000/vmcreatedtime/demovm139446105600?format=epoch
+
 Todos and action points
 -----------------------
 
