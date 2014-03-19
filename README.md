@@ -41,7 +41,8 @@ Todos and action points
 - Puppet master certificate signer
  - WIP
 - Billing / Cost visibility
- - WIP - set up on S3 bucket - create csw parser
+ - WIP - set up on S3 bucket (vmm-billing) - create csw parser, use netflix ice
+   or other cheaper variant (ice uses proprietary js libs)
 
 Installation
 ------------
