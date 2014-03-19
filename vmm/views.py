@@ -18,18 +18,18 @@ import tasks
 def index(request):
     """ List all machines """
     vm_list = VirtualMachine.objects.order_by('-creation_date')
-    
+
     c = {
      'virtual_machines' : vm_list
     }
-    
+
     #result = '<br \> '.join([vm.primary_name for vm in vm_list])
     return render(request, template_name='common/index.html', dictionary=c)
 
 def detail(request, primary_name=None):
     """ Display info of a specific machine. """
     vm = VirtualMachine.objects.get(primary_name=primary_name)
-    
+
     c = {
      'virtual_machines' : [vm]
     }
@@ -55,7 +55,7 @@ def create(request, virtualmachine_id=None):
     #    result += "Waiting for task to complete ..."
 
     result += "<br />"
-    
+
     result += "task_result.result: %s <br />" % task_result.result
     return HttpResponseRedirect("/")
 
@@ -68,7 +68,7 @@ def terminate(request, instance_id):
     #    result += "Waiting for task to complete ..."
 
     result += "<br />"
-    
+
     result += "task_result.result: %s <br />" % task_result.result
     return HttpResponseRedirect("/")
 
@@ -91,5 +91,25 @@ def vmstatus(request, primary_name=None, format="json"):
         result = serializers.serialize("json", vm_list)
         if format == "md5" and vm_list:
             result = hashlib.md5(result).hexdigest()
+
+    return HttpResponse(result)
+
+def vmcreatedtime(request, primary_name=None, format="epoch"):
+    """ Return the JSON data of a virtual machine, or all virtual machines. """
+    result = "0"
+    if request.GET.get('format'):
+        format = request.GET.get('format')
+
+    if primary_name != None:
+        try:
+            vm_list = [ VirtualMachine.objects.get(primary_name=primary_name) ]
+        except ObjectDoesNotExist:
+            vm_list = []
+
+    if format in ("epoch", "iso") and vm_list:
+        if format == "iso":
+            result = vm_list[0].creation_date
+        else:
+            result = vm_list[0].creation_date.strftime("%s")
 
     return HttpResponse(result)

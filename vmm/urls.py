@@ -12,4 +12,7 @@ urlpatterns = patterns('',
     # Ajax views
     url(r'^vmstatus/$', views.vmstatus, name='vmstatus'),
     url(r'^vmstatus/(?P<primary_name>[\w\-]+)', views.vmstatus, name='vmstatus'),
+    # Not quite an ajax view, but checked by the puppetmaster certsign daemon
+    # Should return epoch time when VM has been created or 0 if VM doesn't exist
+    url(r'^vmcreatedtime/(?P<primary_name>[\w\-]+)', views.vmcreatedtime, name='vmcreatedtime'),
 )
