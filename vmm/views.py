@@ -8,6 +8,8 @@ from django.core import serializers
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
+from stronghold.decorators import public
+
 from vmm.models import VirtualMachine
 
 # Celery tasks
@@ -94,6 +96,7 @@ def vmstatus(request, primary_name=None, format="json"):
 
     return HttpResponse(result)
 
+@public
 def vmcreatedtime(request, primary_name=None, format="epoch"):
     """ Return the JSON data of a virtual machine, or all virtual machines. """
     result = "0"
