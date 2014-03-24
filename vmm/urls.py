@@ -9,6 +9,8 @@ urlpatterns = patterns('',
     # Creation, termination etc
     url(r'^create/$', views.create, name='create'),
     url(r'^terminate/(?P<instance_id>[\w\-]+)', views.terminate, name='terminate'),
+    url(r'^poweron/(?P<instance_id>[\w\-]+)', views.poweron, name='poweron'),
+    url(r'^poweroff/(?P<instance_id>[\w\-]+)', views.poweroff, name='poweroff'),
     # Ajax views
     url(r'^vmstatus/$', views.vmstatus, name='vmstatus'),
     url(r'^vmstatus/(?P<primary_name>[\w\-]+)', views.vmstatus, name='vmstatus'),

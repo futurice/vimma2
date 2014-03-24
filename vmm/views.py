@@ -52,27 +52,35 @@ def create(request, virtualmachine_id=None):
     task_result = tasks.create_vm.delay(vm_name)
 
     result = ""
-
-    #while not task_result.ready():
-    #    result += "Waiting for task to complete ..."
-
-    result += "<br />"
-
     result += "task_result.result: %s <br />" % task_result.result
     return HttpResponseRedirect("/")
 
 def terminate(request, instance_id):
     """ Destroy a virtual machine. """
-    result = ""
+    vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
+    setattr(vm_obj, 'status', 'terminating')
+    vm_obj.save()
+
     task_result = tasks.terminate_vm.delay(instance_id)
-
-    #while not task_result.ready():
-    #    result += "Waiting for task to complete ..."
-
-    result += "<br />"
-
-    result += "task_result.result: %s <br />" % task_result.result
     return HttpResponseRedirect("/")
+
+def poweron(request, instance_id):
+    """ Poweron / Start up a virtual machine. """
+    vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
+    setattr(vm_obj, 'status', 'powering on')
+    vm_obj.save()
+    #task_result = tasks.poweron_vm.delay(instance_id)
+    return HttpResponseRedirect("/")
+
+def poweroff(request, instance_id):
+    """ Poweroff / Shutdown a virtual machine. """
+    vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
+    setattr(vm_obj, 'status', 'powering off')
+    vm_obj.save()
+
+    task_result = tasks.poweroff_vm.delay(instance_id)
+    return HttpResponseRedirect("/")
+
 
 # Ajax helper views
 def vmstatus(request, primary_name=None, format="json"):

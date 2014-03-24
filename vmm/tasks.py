@@ -83,3 +83,33 @@ def terminate_vm(instance_id):
     else:
         VirtualMachine.objects.filter(instance_id=instance_id).delete()
         return True
+
+@app.task
+def poweroff_vm(instance_id):
+    logger.info('Powering off instance id: %r' % instance_id)
+    aws_conn = aws.AWS_conn.EC2Conn()
+    aws_conn.connect()
+
+    instance_dict = aws_conn.describe_instance(instance_id).__dict__
+    (vm_name, public_dns_name) = (instance_dict['tags']['Name'], instance_dict['public_dns_name'])
+
+    try:
+        route53_conn = aws.AWS_conn.Route53Conn()
+        route53_conn.connect()
+        route53_conn.remove_cname(vm_name, public_dns_name)
+    except: # DNSServerError
+        logger.error("Failure deleting DNS CNAME record: %s - %s" % (vm_name, public_dns_name))
+    else:
+        logger.info("Deleted DNS CNAME record: %s - %s" % (vm_name, public_dns_name))
+
+    try:
+        aws_conn.poweroff_instance(instance_id=instance_id)
+    except:
+        logger.warning('Instance termination failed for instance id: %r' % instance_id)
+        return False
+    else:
+        logger.info("Powered off instance: %s - %s" % (instance_id, vm_name))
+        vm_obj = VirtualMachine.objects.get(primary_name=vm_name)
+        setattr(vm_obj, 'status', 'powered off')
+        vm_obj.save()
+        return True

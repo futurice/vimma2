@@ -13,11 +13,13 @@ body{padding-top:40px;padding-bottom:40px;background-color:#f5f5f5;}
 
 /* task status colors */
 /* red */
-span.undefined span.terminating {text-transform:capitalize; color:#c00;}
+span.undefined, span.terminating {text-transform:capitalize; color:#c00;}
 /* green */
 span.created {text-transform:capitalize; color:#0c0;}
 /* blue */
-span.creating {text-transform:capitalize; color:#00c;}
+span.creating, span.powering-on {text-transform:capitalize; color:#00c;}
+/* dark gray */
+span.shutdown, span.powered-off, span.powering-off {text-transform:capitalize; color:#777;}
 
 @media only all and (max-width:1024px){.panel .col-xs-1{width:20%;}}@media only all and (max-width:700px){.panel .col-xs-1{width:40%;}}
 /*!
