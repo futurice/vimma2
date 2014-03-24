@@ -69,7 +69,7 @@ def poweron(request, instance_id):
     vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
     setattr(vm_obj, 'status', 'powering on')
     vm_obj.save()
-    #task_result = tasks.poweron_vm.delay(instance_id)
+    task_result = tasks.poweron_vm.delay(instance_id)
     return HttpResponseRedirect("/")
 
 def poweroff(request, instance_id):

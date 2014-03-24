@@ -108,8 +108,36 @@ def poweroff_vm(instance_id):
         logger.warning('Instance termination failed for instance id: %r' % instance_id)
         return False
     else:
+        # Wait for the machine to be properly shut down
+        instance = aws_conn.describe_instance(instance_id)
+
+        while instance.state != 'stopped':
+            time.sleep(5)
+            instance.update()
+            print "Instance state: %s" % (instance.state)
+
         logger.info("Powered off instance: %s - %s" % (instance_id, vm_name))
         vm_obj = VirtualMachine.objects.get(primary_name=vm_name)
         setattr(vm_obj, 'status', 'powered off')
         vm_obj.save()
         return True
+
+@app.task
+def poweron_vm(instance_id):
+    logger.info('Powering on instance id: %r' % instance_id)
+    aws_conn = aws.AWS_conn.EC2Conn()
+    aws_conn.connect()
+
+    try:
+        vm_dict = aws_conn.poweron_instance(instance_id=instance_id).__dict__
+    except: # EC2ResponseError
+        logger.info('Instance poweron failed for instance: %r' % instance_id)
+    else:
+        vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
+        setattr(vm_obj, 'status', 'powered on')
+        vm_obj.save()
+
+        # Create CNAME to Route53
+        # WARNING: NOTICE: Perhaps move to own task?
+        create_cname(vm_obj.primary_name, vm_dict['dns_name'])
+        logger.info("Power on result dict: %r" % vm_dict)

@@ -67,8 +67,10 @@ class EC2Conn:
         print "Connection: %s" % self.conn
 
     def describe_instance(self, instance_id):
-        reservations = self.conn.get_all_instances(instance_ids=[instance_id])
-        instance = reservations[0].instances[0]
+        #reservations = self.conn.get_all_instances(instance_ids=[instance_id])
+        #instance = reservations[0].instances[0]
+        instances = self.conn.get_only_instances(instance_ids=[instance_id])
+        instance = instances[0]
         return instance
 
     def create_instance(self, instance_type='vmm01', instance_name=None, address=None):
@@ -90,15 +92,6 @@ class EC2Conn:
 
         # Set instance name
         self.conn.create_tags([instance.id], {"Name": instance_name})
-
-        if address:
-            success = self.link_instance_and_ip(instance.id, address)
-            if success:
-                print "Linked %s to %s" % (instance.id, address)
-            else:
-                print "Failed to link %s to %s" % (instance.id, address)
-            instance.update()
-
         return instance
 
     def terminate_instance(self, instance_id):
@@ -106,6 +99,17 @@ class EC2Conn:
 
     def poweroff_instance(self, instance_id):
         self.conn.stop_instances(instance_ids=[instance_id])
+
+    def poweron_instance(self, instance_id):
+        print "Poweron instance %s" % instance_id
+        instance = self.describe_instance(instance_id)
+        instance.start()
+
+        while instance.state != 'running':
+            time.sleep(5)
+            instance.update()
+            print "Instance state: %s" % (instance.state)
+        return instance
 
     def link_instance_and_ip(self, instance_id, ip=None):
         success = self.conn.associate_address(instance_id=instance_id, public_ip=ip)
