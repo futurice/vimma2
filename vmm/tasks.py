@@ -31,13 +31,7 @@ def create_vm(vm_name):
     aws_conn = aws.AWS_conn.EC2Conn()
     aws_conn.connect()
 
-    #vm_name = "demovm" + str(int(time.time()))
     logger.warning('Creating instance with name: %r' % vm_name)
-
-    # moved to view
-    #vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
-    #setattr(vm_obj, 'status', 'creating')
-    #vm_obj.save()
 
     try:
         vm_dict = aws_conn.create_instance(instance_name=vm_name).__dict__
@@ -48,7 +42,7 @@ def create_vm(vm_name):
     else:
         vm_obj = VirtualMachine.objects.get(primary_name=vm_name)
         setattr(vm_obj, 'instance_id', vm_dict['id'])
-        setattr(vm_obj, 'status', 'created')
+        setattr(vm_obj, 'status', 'running')
         vm_obj.save()
 
         # Create CNAME to Route53
@@ -118,7 +112,7 @@ def poweroff_vm(instance_id):
 
         logger.info("Powered off instance: %s - %s" % (instance_id, vm_name))
         vm_obj = VirtualMachine.objects.get(primary_name=vm_name)
-        setattr(vm_obj, 'status', 'powered off')
+        setattr(vm_obj, 'status', 'stopped')
         vm_obj.save()
         return True
 
@@ -134,7 +128,7 @@ def poweron_vm(instance_id):
         logger.info('Instance poweron failed for instance: %r' % instance_id)
     else:
         vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
-        setattr(vm_obj, 'status', 'powered on')
+        setattr(vm_obj, 'status', 'running')
         vm_obj.save()
 
         # Create CNAME to Route53

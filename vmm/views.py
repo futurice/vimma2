@@ -15,6 +15,8 @@ from vmm.models import VirtualMachine
 # Celery tasks
 import tasks
 
+# http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html
+
 # Vimma 2 main views
 
 def index(request):
@@ -46,7 +48,7 @@ def create(request, virtualmachine_id=None):
     # We synchronously add an entry to our local DB to make
     # sure it is there when returning to the page
     vm_obj = VirtualMachine(primary_name = vm_name, schedule_id = 1)
-    setattr(vm_obj, 'status', 'creating')
+    setattr(vm_obj, 'status', 'pending')
     vm_obj.save()
 
     task_result = tasks.create_vm.delay(vm_name)
@@ -58,7 +60,7 @@ def create(request, virtualmachine_id=None):
 def terminate(request, instance_id):
     """ Destroy a virtual machine. """
     vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
-    setattr(vm_obj, 'status', 'terminating')
+    setattr(vm_obj, 'status', 'shutting-down')
     vm_obj.save()
 
     task_result = tasks.terminate_vm.delay(instance_id)
@@ -67,7 +69,7 @@ def terminate(request, instance_id):
 def poweron(request, instance_id):
     """ Poweron / Start up a virtual machine. """
     vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
-    setattr(vm_obj, 'status', 'powering on')
+    setattr(vm_obj, 'status', 'pending')
     vm_obj.save()
     task_result = tasks.poweron_vm.delay(instance_id)
     return HttpResponseRedirect("/")
@@ -75,7 +77,7 @@ def poweron(request, instance_id):
 def poweroff(request, instance_id):
     """ Poweroff / Shutdown a virtual machine. """
     vm_obj = VirtualMachine.objects.get(instance_id=instance_id)
-    setattr(vm_obj, 'status', 'powering off')
+    setattr(vm_obj, 'status', 'stopping')
     vm_obj.save()
 
     task_result = tasks.poweroff_vm.delay(instance_id)
