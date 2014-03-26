@@ -2,36 +2,7 @@
 
 {% block body %}
 
-<form class="form-signin">
-    <table class="table table-striped orders">
-        <tr>
-            <th>Virtual Machine</th>
-            <th>Created</th>
-            <th>Instance Id</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-
-        {% for vm in virtual_machines %}
-        <tr data-pk="{{virtual_machines.pk}}">
-            <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}.dev.futurice.com</td>
-            <td>{{vm.creation_date}}</td>
-            <td>{{vm.instance_id}}</td>
-            <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
-            <td>
-              {% if vm.status == "running" %}
-                <a href="{% url 'poweroff' vm.instance_id %}"><span title="Power off" style='color: #c00; width: 1em;'><span class="glyphicon glyphicon-off"></span></span></a>
-              {% endif %}
-              {% if vm.status == "stopped" %}
-                <a href="{% url 'poweron' vm.instance_id %}"><span title="Power on" style='color: #0c0; width: 1em;'><span class="glyphicon glyphicon-play-circle"></span></span></a>
-              {% endif %}
-              {% if vm.status == "stopped" or vm.status == "running" %}
-                <a href="{% url 'terminate' vm.instance_id %}"><span title="Destroy instance" style='color: #000; width: 1em;'><span class="glyphicon glyphicon-remove-circle"></span></span></a>
-              {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% include 'common/partials/vm_table.html' %}
 
     <button type="button" class="btn btn-primary btn-md btn-block" onclick="parent.location='{% url 'create' %}'">Create a new virtual machine</button>
 
