@@ -135,3 +135,90 @@ def poweron_vm(instance_id):
         # WARNING: NOTICE: Perhaps move to own task?
         create_cname(vm_obj.primary_name, vm_dict['dns_name'])
         logger.info("Power on result dict: %r" % vm_dict)
+
+@app.task
+def refresh_local_state(instance_id = None):
+    # Let's fetch our local db values
+    if not instance_id:
+        vm_list = VirtualMachine.objects.all()
+    else:
+        try:
+            vm_list = [ VirtualMachine.objects.get(instance_id=instance_id) ]
+        except ObjectDoesNotExist:
+            result = "Refresh : No such instance: %s" % instance_id
+            return HttpResponse(result)
+
+    # Note: Empty local VM list is a valid scenario.
+
+    # Let's get the remote data from AWS
+    #import aws.AWS_conn
+
+    aws_instanceid_to_status_map = {}
+    local_instanceid_to_status_map = {}
+    # fairly large instanceid to instancedata mapping
+    aws_instancedata = {}
+
+    aws_conn = aws.AWS_conn.EC2Conn()
+    aws_conn.connect()
+
+    all_instances = aws_conn.describe_all_instances()
+
+    logger.info("AWS instance listing.")
+    for i, instance in enumerate(all_instances):
+        logger.debug("Instance #%d: %s<br />" % (i, instance.__dict__))
+        # Let's create our aws_instance_to_status -mapping
+        if instance.id and \
+           instance.tags and 'VimmaSpawned' in instance.tags.keys() and \
+           instance.state not in ('terminated'):
+            aws_instanceid_to_status_map[instance.id] = instance.state
+            aws_instancedata[instance.id] = instance
+
+    logger.info("Local instance listing.")
+    for i, vm in enumerate(vm_list):
+        logger.debug("Local instance #%d: %s" % (i, vm.__dict__))
+        if vm.instance_id:
+            local_instanceid_to_status_map[vm.instance_id] = vm.status
+
+    logger.info("AWS instanceid to state mapping: %r" % aws_instanceid_to_status_map)
+    logger.info("Local instanceid to state mapping: %r" % local_instanceid_to_status_map)
+
+    # Let's first do a quick check, comparing the two dicts we made.
+    # If they are indentical we have no need for further checks.
+    import dictdiffer
+
+    statediff = dictdiffer.DictDiffer(aws_instanceid_to_status_map, \
+                                      local_instanceid_to_status_map)
+
+    logger.info("Changed : %r, Added : %r, Removed : %r, Unchanged : %r" % \
+        (statediff.changed(), statediff.added(), statediff.removed(), statediff.unchanged()))
+
+    if not (statediff.changed() or statediff.added() or statediff.removed()):
+        logger.info("No differences between AWS and local db. Exiting.")
+        return
+
+    for changed_item in statediff.changed():
+        logger.info("Applying changed status to instance %s" % changed_item)
+        vm_obj = VirtualMachine.objects.get(instance_id=changed_item)
+        setattr(vm_obj, 'status', aws_instanceid_to_status_map[changed_item])
+        vm_obj.save()
+
+    for removed_item in statediff.removed():
+        logger.info("Removing local instance %s, it is no longer in AWS." % removed_item)
+        VirtualMachine.objects.get(instance_id=removed_item).delete()
+
+    # WARNING: FIXME: We don't know the schedule yet - using hardcoded pk=1!
+    for added_item in statediff.added():
+        logger.info("Handling addition, instance %s" % added_item)
+        if not 'Name' in aws_instancedata[added_item].tags or not aws_instancedata[added_item].tags['Name']:
+            logger.warning("no Name tag in instance to be added: %s" % added_item)
+            continue
+
+        new_item_name = aws_instancedata[added_item].tags['Name']
+        new_item_schedule_pk = 1
+        new_item_state = aws_instancedata[added_item].state
+
+        vm_obj = VirtualMachine(primary_name = new_item_name, \
+                                schedule_id = new_item_schedule_pk, \
+                                status = new_item_state)
+        setattr(vm_obj, 'instance_id', aws_instancedata[added_item].id)
+        vm_obj.save()
