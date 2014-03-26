@@ -113,4 +113,16 @@ CELERYD_LOG_LEVEL = "INFO"
 
 STATIC_URL = '/static/'
 
+from datetime import timedelta
+
+# This is our periodical task configuration
+
+CELERYBEAT_SCHEDULE = {
+    'refresh_local_db_from_aws': {
+        'task': 'refresh-local-state',
+        'schedule': timedelta(seconds=60),
+        'args': None
+    },
+}
+
 from local_settings import *

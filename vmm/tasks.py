@@ -136,7 +136,7 @@ def poweron_vm(instance_id):
         create_cname(vm_obj.primary_name, vm_dict['dns_name'])
         logger.info("Power on result dict: %r" % vm_dict)
 
-@app.task
+@app.task(name = 'refresh-local-state')
 def refresh_local_state(instance_id = None):
     # Let's fetch our local db values
     if not instance_id:
