@@ -20,13 +20,13 @@
             <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
             <td>
               {% if vm.status == "running" %}
-                <a href="{% url 'poweroff' vm.instance_id %}"><span style='color: #c00; width: 1em;'><span class="glyphicon glyphicon-off"></span></span></a>
+                <a href="{% url 'poweroff' vm.instance_id %}"><span title="Power off" style='color: #c00; width: 1em;'><span class="glyphicon glyphicon-off"></span></span></a>
               {% endif %}
               {% if vm.status == "stopped" %}
-                <a href="{% url 'poweron' vm.instance_id %}"><span style='color: #0c0; width: 1em;'><span class="glyphicon glyphicon-play-circle"></span></span></a>
+                <a href="{% url 'poweron' vm.instance_id %}"><span title="Power on" style='color: #0c0; width: 1em;'><span class="glyphicon glyphicon-play-circle"></span></span></a>
               {% endif %}
               {% if vm.status == "stopped" or vm.status == "running" %}
-                <a href="{% url 'terminate' vm.instance_id %}"><span style='color: #000; width: 1em;'><span class="glyphicon glyphicon-remove-circle"></span></span></a>
+                <a href="{% url 'terminate' vm.instance_id %}"><span title="Destroy instance" style='color: #000; width: 1em;'><span class="glyphicon glyphicon-remove-circle"></span></span></a>
               {% endif %}
             </td>
         </tr>
