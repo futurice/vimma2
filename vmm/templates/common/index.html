@@ -19,11 +19,15 @@
             <td>{{vm.instance_id}}</td>
             <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
             <td>
-              {% if vm.status != "undefined" %}
+              {% if vm.status == "running" %}
                 <a href="{% url 'poweroff' vm.instance_id %}"><span style='color: #c00; width: 1em;'><span class="glyphicon glyphicon-off"></span></span></a>
+              {% endif %}
+              {% if vm.status == "stopped" %}
                 <a href="{% url 'poweron' vm.instance_id %}"><span style='color: #0c0; width: 1em;'><span class="glyphicon glyphicon-play-circle"></span></span></a>
               {% endif %}
-              <a href="{% url 'terminate' vm.instance_id %}"><span style='color: #000; width: 1em;'><span class="glyphicon glyphicon-remove-circle"></span></span></a>
+              {% if vm.status == "stopped" or vm.status == "running" %}
+                <a href="{% url 'terminate' vm.instance_id %}"><span style='color: #000; width: 1em;'><span class="glyphicon glyphicon-remove-circle"></span></span></a>
+              {% endif %}
             </td>
         </tr>
         {% endfor %}
