@@ -127,7 +127,8 @@ def vmcreatedtime(request, primary_name=None, format="epoch"):
 
     return HttpResponse(result)
 
-# Background tasks
+# Background tasks, this can be removed, called by celerybeat
+# Still here for debugging purposes
 def refresh_local_state(request, instance_id = None):
     """
     Refresh the state(s) of one or several instances, updating the local db

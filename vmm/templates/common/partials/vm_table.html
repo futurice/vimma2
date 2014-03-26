@@ -3,6 +3,7 @@
             <th>Virtual Machine</th>
             <th>Created</th>
             <th>Instance Id</th>
+            <th>Schedule</th>
             <th>Status</th>
             <th>Actions</th>
         </tr>
@@ -12,6 +13,7 @@
             <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}.dev.futurice.com</td>
             <td>{{vm.creation_date}}</td>
             <td>{{vm.instance_id}}</td>
+            <td>{{vm.schedule}}</td>
             <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
             <td>
               {% if vm.status == "running" %}
