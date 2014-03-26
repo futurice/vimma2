@@ -17,4 +17,7 @@ urlpatterns = patterns('',
     # Not quite an ajax view, but checked by the puppetmaster certsign daemon
     # Should return epoch time when VM has been created or 0 if VM doesn't exist
     url(r'^vmcreatedtime/(?P<primary_name>[\w\-]+)', views.vmcreatedtime, name='vmcreatedtime'),
+    # Background tasks
+    url(r'^refresh_local_state/$', views.refresh_local_state, name='refresh_local_state'),
+    url(r'^refresh_local_state/(?P<instance_id>[\w\-]+)', views.refresh_local_state, name='refresh_local_state'),
 )

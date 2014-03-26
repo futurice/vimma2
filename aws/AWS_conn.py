@@ -73,6 +73,11 @@ class EC2Conn:
         instance = instances[0]
         return instance
 
+    def describe_all_instances(self):
+        instances = self.conn.get_only_instances()
+        return instances
+
+
     def create_instance(self, instance_type='vmm01', instance_name=None, address=None):
         reservation = self.conn.run_instances( **SERVER_TYPES[instance_type])
         print reservation
@@ -90,8 +95,9 @@ class EC2Conn:
         # Set delete on termination to True
         instance.modify_attribute('blockDeviceMapping', { '/dev/sda1' : True })
 
-        # Set instance name
+        # Set instance name and other tags
         self.conn.create_tags([instance.id], {"Name": instance_name})
+        self.conn.create_tags([instance.id], {"VimmaSpawned": True})
         return instance
 
     def terminate_instance(self, instance_id):

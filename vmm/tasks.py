@@ -75,7 +75,7 @@ def terminate_vm(instance_id):
         logger.warning('Instance termination failed for instance id: %r' % instance_id)
         return False
     else:
-        VirtualMachine.objects.filter(instance_id=instance_id).delete()
+        VirtualMachine.objects.get(instance_id=instance_id).delete()
         return True
 
 @app.task
