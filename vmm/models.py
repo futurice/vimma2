@@ -1,4 +1,5 @@
 from django.db import models
+from vimma2.settings import *
 
 # Create your models here.
 
@@ -53,6 +54,23 @@ class VirtualMachine(models.Model):
     schedule = models.ForeignKey(Schedule)
     # Override the schedule. The instance will not be automatically shut down before this point in time.
     persist_until = models.DateTimeField(u"Persist the instance until this date", blank=True, null=True)
+
+    def allowed_active(self):
+        """ Return true if VM schedule and persitence allowed VM to be on, otherwise false. """
+        if self.persisting():
+            return True
+
+        return vm.schedule.is_active()
+
+    def persisting(self):
+        """ Return true if persist_until is in the future. """
+        import datetime, pytz
+        time_now = datetime.datetime.now(pytz.timezone(TIME_ZONE))
+
+        if self.persist_until and self.persist_until > time_now:
+            return True
+
+        return False
 
     def __unicode__(self):
         return self.primary_name

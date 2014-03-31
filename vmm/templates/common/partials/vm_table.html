@@ -14,21 +14,23 @@
             <td>{{vm.creation_date}}</td>
             <td>{{vm.instance_id}}</td>
 
-            {% if vm.schedule.is_active %}
-              <td>
+            <td>
+            {% if vm.persisting %}
+                 <a href="{% url 'schedule' vm.schedule.pk %}">
+                    <span style='color: #777; text-decoration: line-through'>{{vm.schedule}}</span>
+                 </a>
+            {% elif vm.schedule.is_active %}
                  <a href="{% url 'schedule' vm.schedule.pk %}">
                    <span style='color: #0c0;'>{{vm.schedule}}</span>
                  </a>
-              </td>
             {% else %}
-              <td>
                 <a href="{% url 'schedule' vm.schedule.pk %}">
                   <span style='color: #c00'>
                     {{vm.schedule}}
                   </span>
                 </a>
-              </td>
             {% endif %}
+            </td>
             <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
             <td>
               {% if vm.status == "running" %}

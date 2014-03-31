@@ -136,8 +136,34 @@ def poweron_vm(instance_id):
         create_cname(vm_obj.primary_name, vm_dict['dns_name'])
         logger.info("Power on result dict: %r" % vm_dict)
 
+@app.task(name = 'enforce-schedules')
+def enforce_schedules():
+    """ This tasks goes through the local DB and turns VMs off and on as needed. """
+    # FIXME: We can make poweron and poweroff much more effective by giving
+    # a list of instance ids to start up and down. That'll need to be done.
+    import datetime
+    import pytz
+
+    logger.debug("Running enforce schedules")
+    vm_list = VirtualMachine.objects.all()
+    time_now = datetime.datetime.now(pytz.timezone(TIME_ZONE))
+
+    for vm in vm_list:
+        if vm.persisting():
+            logger.info("VM '%s' has persist_until in the future ('%s'), not enforcing schedules" % (vm.instance_id, vm.persist_until))
+            continue
+        if vm.status == "running" and not vm.schedule.is_active():
+            logger.info("Enforce schedules shutting down VM '%s'" % vm.instance_id)
+            poweroff_vm(vm.instance_id)
+            continue
+        if vm.status == "stopped" and vm.schedule.is_active():
+            logger.info("Enforce schedules starting up VM '%s'" % vm.instance_id)
+            poweron_vm(vm.instance_id)
+
+
 @app.task(name = 'refresh-local-state')
 def refresh_local_state(instance_id = None):
+    """ Refresh the status data from AWS to our local DB. """
     # Let's fetch our local db values
     if not instance_id:
         vm_list = VirtualMachine.objects.all()

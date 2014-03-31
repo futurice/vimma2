@@ -123,6 +123,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=60),
         'args': None
     },
+   'enforce_schedules': {
+        'task': 'enforce-schedules',
+        'schedule': timedelta(seconds=20),
+        'args': None
+    },
 }
 
 from local_settings import *
