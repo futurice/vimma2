@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 
 #from celery import shared_task
 from django.conf import settings
+from vimma2.settings import TIME_ZONE
 
 from vmm.models import VirtualMachine
 
