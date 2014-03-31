@@ -13,7 +13,22 @@
             <td><a href="{% url 'detail' vm.primary_name %}">{{vm.primary_name}}.dev.futurice.com</td>
             <td>{{vm.creation_date}}</td>
             <td>{{vm.instance_id}}</td>
-            <td>{{vm.schedule}}</td>
+
+            {% if vm.schedule.is_active %}
+              <td>
+                 <a href="{% url 'schedule' vm.schedule.pk %}">
+                   <span style='color: #0c0;'>{{vm.schedule}}</span>
+                 </a>
+              </td>
+            {% else %}
+              <td>
+                <a href="{% url 'schedule' vm.schedule.pk %}">
+                  <span style='color: #c00'>
+                    {{vm.schedule}}
+                  </span>
+                </a>
+              </td>
+            {% endif %}
             <td><span class="{{vm.status|slugify}}">{{vm.status}}</span></td>
             <td>
               {% if vm.status == "running" %}

@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from stronghold.decorators import public
 
 from vmm.models import VirtualMachine
+from vmm.models import Schedule
 
 # Celery tasks
 import tasks
@@ -38,6 +39,16 @@ def detail(request, primary_name=None):
      'virtual_machines' : [vm]
     }
     return render(request, template_name='common/detail.html', dictionary=c)
+
+def schedule(request, pk):
+    """ Display info of a specific machine. """
+    sched = Schedule.objects.get(pk=pk)
+
+    result = "Schedule: %r" % sched.__dict__
+    result += "<br />Schedule active now: %r" % sched.is_active()
+
+    return HttpResponse(result)
+
 
 # Virtual machine creation, termination views
 
