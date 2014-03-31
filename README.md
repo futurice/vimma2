@@ -34,15 +34,9 @@ Some URLs of interest
 Todos and action points
 -----------------------
 
-- Setting up the environment
- - Pretty much done
-- Scheduling
- - WIP
-- Puppet master certificate signer
- - WIP
-- Billing / Cost visibility
- - WIP - set up on S3 bucket (vmm-billing) - create csw parser, use netflix ice
-   or other cheaper variant (ice uses proprietary js libs)
+- Confluence:
+  https://confluence.futurice.com/display/infra/Vimma+2
+
 
 Installation
 ------------
@@ -140,7 +134,7 @@ vmm@vmm:~/vmm_test/futurice_vimma2$ . ~/.virtualenvs/vmmtest/bin/activate
 
 # Insert an initial schedule (optionally through django admin view):
 
-vmmtest=> INSERT INTO vmm_schedule VALUES (1, 'Eight-to-Eight', '08:00:00', '20:00:00', 'tttttff');
+vmmtest=> INSERT INTO vmm_schedule VALUES (0, 'Eight-to-Eight', '08:00:00', '20:00:00', 'tttttff');
 INSERT 0 1
 ```
 
