@@ -14,7 +14,7 @@ boto==2.25.0
 celery==3.1.7
 django-celery==3.1.1
 django-stronghold==0.2.4
-ipaddr==2.1.7
+ipaddr==2.1.10
 kombu==3.0.9
 psycopg2==2.5.2
 pytz==2013.9

@@ -42,10 +42,28 @@ Installation
 ------------
 
 The portal should be testable locally with the following steps:
-- Cloning the repo
 - A local postgresql DB and rabbitmq
+```
+createdb vimma2
+```
+- Local settings
+```
+cp local_settings.py.example local_settings.py
+```
 - Installation of requirements, db sync and migration
-- python manage.py runserver & python manage.py celeryd
+```
+virtualenv env
+. env/bin/activate
+./manage.py syncdb	# create an admin user when asked
+./manage.py migrate
+```
+- Start servers
+```
+./manage.py runserver
+./manage.py celeryd
+```
+- Add a Schedule (or creating a VM will give an error)
+http://localhost:8000/admin/vmm/schedule/add/
 
 A bit more detailed installation flow for an ubuntu server:
 
@@ -117,7 +135,7 @@ DATABASES = {
 }
 
 # AWS connections
-AWS_ACCESS_KEY_ID="AKI access key"
+AWS_ACCESS_KEY_ID="API access key"
 AWS_ACCESS_KEY_SECRET="aws secret"
 ROUTE53_HOSTED_ZONE_ID="hosted zone id"
 ```
