@@ -20,7 +20,7 @@ djcelery.setup_loader()
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'y9lfzc!on^=rowy=c8ddm2gs*2#9xl319ta#xyrent_07%2#ta'
+#SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
