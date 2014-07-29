@@ -15,7 +15,6 @@ from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
 
 from VMM_util import *
-from settings import *
 from vimma2.settings import *
 
 

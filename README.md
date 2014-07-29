@@ -54,6 +54,7 @@ cp local_settings.py.example local_settings.py
 ```
 virtualenv env
 . env/bin/activate
+pip install -r requirements.txt
 ./manage.py syncdb	# create an admin user when asked
 ./manage.py migrate
 ```
@@ -156,4 +157,4 @@ vmmtest=> INSERT INTO vmm_schedule VALUES (0, 'Eight-to-Eight', '08:00:00', '20:
 INSERT 0 1
 ```
 
-- Upstart script examples available under https://code.futurice.com/futurice_vimma2/tree/master/extras
+- Upstart script examples available under the extras/ directory

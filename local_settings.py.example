@@ -1,3 +1,6 @@
+# Set this to some random string
+SECRET_KEY = ''
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -6,9 +9,17 @@ DATABASES = {
     }
 }
 
-# AWS connections
+# AWS settings
+
 AWS_ACCESS_KEY_ID = "API_key"
 AWS_ACCESS_KEY_SECRET = "AWS_secret"
 ROUTE53_HOSTED_ZONE_ID = "zone_id"
 
+# The values below are for Futurice. These values are in the Amazon AWS Web UI.
+
 DOMAIN_SUFFIX = ".futuhosting.com"
+
+DEFAULT_SECURITYGROUP="default"
+DEFAULT_KEYPAIR_NAME="emkos_air"
+DEFAULT_AMI_ID="ami-72bbb406"
+DEFAULT_REGION="eu-west-1"
