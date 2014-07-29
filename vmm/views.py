@@ -64,8 +64,7 @@ def create(request, virtualmachine_id=None):
 
     task_result = tasks.create_vm.delay(vm_name)
 
-    result = ""
-    result += "task_result.result: %s <br />" % task_result.result
+    result = "task_result.result: %s <br />" % task_result.result
     return HttpResponseRedirect("/")
 
 def terminate(request, instance_id):

@@ -1,0 +1,14 @@
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'vimma2',
+        'HOST': 'localhost',
+    }
+}
+
+# AWS connections
+AWS_ACCESS_KEY_ID = "API_key"
+AWS_ACCESS_KEY_SECRET = "AWS_secret"
+ROUTE53_HOSTED_ZONE_ID = "zone_id"
+
+DOMAIN_SUFFIX = ".futuhosting.com"
