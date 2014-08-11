@@ -8,3 +8,9 @@ virtualenv -p python3 env
 . env/bin/activate
 
 pip install -r req.txt
+
+Set up local_settings.py:
+― Type a random string for the SECRET_KEY
+cd vimmasite
+cp local_settings.py.example local_settings.py
+cd ..

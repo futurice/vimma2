@@ -16,9 +16,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'ww*r7+61@1h3+m-p81!qk$6&)%-c!!0dvq(w_e)$a^5oohfgb&'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -82,3 +79,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
+
+from local_settings import *
