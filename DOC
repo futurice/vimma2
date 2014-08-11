@@ -1,0 +1,3 @@
+Create and manage VMs from a provider, such as Amazon Web Services.
+
+A user belongs to a set of Projects. VMs are assigned to projects not users.

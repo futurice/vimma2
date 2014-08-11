@@ -1,2 +1,28 @@
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ''
+
+
+# Database
+# https://docs.djangoproject.com/en/dev/ref/settings/#databases
+
+SQLITE3_DB = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+}
+
+# Initial setup for your PostgreSQL server, so Django can use the DB:
+# createdb vimma
+POSTGRESQL_DB = {
+    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    'NAME': 'vimma',
+    'HOST': 'localhost',
+}
+
+DATABASES = {
+    'default': SQLITE3_DB,
+}
