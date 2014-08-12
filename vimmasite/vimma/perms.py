@@ -12,6 +12,7 @@ class Perms:
     OMNIPOTENT = 'omnipotent'
     # Create, delete, edit schedules
     EDIT_SCHEDULE = 'schedule-edit'
+    USE_SPECIAL_SCHEDULE = 'schedule-use-special'
 
 # Collect all permissions so we can pre-populate the DB with them
 ALL_PERMS = {x:getattr(Perms, x) for x in dir(Perms) if not x.startswith('_')}

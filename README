@@ -30,4 +30,11 @@ rm -f vimmasite/vimma/migrations/0*.py
 Run Tests:
 rm -f vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
-./vimmasite/manage.py test vimma
+./vimmasite/manage.py test vimma --settings=test_settings
+
+Run the webserver:
+rm -f vimmasite/db.sqlite3 vimmasite/vimma/migrations/0*.py
+./vimmasite/manage.py makemigrations
+./vimmasite/manage.py migrate
+./vimmasite/manage.py shell <create-dev-data.py
+REMOTE_USER=u1 ./vimmasite/manage.py runserver

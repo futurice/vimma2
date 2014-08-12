@@ -34,6 +34,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'vimma',
+    'rest_framework',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -44,6 +45,11 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.contrib.auth.middleware.RemoteUserMiddleware',
+)
+
+AUTHENTICATION_BACKENDS = (
+    'vimma.backends.RemoteNoUnknownUserBackend',
 )
 
 ROOT_URLCONF = 'vimmasite.urls'
@@ -69,5 +75,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    )
+}
+
 
 from local_settings import *

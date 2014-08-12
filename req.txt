@@ -1,2 +1,5 @@
 https://www.djangoproject.com/download/1.7c2/tarball/
 psycopg2
+djangorestframework
+markdown
+django-filter
