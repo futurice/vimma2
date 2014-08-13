@@ -26,6 +26,6 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 @login_required_or_forbidden
 def index(request):
     """
-    Homepage
+    Homepage.
     """
     return render(request, 'vimma/index.html')

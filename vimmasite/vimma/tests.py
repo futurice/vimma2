@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
@@ -211,7 +212,7 @@ class ScheduleTests(APITestCase):
         def get_list():
             response = self.client.get(reverse('schedule-list'))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            return json.loads(response.content.decode('utf-8'))
+            return response.data['results']
 
         def get_item(id):
             response = self.client.get(reverse('schedule-detail', args=[id]))
@@ -319,6 +320,30 @@ class ApiTests(TestCase):
         # putting these on several lines to more easily see test failures
         check('api-root')
         check('schedule-list')
+
+    def test_pagination(self):
+        """
+        Check that the API uses pagination.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+
+        matrix = 7*[16*[True, True, False]]
+        page_size = settings.REST_FRAMEWORK['PAGINATE_BY']
+        for i in range(page_size+1):
+            Schedule.objects.create(name=str(i), matrix=matrix)
+
+        n, pages = 0, 0
+        url = reverse('schedule-list')
+        while url:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            n += len(response.data['results'])
+            pages += 1
+            url = response.data['next']
+
+        self.assertEqual(n, page_size+1)
+        self.assertEqual(pages, 2)
 
 
 class WebViewsPermissionTests(TestCase):
