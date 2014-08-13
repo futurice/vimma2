@@ -210,25 +210,25 @@ class ScheduleTests(APITestCase):
 
         def get_list():
             response = self.client.get(reverse('schedule-list'))
-            self.assertIs(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             return json.loads(response.content.decode('utf-8'))
 
         def get_item(id):
             response = self.client.get(reverse('schedule-detail', args=[id]))
-            self.assertIs(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             return json.loads(response.content.decode('utf-8'))
 
         # Test Reader
 
         self.assertTrue(self.client.login(username='r', password='p'))
-        self.assertIs(len(get_list()), 0)
+        self.assertEqual(len(get_list()), 0)
 
         m1 = json.dumps(7*[48*[False]])
         Schedule.objects.create(name='s', matrix=m1).full_clean()
 
         # read list
         items = get_list()
-        self.assertIs(len(items), 1)
+        self.assertEqual(len(items), 1)
         item = items[0]
         self.assertEqual(item['is_special'], False)
 
@@ -240,25 +240,25 @@ class ScheduleTests(APITestCase):
         response = self.client.put(
                 reverse('schedule-detail', args=[item['id']]),
                 item, format='json')
-        self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # can't delete
         response = self.client.delete(
                 reverse('schedule-detail', args=[item['id']]))
-        self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # can't create
         new_item = {'name': 'NewSched', 'matrix': m1}
         response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
-        self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Test Writer
         self.assertTrue(self.client.login(username='w', password='p'))
 
         # read list
         items = get_list()
-        self.assertIs(len(items), 1)
+        self.assertEqual(len(items), 1)
 
         # modify
         item = items[0]
@@ -267,17 +267,17 @@ class ScheduleTests(APITestCase):
         response = self.client.put(
                 reverse('schedule-detail', args=[item['id']]),
                 item, format='json')
-        self.assertIs(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # delete
         response = self.client.delete(
                 reverse('schedule-detail', args=[item['id']]))
-        self.assertIs(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         # create
         response = self.client.post(reverse('schedule-list'),
                 {'name': 'NewSched', 'matrix': m1}, format='json')
-        self.assertIs(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode('utf-8'))
 
     def test_api_validation(self):
@@ -296,7 +296,7 @@ class ScheduleTests(APITestCase):
         new_item = {'name': 'NewSched', 'matrix': json.dumps([2, [True]])}
         response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
-        self.assertIs(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class ApiTests(TestCase):
@@ -310,12 +310,32 @@ class ApiTests(TestCase):
             url = reverse(viewname)
             self.client.logout()
             response = self.client.get(url)
-            self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
             self.assertTrue(self.client.login(username='a', password='pass'))
             response = self.client.get(url)
-            self.assertIs(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # putting these on several lines to more easily see test failures
         check('api-root')
         check('schedule-list')
+
+
+class WebViewsPermissionTests(TestCase):
+
+    def test_login_required(self):
+        """
+        You must be logged in to access the webpage views.
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        def check(viewname):
+            url = reverse(viewname)
+            self.client.logout()
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+            self.assertTrue(self.client.login(username='a', password='pass'))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        check('index')

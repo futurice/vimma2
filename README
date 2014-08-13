@@ -26,6 +26,11 @@ Remember to run this every time you make a change (or update your repository):
 rm -f vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 
+Install PolymerJS:
+cd vimmasite/vimma/static/vimma
+bower install Polymer/polymer Polymer/core-elements Polymer/paper-elements
+cd ../../../..
+
 
 Run Tests:
 rm -f vimmasite/vimma/migrations/0*.py

@@ -6,7 +6,7 @@ from rest_framework.permissions import (
 
 from vimma.models import Schedule
 from vimma.perms import Perms
-from vimma.util import has_perm
+from vimma.util import has_perm, login_required_or_forbidden
 
 
 class SchedulePermission(BasePermission):
@@ -21,3 +21,11 @@ class SchedulePermission(BasePermission):
 class ScheduleViewSet(viewsets.ModelViewSet):
     model = Schedule
     permission_classes = (IsAuthenticated, SchedulePermission,)
+
+
+@login_required_or_forbidden
+def index(request):
+    """
+    Homepage
+    """
+    return render(request, 'vimma/index.html')

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
 from vimma.models import Profile
@@ -33,3 +34,17 @@ def has_perm(user, perm):
         if r.permissions.filter(name=perm).exists():
             return True
     return False
+
+
+def login_required_or_forbidden(view_func):
+    """
+    Decorator raises PermissionDenied if the user is not logged in.
+
+    This is similar to Django's login_required, only that one redirects to the
+    login page.
+    """
+    def wrapped_view(request, *posargs, **kwargs):
+        if not request.user.is_authenticated():
+            raise PermissionDenied('You must be logged in')
+        return view_func(request, *posargs, **kwargs)
+    return wrapped_view
