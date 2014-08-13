@@ -1,6 +1,6 @@
 /env/
 __pycache__/
-/vimmasite/vimma/static/vimma/bower_components/
+/vimmasite/vimma/static/vimma/components/bower_components/
 
 /vimmasite/local_settings.py
 

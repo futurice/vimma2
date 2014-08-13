@@ -27,9 +27,9 @@ rm -f vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 
 Install PolymerJS:
-cd vimmasite/vimma/static/vimma
+cd vimmasite/vimma/static/vimma/components
 bower install Polymer/polymer Polymer/core-elements Polymer/paper-elements
-cd ../../../..
+cd ../../../../..
 
 
 Run Tests:
