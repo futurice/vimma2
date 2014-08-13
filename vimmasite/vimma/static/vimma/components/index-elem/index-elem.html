@@ -1,7 +1,27 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 
-<polymer-element name="index-elem" noscript>
+<polymer-element name="index-elem" on-core-select="{{onCoreSelect}}">
   <template>
-    Hello world!
+    <paper-tabs selected="0">
+      <paper-tab id="{{tabIds.SCHEDULES}}">Schedules</paper-tab>
+      <paper-tab id="{{tabIds.ANOTHER}}">Another Tab</paper-tab>
+      <paper-tab id="{{tabIds.THIRD}}">A Third Tab</paper-tab>
+    </paper-tabs>
+
+    <template if="{{selectedId == tabIds.SCHEDULES}}">
+      Schedules
+    </template>
+
+    <template if="{{selectedId == tabIds.ANOTHER}}">
+      Another tab contents.
+    </template>
+
+    <template if="{{selectedId == tabIds.THIRD}}">
+      Third Tab contents.
+    </template>
+
   </template>
+  <script src="index-elem.js"></script>
 </polymer-element>
