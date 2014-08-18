@@ -1,9 +1,0 @@
-.DS_Store
-*~
-local_settings.py
-*.pyc
-DEADJOE
-*.log
-
-/env
-/local_settings.py
