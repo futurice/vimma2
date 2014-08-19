@@ -1,0 +1,10 @@
+Provision and manage virtual machines from cloud providers
+
+
+Installation:
+
+Use Python3, e.g. in a virtual environment:
+virtualenv -p python3 env
+. env/bin/activate
+
+pip install -r req.txt
