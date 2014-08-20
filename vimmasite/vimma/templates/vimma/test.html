@@ -1,0 +1,14 @@
+{% extends "vimma/base.html" %}
+{% load staticfiles %}
+
+{% block head %}
+  <title>Unit Tests</title>
+  <link rel="stylesheet" href="{% static 'vimma/css/lib/qunit-1.15.0.css' %}">
+{% endblock %}
+
+{% block body %}
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+  <script src="{% static 'vimma/js/lib/qunit-1.15.0.js' %}"></script>
+  <script src="{% static 'vimma/js/test.js' %}"></script>
+{% endblock %}

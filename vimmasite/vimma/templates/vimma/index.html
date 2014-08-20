@@ -1,15 +1,13 @@
+{% extends "vimma/base.html" %}
 {% load staticfiles %}
-<!doctype html>
-<html>
-  <head>
-    <script>
-      var vimmaApiRoot = '{% url "api-root" %}';
-    </script>
 
-    <script src="{% static 'vimma/components/bower_components/platform/platform.js' %}"></script>
-    <link rel="import" href="{% static 'vimma/components/index-elem/index-elem.html' %}">
-  </head>
-  <body>
-    <index-elem></index-elem>
-  </body>
-</html>
+{% block head %}
+  <script src="{% static 'vimma/components/bower_components/platform/platform.js' %}"></script>
+  <link rel="import" href="{% static 'vimma/components/index-elem/index-elem.html' %}">
+
+  <script src="{% static 'vimma/js/lib/jquery-2.1.1.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+  <index-elem></index-elem>
+{% endblock %}

@@ -29,3 +29,11 @@ def index(request):
     Homepage.
     """
     return render(request, 'vimma/index.html')
+
+
+@login_required_or_forbidden
+def test(request):
+    """
+    JavaScript Unit Tests.
+    """
+    return render(request, 'vimma/test.html')

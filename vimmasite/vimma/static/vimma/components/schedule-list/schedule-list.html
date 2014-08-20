@@ -1,0 +1,21 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<polymer-element name="schedule-list">
+  <template>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        {{errorText}}
+      </template>
+
+      <template if="{{success}}">
+        Loaded {{schedules.length}} schedules.
+      </template>
+    </template>
+  </template>
+
+  <script src="schedule-list.js"></script>
+</polymer-element>

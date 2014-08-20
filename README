@@ -43,3 +43,6 @@ rm -f vimmasite/db.sqlite3 vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py migrate
 ./vimmasite/manage.py shell <create-dev-data.py
 REMOTE_USER=u1 ./vimmasite/manage.py runserver
+
+http://localhost:8000/vimma/
+http://localhost:8000/vimma/test
