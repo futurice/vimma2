@@ -1,0 +1,49 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-icons/core-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="matrix-editor.html">
+
+<polymer-element name="schedule-editor" attributes="model">
+  <template>
+    <link rel="stylesheet" type="text/css" href="schedule-editor.css">
+
+    <paper-input label="Schedule Name" floatingLabel="true"
+      required error="The name may not be empty" on-input="{{nameEdited}}"
+      value="{{editModel.name}}" disabled="{{ajaxInProgress}}">
+    </paper-input>
+
+    <matrix-editor matrix="{{editModel.matrix}}" disabled="{{ajaxInProgress}}">
+    </matrix-editor>
+
+    <input id="is_special" type="checkbox" checked="{{editModel.is_special}}">
+    <label for="is_special">
+      Using this schedule requires special permissions
+    </label>
+
+    <br>
+    {{hasUnsavedChanges ? 'You have unsaved changes' : ''}}
+    <br>
+    <paper-button id="save" icon="save" label="Save" raisedButton
+      on-click={{save}} disabled="{{ajaxInProgress}}"
+      class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
+    </paper-button>
+    <paper-button id="revert" icon="undo" label="Discard changes" raisedButton
+      on-click={{revert}} disabled="{{ajaxInProgress}}"
+      class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
+    </paper-button>
+    <br>
+    <paper-button id="delete" icon="delete" label="Delete" raisedButton
+      on-click={{delete}} disabled="{{ajaxInProgress}}">
+    </paper-button>
+
+    <template if={{!ajaxInProgress}}>
+      <template if={{!ajaxSuccess}}>
+        <br>
+        <error-display text={{ajaxErrTxt}}></error-display>
+      </template>
+    </template>
+  </template>
+
+  <script src="schedule-editor.js"></script>
+</polymer-element>

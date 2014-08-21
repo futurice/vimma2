@@ -4,6 +4,12 @@ Polymer('schedule-list', {
     errorText: null,
     schedules: null,
 
+    newScheduleName: '',
+
+    ajaxInProgress: false,
+    ajaxSuccess: true,
+    ajaxErrTxt: '',
+
     created: function() {
         var success = (function(schedules) {
             this.loading = false;
@@ -18,5 +24,52 @@ Polymer('schedule-list', {
         }).bind(this);
 
         apiGetAll(vimmaApiScheduleList, success, fail);
+
+        this.defaultMatrix = [];
+        var i, j, row;
+        for (i = 0; i < 7; i++) {
+            row = [];
+            for (j = 0; j < 48; j++) {
+                row.push(false);
+            }
+            this.defaultMatrix.push(row);
+        }
+    },
+
+    scheduleDeleted: function(e, detail, sender) {
+        var arrayIdx = parseInt(sender.getAttribute('arrayIdx'));
+        this.schedules.splice(arrayIdx, 1);
+    },
+    nameEdited: function(e, detail, sender) {
+        sender.commit();
+    },
+
+    create: function() {
+        this.ajaxInProgress = true;
+
+        $.ajax({
+            url: vimmaApiScheduleList,
+            type: 'POST',
+            contentType: 'application/json; charset=UTF-8',
+            headers: {
+                'X-CSRFToken': $.cookie('csrftoken')
+            },
+            data: JSON.stringify({
+                name: this.newScheduleName,
+                matrix: JSON.stringify(this.defaultMatrix)
+            }),
+            complete: (function() {
+                this.ajaxInProgress = false;
+            }).bind(this),
+            success: (function(data) {
+                this.ajaxSuccess = true;
+                this.schedules.push(data);
+                this.newScheduleName = '';
+            }).bind(this),
+            error: (function(xhr, txtStatus, saveErr) {
+                this.ajaxSuccess = false;
+                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+            }).bind(this)
+        });
     }
 });

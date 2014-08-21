@@ -1,0 +1,26 @@
+ul#schedules {
+	list-style-type: none;
+	padding-left: inherit;
+}
+
+ul#schedules > li {
+	border: 1px solid gray;
+}
+
+ul#schedules > li + li {
+	margin-top: 0.5em;
+}
+
+#create.highlight {
+	background: ForestGreen;
+	color: white;
+}
+
+#create:hover {
+	background: MediumSeaGreen;
+	color: white;
+}
+
+#create::shadow #ripple {
+	color: yellow;
+}

@@ -1,0 +1,30 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<polymer-element name="matrix-editor" attributes="matrix disabled">
+  <template>
+    <link rel="stylesheet" type="text/css" href="matrix-editor.css">
+
+    <table id="matrix">
+      <template repeat="{{rowData, row in matrix}}">
+        <tr>
+          <template repeat="{{val, col in rowData}}">
+            <!--
+              using mouseover, which fires on every move, because mouseEnter,
+              which fires only when entering, doesn't work while dragging.
+            -->
+            <td
+              class="{{ {on: val, off: !val, dragging: cellIsHighlighted(row, col), normal: !cellIsHighlighted(row, col)} | tokenList }}"
+              on-mousedown="{{mouseDown}}"
+              on-mouseover="{{mouseOver}}"
+              on-mouseup="{{mouseUp}}"
+              row="{{row}}" col="{{col}}"
+              >
+            </td>
+          </template>
+        </tr>
+      </template>
+    </table>
+  </template>
+
+  <script src="matrix-editor.js"></script>
+</polymer-element>

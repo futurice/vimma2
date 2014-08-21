@@ -1,0 +1,13 @@
+div#box {
+	white-space: pre-wrap;
+	background-color: Pink;
+	display: inline-block;
+	text-overflow: ellipsis;
+}
+
+div#box.trims {
+	cursor: pointer;
+}
+div#box.trims:hover {
+	background-color: HotPink;
+}

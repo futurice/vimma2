@@ -1,7 +1,12 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-icons/core-icons.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../schedule-editor/schedule-editor.html">
 
 <polymer-element name="schedule-list">
   <template>
+    <link rel="stylesheet" type="text/css" href="schedule-list.css">
+
     <template if="{{loading}}">
       Loading…
     </template>
@@ -12,7 +17,44 @@
       </template>
 
       <template if="{{success}}">
-        Loaded {{schedules.length}} schedules.
+        Showing {{schedules.length}}
+        {{schedules.length == 1 ? 'schedule' : 'schedules'}}
+
+        <template bind ref="schedule-list"></template>
+        <template bind ref="create-schedule"></template>
+      </template>
+    </template>
+
+
+    <template id="schedule-list">
+      <ul id="schedules">
+        <template repeat="{{schedule, idx in schedules}}">
+          <li>
+            <schedule-editor model="{{schedule}}" arrayIdx="{{idx}}"
+              on-schedule-deleted="{{scheduleDeleted}}">
+            </schedule-editor>
+          </li>
+        </template>
+      </ul>
+    </template>
+
+    <template id="create-schedule">
+      <paper-input label="New schedule name" floatingLabel="true"
+        required error="The name may not be empty"
+        value="{{newScheduleName}}" disabled="{{ajaxInProgress}}"
+        on-input="{{nameEdited}}">
+      </paper-input>
+      <br>
+      <paper-button id="create" icon="create" label="Create" raisedButton
+        on-click={{create}} disabled="{{ajaxInProgress}}"
+        class="{{ {highlight: newScheduleName.length} | tokenList }}">
+      </paper-button>
+
+      <template if={{!ajaxInProgress}}>
+        <template if={{!ajaxSuccess}}>
+          <br>
+          <error-display text={{ajaxErrTxt}}></error-display>
+        </template>
       </template>
     </template>
   </template>

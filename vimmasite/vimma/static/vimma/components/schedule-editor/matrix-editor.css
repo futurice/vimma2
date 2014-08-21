@@ -1,0 +1,29 @@
+table#matrix {
+	border-collapse: collapse;
+}
+
+table#matrix td {
+	width: 1em;
+	height: 1em;
+	border: 1px solid black;
+}
+
+table#matrix td.on.normal {
+	background-color: forestgreen;
+}
+table#matrix td.on.dragging {
+	background-color: lightgreen;
+}
+table#matrix td.on.normal:hover {
+	background-color: lightslategray;
+}
+
+table#matrix td.off.normal {
+	background-color: lightgray;
+}
+table#matrix td.off.dragging {
+	background-color: lightslategray;
+}
+table#matrix td.off.normal:hover {
+	background-color: lightgreen;
+}

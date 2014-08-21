@@ -1,0 +1,18 @@
+#delete:hover {
+	background: crimson;
+	color: white;
+}
+
+#delete::shadow #ripple {
+	color: blue;
+}
+
+#save.unsaved, #save:hover {
+	background: DodgerBlue;
+	color: white;
+}
+
+#revert.unsaved {
+	background: CornflowerBlue;
+	color: white;
+}
