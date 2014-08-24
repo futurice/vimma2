@@ -1,0 +1,12 @@
+Create and manage VMs from a provider, such as Amazon Web Services.
+
+A user belongs to a set of Projects. VMs are assigned to projects not users.
+
+Some actions require permissions. A Role is a set of permissions. A user
+has a set of Roles.
+There is a special permission, OMNIPOTENT_PERMISSION, which grants a user all
+permissions (without having to assign each permission explicitly).
+
+A user U has permission P if there is a role R, assigned to U,
+and R's permission set includes P or OMNIPOTENT_PERMISSION.
+Otherwise user U doesn't have permission P.

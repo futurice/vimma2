@@ -1,5 +1,7 @@
 Provision and manage virtual machines from cloud providers
 
+The DOC file has some explanations about the structure & features.
+
 
 Installation:
 
@@ -8,3 +10,22 @@ virtualenv -p python3 env
 . env/bin/activate
 
 pip install -r req.txt
+
+Set up local_settings.py:
+― Type a random string for the SECRET_KEY
+― Choose the DB (the file has instructions for DBs that need additional setup)
+cd vimmasite
+cp local_settings.py.example local_settings.py
+cd ..
+
+During initial development don't use migrations. There's too much change and
+experimentation. Instead, create the data model every time.
+Remember to run this every time you make a change (or update your repository):
+rm -f vimmasite/vimma/migrations/0*.py
+./vimmasite/manage.py makemigrations
+
+
+Run Tests:
+rm -f vimmasite/vimma/migrations/0*.py
+./vimmasite/manage.py makemigrations
+./vimmasite/manage.py test vimma
