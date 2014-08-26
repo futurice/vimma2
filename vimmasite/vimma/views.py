@@ -21,6 +21,8 @@ class SchedulePermission(BasePermission):
 class ScheduleViewSet(viewsets.ModelViewSet):
     model = Schedule
     permission_classes = (IsAuthenticated, SchedulePermission,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('name',)
 
 
 @login_required_or_forbidden
