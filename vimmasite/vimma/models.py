@@ -40,6 +40,10 @@ class Profile(models.Model):
     roles = models.ManyToManyField(Role)
 
 
+class TimeZone(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+
 def schedule_matrix_validator(val):
     try:
         matrix = json.loads(val)
@@ -65,12 +69,9 @@ class Schedule(models.Model):
     Each row is a day of the week (first row is Monday, last row is Sunday).
     Each column is a 30-min time interval. First column is [0:00, 0:30),
     second is [0:30, 1:00), last column is [23:30, 24:00).
-
-    Since a schedule only deals with local time, anyone using it must create a
-    local time (e.g. a timezone-aware VM) then check it against the schedule
-    to find ON or OFF state.
     """
     name = models.CharField(max_length=50, unique=True)
+    timezone = models.ForeignKey(TimeZone, on_delete=models.PROTECT)
     matrix = models.TextField(validators=[schedule_matrix_validator])
     # ‘special’ schedules can't be used by anyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.

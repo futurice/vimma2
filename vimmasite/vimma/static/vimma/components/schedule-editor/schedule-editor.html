@@ -4,7 +4,7 @@
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="matrix-editor.html">
 
-<polymer-element name="schedule-editor" attributes="model">
+<polymer-element name="schedule-editor" attributes="schedule timezones">
   <template>
     <link rel="stylesheet" type="text/css" href="schedule-editor.css">
 
@@ -16,6 +16,14 @@
     <matrix-editor matrix="{{editModel.matrix}}" disabled="{{ajaxInProgress}}">
     </matrix-editor>
 
+    TimeZone:
+    <core-dropdown selected="{{editModel.timezone}}" valueattr="tzid"
+      on-core-select="{{timezoneSelected}}">
+      <template repeat="{{tz in timezones}}">
+        <core-item label="{{tz.name}}" tzid="{{tz.id}}"></core-item>
+      </template>
+    </core-dropdown>
+    <br>
     <input id="is_special" type="checkbox" checked="{{editModel.is_special}}">
     <label for="is_special">
       Using this schedule requires special permissions

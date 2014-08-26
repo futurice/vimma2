@@ -1,16 +1,17 @@
 Polymer('schedule-editor', {
     ready: function() {
-        // The external interface is ‘model’. Internally we have a last saved
-        // model and the current editing model.
-        this.savedModel = clone(this.model);
+        // The external interface is ‘schedule’. Internally we have a last
+        // saved model and the currently editing model.
+        this.savedModel = clone(this.schedule);
         this.savedModel.matrix = JSON.parse(this.savedModel.matrix);
         this.editModel = clone(this.savedModel);
 
-        this.model = null;
+        this.schedule = null;
     },
 
     observe: {
         'editModel.name': 'checkUnsavedChanges',
+        'editModel.timezone': 'checkUnsavedChanges',
         'editModel.is_special': 'checkUnsavedChanges',
         'editModel.matrix': 'checkUnsavedChanges',
         'savedModel': 'checkUnsavedChanges'
@@ -23,6 +24,14 @@ Polymer('schedule-editor', {
 
     nameEdited: function(e, detail, sender) {
         sender.commit();
+    },
+
+    timezoneSelected: function(e, detail, sender) {
+        e.stopPropagation();
+        if (detail.isSelected) {
+            this.editModel.timezone = parseInt(
+                    detail.item.getAttribute('tzid'), 10);
+        }
     },
 
     ajaxInProgress: false,
@@ -74,7 +83,7 @@ Polymer('schedule-editor', {
             }).bind(this),
             success: (function(data) {
                 this.ajaxSuccess = true;
-                this.savedModel = this.editModel;
+                this.savedModel = clone(this.editModel);
             }).bind(this),
             error: (function() {
                 this.ajaxSuccess = false;

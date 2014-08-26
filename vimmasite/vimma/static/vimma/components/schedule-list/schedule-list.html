@@ -1,6 +1,8 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-dropdown/core-dropdown.html">
 <link rel="import" href="../bower_components/core-icons/core-icons.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../schedule-editor/schedule-editor.html">
 
 <polymer-element name="schedule-list">
@@ -13,7 +15,7 @@
 
     <template if="{{!loading}}">
       <template if="{{!success}}">
-        {{errorText}}
+        <error-display text={{errorText}}></error-display>
       </template>
 
       <template if="{{success}}">
@@ -30,8 +32,8 @@
       <ul id="schedules">
         <template repeat="{{schedule, idx in schedules}}">
           <li>
-            <schedule-editor model="{{schedule}}" arrayIdx="{{idx}}"
-              on-schedule-deleted="{{scheduleDeleted}}">
+            <schedule-editor schedule="{{schedule}}" timezones="{{timezones}}"
+              arrayIdx="{{idx}}" on-schedule-deleted="{{scheduleDeleted}}">
             </schedule-editor>
           </li>
         </template>
@@ -45,9 +47,17 @@
         on-input="{{nameEdited}}">
       </paper-input>
       <br>
+      <core-dropdown label="Select a TimeZone"
+        on-core-select="{{timezoneSelected}}">
+        <template repeat="{{tz in timezones}}">
+          <core-item label="{{tz.name}}" tzid="{{tz.id}}">
+          </core-item>
+        </template>
+      </core-dropdown>
+      <br>
       <paper-button id="create" icon="create" label="Create" raisedButton
         on-click={{create}} disabled="{{ajaxInProgress}}"
-        class="{{ {highlight: newScheduleName.length} | tokenList }}">
+        class="{{ {highlight: newScheduleName.length && newScheduleTimeZone != null} | tokenList }}">
       </paper-button>
 
       <template if={{!ajaxInProgress}}>

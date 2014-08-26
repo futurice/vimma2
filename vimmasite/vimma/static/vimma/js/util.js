@@ -22,38 +22,88 @@ function getAjaxErr(xhr, txtStatus, errThrown) {
             errTxt += ': ' + JSON.stringify(JSON.parse(xhr.responseText));
         } catch (exc) {
             // json parsing error
-            errTxt += ': ' + xhr.responseText.substr(0, 100);
+            errTxt += ': ' + xhr.responseText;
         }
     }
     return errTxt;
 }
 
 /*
- * Start at url, follow .next pages to end.
- * Call successCallback(results) or errCallback(errorText).
+ * Start at each url in urlArray, follow .next pages to end.
+ * If any call fails, call errCallback(errorText) and stop.
+ * Else call successCallback(resultsArray).
+ * resultsArray.length == urlArray.length
+ * resultsArray[i] is itself an array with the data for urlArray[i].
  */
-function apiGetAll(url, successCallback, errCallback) {
-    var results = [];
-    function fetch() {
-        if (!url) {
-            successCallback(results);
+function apiGetAll(urlArray, successCallback, errCallback) {
+    var resultsArray = [],
+        // completedArray[i] == true if urlArray[i] finished successfully
+        completedArray = [],
+        // a call has failed: remaining url fetchers stop paging
+        failed = false,
+        // how many urls haven't reached the last page yet
+        remaining = 0;
+
+    urlArray.forEach(function() {
+        resultsArray.push([]);
+        completedArray.push(false);
+    });
+
+    // fetcher for urlArray[i] completed
+    function done(i, results) {
+        if (completedArray[i]) {
+            throw i + ' completed multiple times';
+        }
+        if (failed) {
             return;
         }
-
-        $.ajax({
-            url: url,
-            success: function(data) {
-                results = results.concat(data.results);
-                url = data.next;
-                fetch();
-            },
-            error: function() {
-                var errTxt = getAjaxErr.apply(this, arguments);
-                errCallback(errTxt);
-            }
-        });
+        completedArray[i] = true;
+        resultsArray[i] = results;
+        remaining--;
+        if (remaining == 0) {
+            successCallback(resultsArray);
+        }
     }
-    fetch();
+
+    // a call failed
+    function fail(errorText) {
+        if (failed) {
+            return;
+        }
+        failed = true;
+        errCallback(errorText);
+    }
+
+    function fetchIdx(i) {
+        var results = [];
+        function fetchUrl(url) {
+            if (!url) {
+                done(i, results);
+                return;
+            }
+            if (failed) {
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                success: function(data) {
+                    results = results.concat(data.results);
+                    fetchUrl(data.next);
+                },
+                error: function() {
+                    var errTxt = getAjaxErr.apply(this, arguments);
+                    fail(errTxt);
+                }
+            });
+        }
+        fetchUrl(urlArray[i]);
+    }
+
+    urlArray.forEach(function(url, idx) {
+        fetchIdx(idx);
+        remaining++;
+    });
 }
 
 

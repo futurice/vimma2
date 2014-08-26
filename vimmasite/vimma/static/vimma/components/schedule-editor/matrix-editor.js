@@ -67,8 +67,8 @@ Polymer('matrix-editor', {
 
     mouseDown: function(ev, detail, sender) {
         if (!this.editing) {
-            var row = parseInt(sender.getAttribute('row')),
-                col = parseInt(sender.getAttribute('col'));
+            var row = parseInt(sender.getAttribute('row'), 10),
+                col = parseInt(sender.getAttribute('col'), 10);
             this.startEdit(row, col);
         }
     },
@@ -79,8 +79,8 @@ Polymer('matrix-editor', {
     },
     mouseOver: function(ev, detail, sender) {
         if (this.editing) {
-            var row = parseInt(sender.getAttribute('row')),
-                col = parseInt(sender.getAttribute('col'));
+            var row = parseInt(sender.getAttribute('row'), 10),
+                col = parseInt(sender.getAttribute('col'), 10);
             this.dragTo(row, col);
         }
     },

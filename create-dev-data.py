@@ -1,10 +1,13 @@
 from vimma.util import create_vimma_user
-from vimma.models import Schedule, Role, Permission
+from vimma.models import TimeZone, Schedule, Role, Permission
 from vimma.perms import Perms
 import json
 
 create_vimma_user('u1', 'u1@example.com', 'pass')
-Schedule.objects.create(name='My Schedule',
+tz_hki = TimeZone.objects.create(name='Europe/Helsinki')
+TimeZone.objects.create(name='Europe/London')
+TimeZone.objects.create(name='America/Los_Angeles')
+Schedule.objects.create(name='My Schedule', timezone=tz_hki,
         matrix=json.dumps(7*[10*2*[False] + 8*2*[True] + 6*2*[False]])
         ).full_clean()
 

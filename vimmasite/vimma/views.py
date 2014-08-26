@@ -4,9 +4,15 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from vimma.models import Schedule
+from vimma.models import Schedule, TimeZone
 from vimma.perms import Perms
 from vimma.util import has_perm, login_required_or_forbidden
+
+
+class TimeZoneViewSet(viewsets.ReadOnlyModelViewSet):
+    model = TimeZone
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('name',)
 
 
 class SchedulePermission(BasePermission):

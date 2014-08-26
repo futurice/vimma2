@@ -3,18 +3,21 @@ Polymer('schedule-list', {
     success: null,
     errorText: null,
     schedules: null,
+    timezones: null,
 
     newScheduleName: '',
+    newScheduleTimeZone: null,
 
     ajaxInProgress: false,
     ajaxSuccess: true,
     ajaxErrTxt: '',
 
     created: function() {
-        var success = (function(schedules) {
+        var success = (function(resultsArr) {
             this.loading = false;
             this.success = true;
-            this.schedules = schedules;
+            this.schedules = resultsArr[0];
+            this.timezones = resultsArr[1];
         }).bind(this);
 
         var fail = (function(errorText) {
@@ -23,7 +26,7 @@ Polymer('schedule-list', {
             this.errorText = errorText;
         }).bind(this);
 
-        apiGetAll(vimmaApiScheduleList, success, fail);
+        apiGetAll([vimmaApiScheduleList, vimmaApiTimeZoneList], success, fail);
 
         this.defaultMatrix = [];
         var i, j, row;
@@ -44,6 +47,14 @@ Polymer('schedule-list', {
         sender.commit();
     },
 
+    timezoneSelected: function(e, detail, sender) {
+        e.stopPropagation();
+        if (detail.isSelected) {
+            this.newScheduleTimeZone = parseInt(
+                    detail.item.getAttribute('tzid'), 10);
+        }
+    },
+
     create: function() {
         this.ajaxInProgress = true;
 
@@ -56,6 +67,7 @@ Polymer('schedule-list', {
             },
             data: JSON.stringify({
                 name: this.newScheduleName,
+                timezone: this.newScheduleTimeZone,
                 matrix: JSON.stringify(this.defaultMatrix)
             }),
             complete: (function() {

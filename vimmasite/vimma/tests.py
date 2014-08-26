@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from vimma import util
-from vimma.models import Permission, Role, Project, Profile, Schedule
+from vimma.models import Permission, Role, Project, Profile, TimeZone, Schedule
 from vimma.perms import ALL_PERMS, Perms
 
 
@@ -162,8 +162,10 @@ class ScheduleTests(APITestCase):
         """
         Default field values: is_special=False.
         """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
         matrix = 7 * [48 * [True]];
-        s = Schedule.objects.create(name='s', matrix=json.dumps(matrix))
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(matrix))
         s.full_clean()
         self.assertFalse(s.is_special)
 
@@ -171,22 +173,24 @@ class ScheduleTests(APITestCase):
         """
         Schedules must have unique names.
         """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
         m = json.dumps(7*[48*[True]])
-        Schedule.objects.create(name='s', matrix=m)
-        Schedule.objects.create(name='s2', matrix=m)
+        Schedule.objects.create(name='s', timezone=tz, matrix=m)
+        Schedule.objects.create(name='s2', timezone=tz, matrix=m)
         with self.assertRaises(IntegrityError):
-            Schedule.objects.create(name='s', matrix=m)
+            Schedule.objects.create(name='s', timezone=tz, matrix=m)
 
     def test_matrix(self):
         """
         Schedules require a 7×48 matrix with booleans.
         """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
         count = 0
         def checkInvalid(m):
             with self.assertRaises(ValidationError):
                 nonlocal count
                 count += 1
-                Schedule.objects.create(name=str(count),
+                Schedule.objects.create(name=str(count), timezone=tz,
                         matrix=json.dumps(m)).full_clean()
 
         checkInvalid('')
@@ -194,12 +198,22 @@ class ScheduleTests(APITestCase):
         checkInvalid(7 * [ 12 * [True, False] ])
 
         m = 7 * [ 12 * [True, False, False, False] ]
-        Schedule.objects.create(name='s', matrix=json.dumps(m)).full_clean()
+        Schedule.objects.create(name='s', timezone=tz, matrix=json.dumps(m)
+                ).full_clean()
+
+    def test_requires_timezone(self):
+        """
+        Schedule requires a timezone.
+        """
+        m = json.dumps(7*[48*[True]])
+        with self.assertRaises(IntegrityError):
+            Schedule.objects.create(name='s', matrix=m)
 
     def test_api_permissions(self):
         """
         Check that reading requires no permissions, create/modify/delete does.
         """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
         util.create_vimma_user('r', 'r@example.com', 'p')
         w = util.create_vimma_user('w', 'w@example.com', 'p')
         role = Role.objects.create(name='Schedule Creators')
@@ -225,7 +239,7 @@ class ScheduleTests(APITestCase):
         self.assertEqual(len(get_list()), 0)
 
         m1 = json.dumps(7*[48*[False]])
-        Schedule.objects.create(name='s', matrix=m1).full_clean()
+        Schedule.objects.create(name='s', timezone=tz, matrix=m1).full_clean()
 
         # read list
         items = get_list()
@@ -249,7 +263,7 @@ class ScheduleTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # can't create
-        new_item = {'name': 'NewSched', 'matrix': m1}
+        new_item = {'name': 'NewSched', 'matrix': m1, 'timezone': tz.id}
         response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -277,7 +291,8 @@ class ScheduleTests(APITestCase):
 
         # create
         response = self.client.post(reverse('schedule-list'),
-                {'name': 'NewSched', 'matrix': m1}, format='json')
+                {'name': 'NewSched', 'matrix': m1, 'timezone': tz.id},
+                format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode('utf-8'))
 
@@ -298,6 +313,89 @@ class ScheduleTests(APITestCase):
         response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TimeZoneTests(APITestCase):
+
+    def test_timezone_requires_name(self):
+        """
+        TimeZone requires non-empty name.
+        """
+        with self.assertRaises(ValidationError):
+            TimeZone().full_clean()
+        with self.assertRaises(ValidationError):
+            TimeZone(name='').full_clean()
+        tz = TimeZone(name='America/Los_Angeles')
+        tz.full_clean()
+        tz.save()
+
+    def test_timezone_unique_name(self):
+        """
+        TimeZones must have unique names.
+        """
+        TimeZone.objects.create(name='America/Los_Angeles').full_clean()
+        with self.assertRaises(IntegrityError):
+            TimeZone.objects.create(name='America/Los_Angeles')
+
+    def test_api_permissions(self):
+        """
+        Check that everyone can read, no one can create/modify/delete.
+        """
+        util.create_vimma_user('a', 'a@example.com', 'p')
+        user_b = util.create_vimma_user('b', 'b@example.com', 'p')
+        role = Role.objects.create(name='Omni')
+        role.full_clean()
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        perm.full_clean()
+        role.permissions.add(perm)
+        user_b.profile.roles.add(role)
+
+        def get_list():
+            response = self.client.get(reverse('timezone-list'))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            return response.data['results']
+
+        def get_item(id):
+            response = self.client.get(reverse('timezone-detail', args=[id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            return json.loads(response.content.decode('utf-8'))
+
+        # Test Reading
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        self.assertEqual(len(get_list()), 0)
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        items = get_list()
+        self.assertEqual(len(items), 1)
+
+        # read individual item
+        item = get_item(items[0]['id'])
+
+        # Test Writing
+
+        self.assertTrue(self.client.login(username='b', password='p'))
+        self.assertEqual(len(get_list()), 1)
+
+        # can't modify
+        item['name'] = 'Europe/Berlin'
+        response = self.client.put(
+                reverse('timezone-detail', args=[item['id']]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(
+                reverse('timezone-detail', args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        new_item = {'name': 'Europe/London'}
+        response = self.client.post(reverse('timezone-list'), new_item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class ApiTests(TestCase):
@@ -328,10 +426,11 @@ class ApiTests(TestCase):
         user = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
 
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
         matrix = 7*[16*[True, True, False]]
         page_size = settings.REST_FRAMEWORK['PAGINATE_BY']
         for i in range(page_size+1):
-            Schedule.objects.create(name=str(i), matrix=matrix)
+            Schedule.objects.create(name=str(i), timezone=tz, matrix=matrix)
 
         n, pages = 0, 0
         url = reverse('schedule-list')
