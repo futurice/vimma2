@@ -1,6 +1,9 @@
+import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+import json
+import pytz
 
 from vimma.models import Profile
 from vimma.perms import Perms
@@ -64,3 +67,16 @@ def can_perform_action(user, action, obj):
     else:
         # TODO: log ‘unknown action’ after we add logging config
         return False
+
+
+def schedule_at_tstamp(schedule, tstamp):
+    """
+    Returns True if schedule says ON at unix tstamp, else False.
+    """
+    tz = pytz.timezone(schedule.timezone.name)
+    naive = datetime.datetime.utcfromtimestamp(tstamp)
+    aware = pytz.utc.localize(naive)
+    aware = aware.astimezone(tz)
+    row = aware.weekday()
+    col = aware.hour * 2 + aware.minute // 30
+    return json.loads(schedule.matrix)[row][col]

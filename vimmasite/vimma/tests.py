@@ -1,3 +1,4 @@
+import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -5,6 +6,7 @@ from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.test import TestCase
 import json
+import pytz
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -313,6 +315,43 @@ class ScheduleTests(APITestCase):
         response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_schedule_at_tstamp(self):
+        """
+        Check the util.schedule_at_tstamp function.
+        """
+        for tz_name in ['America/Los_Angeles', 'Europe/Madrid', 'Asia/Tokyo']:
+            tz = pytz.timezone(tz_name)
+            tz_obj = TimeZone.objects.create(name=tz_name)
+            tz_obj.full_clean()
+            matrix = 5*[8*2*[False] + 8*2*[True] + 8*2*[False]]+ 2*[48*[False]]
+            s = Schedule.objects.create(name='Weekdays 8am→4pm, ' + tz_name,
+                    timezone=tz_obj, matrix=json.dumps(matrix))
+            s.full_clean()
+
+            for naive in [
+                    datetime.datetime(2014, 2, 3, 8),
+                    datetime.datetime(2014, 2, 4, 14),
+                    datetime.datetime(2014, 2, 7, 8, 30),
+                    datetime.datetime(2014, 2, 7, 15, 59, 59),
+                    ]:
+                aware = tz.localize(naive)
+                tstamp = aware.timestamp()
+                self.assertTrue(util.schedule_at_tstamp(s, tstamp))
+
+            for naive in [
+                    datetime.datetime(2014, 2, 2, 13),
+                    datetime.datetime(2014, 2, 3, 7, 59, 59),
+                    datetime.datetime(2014, 2, 3, 16),
+                    datetime.datetime(2014, 2, 3, 22),
+                    datetime.datetime(2014, 2, 4, 7, 20),
+                    datetime.datetime(2014, 2, 4, 17, 30),
+                    datetime.datetime(2014, 2, 8),
+                    datetime.datetime(2014, 2, 8, 11),
+                    ]:
+                aware = tz.localize(naive)
+                tstamp = aware.timestamp()
+                self.assertFalse(util.schedule_at_tstamp(s, tstamp))
 
 
 class TimeZoneTests(APITestCase):
