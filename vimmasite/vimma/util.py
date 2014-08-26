@@ -4,6 +4,7 @@ from django.db import transaction
 
 from vimma.models import Profile
 from vimma.perms import Perms
+from vimma.actions import Actions
 
 
 @transaction.atomic
@@ -48,3 +49,18 @@ def login_required_or_forbidden(view_func):
             raise PermissionDenied('You must be logged in')
         return view_func(request, *posargs, **kwargs)
     return wrapped_view
+
+
+def can_perform_action(user, action, obj):
+    """
+    Check if user is omnipotent or is allowed to perform action on obj.
+    """
+    if has_perm(user, Perms.OMNIPOTENT):
+        return True
+
+    if action == Actions.CREATE_VM_IN_PROJECT:
+        # TODO: implement later
+        return False
+    else:
+        # TODO: log ‘unknown action’ after we add logging config
+        return False

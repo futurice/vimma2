@@ -10,3 +10,10 @@ permissions (without having to assign each permission explicitly).
 A user U has permission P if there is a role R, assigned to U,
 and R's permission set includes P or OMNIPOTENT_PERMISSION.
 Otherwise user U doesn't have permission P.
+
+The OMNIPOTENT_PERMISSION also lets a user perform some actions for which we
+don't define an explicit permission. E.g. normally users can only create VMs
+in the projects they're part of. To avoid permission explosion, we don't define
+permissions for each case we want to allow, e.g.
+create_vm_without_prj_membership, but instead allow superusers to perform these
+actions.
