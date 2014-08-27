@@ -3,11 +3,15 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 import json
+import logging
 import pytz
 
 from vimma.models import Profile
 from vimma.perms import Perms
 from vimma.actions import Actions
+
+
+log = logging.getLogger(__name__)
 
 
 @transaction.atomic
@@ -65,7 +69,7 @@ def can_perform_action(user, action, obj):
         # TODO: implement later
         return False
     else:
-        # TODO: log ‘unknown action’ after we add logging config
+        log.warn('Unknown action “{}”'.format(action))
         return False
 
 

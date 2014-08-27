@@ -8,3 +8,5 @@ __pycache__/
 
 # Don't store migrations during initial development
 vimmasite/vimma/migrations/0*.py
+
+/vimma.log*

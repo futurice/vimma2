@@ -88,4 +88,42 @@ REST_FRAMEWORK = {
 }
 
 
+# Logging Configuration
+
+import logging
+import time
+
+# Log UTC times
+logging.Formatter.converter = time.gmtime
+
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'fmt': {
+            'format': '%(asctime)s %(levelname)s:%(name)s:%(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S %z (%Z)',
+        },
+    },
+    'handlers': {
+        'consoleH': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'formatter': 'fmt',
+        },
+        'fileH': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'fmt',
+            'filename': 'vimma.log',
+            'encoding': 'utf-8',
+            'maxBytes': 2*1024*1024,
+            'backupCount': 5,
+        },
+    },
+    'root': {
+        'level': 'NOTSET',
+        'handlers': ['consoleH', 'fileH'],
+    },
+}
+
+
 from local_settings import *
