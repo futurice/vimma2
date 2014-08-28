@@ -19,7 +19,7 @@ from vimma.perms import ALL_PERMS, Perms
 
 class PermissionTests(TestCase):
 
-    def testPermissionRequiresName(self):
+    def test_permission_requires_name(self):
         """
         Permission requires non-empty name.
         """
@@ -27,7 +27,7 @@ class PermissionTests(TestCase):
             Permission.objects.create().full_clean()
         Permission.objects.create(name=Perms.EDIT_SCHEDULE).full_clean()
 
-    def testPermissionUniqueName(self):
+    def test_permission_unique_name(self):
         """
         Permissions have unique names.
         """
@@ -35,7 +35,7 @@ class PermissionTests(TestCase):
         with self.assertRaises(IntegrityError):
             Permission.objects.create(name=Perms.EDIT_SCHEDULE)
 
-    def testCreateAllPerms(self):
+    def test_create_all_perms(self):
         """
         Populate the database with all permissions.
         """
@@ -45,7 +45,7 @@ class PermissionTests(TestCase):
 
 class RoleTests(TestCase):
 
-    def testRoleRequiresName(self):
+    def test_role_requires_name(self):
         """
         Roles require a non-empty name.
         """
@@ -53,7 +53,7 @@ class RoleTests(TestCase):
             Role.objects.create().full_clean()
         Role.objects.create(name='Janitor').full_clean()
 
-    def testRoleUniqueName(self):
+    def test_role_unique_name(self):
         """
         Roles have unique names.
         """
@@ -62,7 +62,7 @@ class RoleTests(TestCase):
         with self.assertRaises(IntegrityError):
             Role.objects.create(name='President')
 
-    def testHasPerm(self):
+    def test_has_perm(self):
         """
         Test assigning Permissions to users via Roles.
         """
@@ -75,14 +75,14 @@ class RoleTests(TestCase):
         omni_role = Role.objects.create(name='Omni Role')
         omni_role.permissions.add(perm_omni)
 
-        nobody = util.createUser('nobody', 'n@a.com', 'pass')
-        fry = util.createUser('fry', 'f@a.com', 'pass')
+        nobody = util.create_vimma_user('nobody', 'n@a.com', 'pass')
+        fry = util.create_vimma_user('fry', 'f@a.com', 'pass')
         fry.profile.roles.add(sched_editors)
-        hubert = util.createUser('hubert', 'h@a.com', 'pass')
+        hubert = util.create_vimma_user('hubert', 'h@a.com', 'pass')
         hubert.profile.roles.add(sched_editors, omni_role)
 
         def check(user, perm, result):
-            self.assertIs(util.hasPerm(user, perm), result)
+            self.assertIs(util.has_perm(user, perm), result)
 
         # make individual function calls, not one single call with a list,
         # to see which test fails.
@@ -105,12 +105,12 @@ class RoleTests(TestCase):
         # Incorrectly created user: has no Profile
         invalid = User.objects.create_user('invalid', 'a@b.com', 'pw')
         with self.assertRaises(Profile.DoesNotExist):
-            util.hasPerm(invalid, 'some-perm')
+            util.has_perm(invalid, 'some-perm')
 
 
 class ProjectTests(TestCase):
 
-    def testProjectRequiresNameAndEmail(self):
+    def test_project_requires_name_and_email(self):
         """
         Project requires a non-empty name and email.
         """
@@ -127,7 +127,7 @@ class ProjectTests(TestCase):
             Project.objects.create(name='prj1').full_clean()
         Project.objects.create(name='prj2', email='a@b.com').full_clean()
 
-    def testProjectNameUnique(self):
+    def test_project_name_unique(self):
         """
         Projects must have unique names.
         """
@@ -138,35 +138,35 @@ class ProjectTests(TestCase):
 
 class UserTest(TestCase):
 
-    def testDefaultUserHasNoProfile(self):
+    def test_default_user_has_no_profile(self):
         """
         Users directly created have no associated profile.
         """
-        badUser = User.objects.create_user('a', 'a@example.com', 'pass')
+        bad_user = User.objects.create_user('a', 'a@example.com', 'pass')
         with self.assertRaises(Profile.DoesNotExist):
-            badUser.profile
+            bad_user.profile
 
-    def testAssociatedProfile(self):
+    def test_associated_profile(self):
         """
-        When using util.createUser a profile is present.
+        When using util.create_vimma_user a profile is present.
         """
-        u = util.createUser('a', 'a@example.com', 'pass')
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
         p = u.profile
         self.assertEqual(u.username, p.user.username)
 
 
 class ScheduleTests(APITestCase):
 
-    def testScheduleDefaults(self):
+    def test_schedule_defaults(self):
         """
-        Default field values: isSpecial=False.
+        Default field values: is_special=False.
         """
         matrix = 7 * [48 * [True]];
         s = Schedule.objects.create(name='s', matrix=json.dumps(matrix))
         s.full_clean()
-        self.assertFalse(s.isSpecial)
+        self.assertFalse(s.is_special)
 
-    def testUniqueName(self):
+    def test_unique_name(self):
         """
         Schedules must have unique names.
         """
@@ -176,7 +176,7 @@ class ScheduleTests(APITestCase):
         with self.assertRaises(IntegrityError):
             Schedule.objects.create(name='s', matrix=m)
 
-    def testMatrix(self):
+    def test_matrix(self):
         """
         Schedules require a 7×48 matrix with booleans.
         """
@@ -195,12 +195,12 @@ class ScheduleTests(APITestCase):
         m = 7 * [ 12 * [True, False, False, False] ]
         Schedule.objects.create(name='s', matrix=json.dumps(m)).full_clean()
 
-    def testApiPermissions(self):
+    def test_api_permissions(self):
         """
         Check that reading requires no permissions, create/modify/delete does.
         """
-        util.createUser('r', 'r@example.com', 'p')
-        w = util.createUser('w', 'w@example.com', 'p')
+        util.create_vimma_user('r', 'r@example.com', 'p')
+        w = util.create_vimma_user('w', 'w@example.com', 'p')
         role = Role.objects.create(name='Schedule Creators')
         role.full_clean()
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
@@ -208,12 +208,12 @@ class ScheduleTests(APITestCase):
         role.permissions.add(perm)
         w.profile.roles.add(role)
 
-        def getList():
+        def get_list():
             response = self.client.get(reverse('schedule-list'))
             self.assertIs(response.status_code, status.HTTP_200_OK)
             return json.loads(response.content.decode('utf-8'))
 
-        def getItem(id):
+        def get_item(id):
             response = self.client.get(reverse('schedule-detail', args=[id]))
             self.assertIs(response.status_code, status.HTTP_200_OK)
             return json.loads(response.content.decode('utf-8'))
@@ -221,22 +221,22 @@ class ScheduleTests(APITestCase):
         # Test Reader
 
         self.assertTrue(self.client.login(username='r', password='p'))
-        self.assertIs(len(getList()), 0)
+        self.assertIs(len(get_list()), 0)
 
         m1 = json.dumps(7*[48*[False]])
         Schedule.objects.create(name='s', matrix=m1).full_clean()
 
         # read list
-        items = getList()
+        items = get_list()
         self.assertIs(len(items), 1)
         item = items[0]
-        self.assertEqual(item['isSpecial'], False)
+        self.assertEqual(item['is_special'], False)
 
         # read individual item
-        item = getItem(item['id'])
+        item = get_item(item['id'])
 
         # can't modify
-        item['isSpecial'] = True
+        item['is_special'] = True
         response = self.client.put(
                 reverse('schedule-detail', args=[item['id']]),
                 item, format='json')
@@ -248,8 +248,8 @@ class ScheduleTests(APITestCase):
         self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # can't create
-        newItem = {'name': 'NewSched', 'matrix': m1}
-        response = self.client.post(reverse('schedule-list'), newItem,
+        new_item = {'name': 'NewSched', 'matrix': m1}
+        response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
         self.assertIs(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -257,13 +257,13 @@ class ScheduleTests(APITestCase):
         self.assertTrue(self.client.login(username='w', password='p'))
 
         # read list
-        items = getList()
+        items = get_list()
         self.assertIs(len(items), 1)
 
         # modify
         item = items[0]
         item['matrix'] = json.dumps(7*[24*[True, False]])
-        item['isSpecial'] = True
+        item['is_special'] = True
         response = self.client.put(
                 reverse('schedule-detail', args=[item['id']]),
                 item, format='json')
@@ -280,11 +280,11 @@ class ScheduleTests(APITestCase):
         self.assertIs(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode('utf-8'))
 
-    def testApiValidation(self):
+    def test_api_validation(self):
         """
         Check that the API runs the field validators.
         """
-        w = util.createUser('w', 'w@example.com', 'p')
+        w = util.create_vimma_user('w', 'w@example.com', 'p')
         role = Role.objects.create(name='Schedule Creators')
         role.full_clean()
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
@@ -293,19 +293,19 @@ class ScheduleTests(APITestCase):
         w.profile.roles.add(role)
 
         self.assertTrue(self.client.login(username='w', password='p'))
-        newItem = {'name': 'NewSched', 'matrix': json.dumps([2, [True]])}
-        response = self.client.post(reverse('schedule-list'), newItem,
+        new_item = {'name': 'NewSched', 'matrix': json.dumps([2, [True]])}
+        response = self.client.post(reverse('schedule-list'), new_item,
                 format='json')
         self.assertIs(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class ApiTests(TestCase):
 
-    def testApiRequiresLogin(self):
+    def test_api_requires_login(self):
         """
         Logged in users see the API, others get Forbidden.
         """
-        util.createUser('a', 'a@example.com', 'pass')
+        util.create_vimma_user('a', 'a@example.com', 'pass')
         def check(viewname):
             url = reverse(viewname)
             self.client.logout()

@@ -40,7 +40,7 @@ class Profile(models.Model):
     roles = models.ManyToManyField(Role)
 
 
-def scheduleMatrixValidator(val):
+def schedule_matrix_validator(val):
     try:
         matrix = json.loads(val)
     except ValueError as e:
@@ -71,9 +71,9 @@ class Schedule(models.Model):
     to find ON or OFF state.
     """
     name = models.CharField(max_length=50, unique=True)
-    matrix = models.TextField(validators=[scheduleMatrixValidator])
+    matrix = models.TextField(validators=[schedule_matrix_validator])
     # ‘special’ schedules can't be used by anyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
-    isSpecial = models.BooleanField(default=False)
+    is_special = models.BooleanField(default=False)
     # TODO: find a way to mark a schedule as ‘default’, to pre-select it in the
     # UI. Either a BooleanField or a singleton with a ForeignKey to Schedule.

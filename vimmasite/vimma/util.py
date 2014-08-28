@@ -6,7 +6,7 @@ from vimma.perms import Perms
 
 
 @transaction.atomic
-def createUser(username, email, password, first_name='', last_name=''):
+def create_vimma_user(username, email, password, first_name='', last_name=''):
     """
     Create a User and the associated Profile and return the User.
 
@@ -19,7 +19,7 @@ def createUser(username, email, password, first_name='', last_name=''):
     return u
 
 
-def hasPerm(user, perm):
+def has_perm(user, perm):
     """
     Return True if user (User object) has perm (string), False otherwise.
 

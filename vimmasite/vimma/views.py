@@ -6,7 +6,7 @@ from rest_framework.permissions import (
 
 from vimma.models import Schedule
 from vimma.perms import Perms
-from vimma.util import hasPerm
+from vimma.util import has_perm
 
 
 class SchedulePermission(BasePermission):
@@ -16,7 +16,7 @@ class SchedulePermission(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return True
-        return hasPerm(request.user, Perms.EDIT_SCHEDULE)
+        return has_perm(request.user, Perms.EDIT_SCHEDULE)
 
 class ScheduleViewSet(viewsets.ModelViewSet):
     model = Schedule
