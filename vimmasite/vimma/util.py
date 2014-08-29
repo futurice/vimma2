@@ -70,6 +70,8 @@ def can_do(user, what, data=None):
 
     if what == Actions.WRITE_SCHEDULES:
         return has_perm(user, Perms.EDIT_SCHEDULE)
+    elif what == Actions.READ_ANY_PROJECT:
+        return has_perm(user, Perms.READ_ANY_PROJECT)
     elif action == Actions.CREATE_VM_IN_PROJECT:
         # TODO: implement later
         return False

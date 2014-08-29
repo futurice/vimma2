@@ -138,6 +138,72 @@ class ProjectTests(TestCase):
         with self.assertRaises(IntegrityError):
             Project.objects.create(name='prj', email='a@c.com')
 
+    def test_api_permissions(self):
+        """
+        Users can read projects they're members of. A permission lets them
+        read all projects. The API doesn't allow writing.
+        """
+        user_a = util.create_vimma_user('a', 'a@example.com', 'p')
+        user_b = util.create_vimma_user('b', 'b@example.com', 'p')
+
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
+        perm.full_clean()
+        role.permissions.add(perm)
+
+        user_b.profile.roles.add(role)
+
+        prj_a = Project.objects.create(name='PrjA', email='a@prj.com')
+        prj_b = Project.objects.create(name='PrjB', email='b@prj.com')
+        user_a.profile.projects.add(prj_a)
+        user_b.profile.projects.add(prj_b)
+
+        def get_list():
+            response = self.client.get(reverse('project-list'))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            return response.data['results']
+
+        def get_item(id):
+            response = self.client.get(reverse('project-detail', args=[id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            return json.loads(response.content.decode('utf-8'))
+
+        # Regular users can only read their projects
+        self.assertTrue(self.client.login(username='a', password='p'))
+        items = get_list()
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['id'], prj_a.id)
+
+        response = self.client.get(reverse('project-detail', args=[prj_b.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Privileged users can see all projects
+        self.assertTrue(self.client.login(username='b', password='p'))
+        items = get_list()
+        self.assertEqual({p['id'] for p in items}, {prj_a.id, prj_b.id})
+
+        # can't modify
+        item = get_item(prj_b.id)
+        item['name'] = 'Renamed'
+        response = self.client.put(reverse('project-detail', args=[prj_b.id]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('project-detail',
+            args=[prj_b.id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('project-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class UserTest(TestCase):
 

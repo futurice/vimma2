@@ -4,7 +4,7 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from vimma.models import Schedule, TimeZone
+from vimma.models import Schedule, TimeZone, Project
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden
 
@@ -29,6 +29,18 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, SchedulePermission,)
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
+
+
+class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Project
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return Project.objects.filter()
+        return user.profile.projects
 
 
 @login_required_or_forbidden
