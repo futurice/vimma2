@@ -5,8 +5,8 @@ from rest_framework.permissions import (
 )
 
 from vimma.models import Schedule, TimeZone
-from vimma.perms import Perms
-from vimma.util import has_perm, login_required_or_forbidden
+from vimma.actions import Actions
+from vimma.util import can_do, login_required_or_forbidden
 
 
 class TimeZoneViewSet(viewsets.ReadOnlyModelViewSet):
@@ -22,7 +22,7 @@ class SchedulePermission(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return True
-        return has_perm(request.user, Perms.EDIT_SCHEDULE)
+        return can_do(request.user, Actions.WRITE_SCHEDULES)
 
 class ScheduleViewSet(viewsets.ModelViewSet):
     model = Schedule

@@ -58,14 +58,19 @@ def login_required_or_forbidden(view_func):
     return wrapped_view
 
 
-def can_perform_action(user, action, obj):
+def can_do(user, what, data=None):
     """
-    Check if user is omnipotent or is allowed to perform action on obj.
+    Check if user is omnipotent or is allowed to do ‘what’.
+
+    Some things, e.g. viewing a project, require parameters (which project).
+    Use the optional ‘data’ arg for this.
     """
     if has_perm(user, Perms.OMNIPOTENT):
         return True
 
-    if action == Actions.CREATE_VM_IN_PROJECT:
+    if what == Actions.WRITE_SCHEDULES:
+        return has_perm(user, Perms.EDIT_SCHEDULE)
+    elif action == Actions.CREATE_VM_IN_PROJECT:
         # TODO: implement later
         return False
     else:
