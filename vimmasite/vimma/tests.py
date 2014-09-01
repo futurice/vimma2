@@ -13,8 +13,9 @@ from rest_framework.test import APITestCase
 
 from vimma import util
 from vimma.models import (
-    Permission, Role, Project, Profile, TimeZone, Schedule, Provider,
-    DummyProvider, AWSProvider,
+    Permission, Role, Project, Profile, TimeZone, Schedule,
+    Provider, DummyProvider, AWSProvider,
+    VMConfig, DummyVMConfig, AWSVMConfig,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -115,7 +116,7 @@ class RoleTests(TestCase):
             util.has_perm(invalid, 'some-perm')
 
 
-class ProjectTests(TestCase):
+class ProjectTests(APITestCase):
 
     def test_project_requires_name_and_email(self):
         """
@@ -239,7 +240,7 @@ class ScheduleTests(APITestCase):
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(matrix))
         s.full_clean()
-        self.assertFalse(s.is_special)
+        self.assertIs(s.is_special, False)
 
     def test_unique_name(self):
         """
@@ -407,7 +408,7 @@ class ScheduleTests(APITestCase):
                     ]:
                 aware = tz.localize(naive)
                 tstamp = aware.timestamp()
-                self.assertTrue(util.schedule_at_tstamp(s, tstamp))
+                self.assertIs(util.schedule_at_tstamp(s, tstamp), True)
 
             for naive in [
                     datetime.datetime(2014, 2, 2, 13),
@@ -421,7 +422,7 @@ class ScheduleTests(APITestCase):
                     ]:
                 aware = tz.localize(naive)
                 tstamp = aware.timestamp()
-                self.assertFalse(util.schedule_at_tstamp(s, tstamp))
+                self.assertIs(util.schedule_at_tstamp(s, tstamp), False)
 
 
 class TimeZoneTests(APITestCase):
@@ -574,7 +575,7 @@ class WebViewsPermissionTests(TestCase):
         check('index')
 
 
-class ProviderTests(TestCase):
+class ProviderTests(APITestCase):
 
     def test_requires_name_and_type(self):
         """
@@ -632,7 +633,7 @@ class ProviderTests(TestCase):
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class DummyProviderTests(TestCase):
+class DummyProviderTests(APITestCase):
 
     def test_requires_provider(self):
         """
@@ -695,7 +696,7 @@ class DummyProviderTests(TestCase):
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class AWSProviderTests(TestCase):
+class AWSProviderTests(APITestCase):
 
     def test_requires_provider(self):
         """
@@ -762,6 +763,273 @@ class AWSProviderTests(TestCase):
         # can't create
         del item['id']
         response = self.client.post(reverse('awsprovider-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class VMConfigTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        VMConfig requires name, default_schedule and provider.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        p.full_clean()
+        for bad_vm_conf in (
+            VMConfig(),
+            VMConfig(name='My Conf'),
+            VMConfig(default_schedule=s),
+            VMConfig(provider=p),
+            VMConfig(name='My Conf', default_schedule=s),
+            ):
+            with self.assertRaises(ValidationError):
+                bad_vm_conf.full_clean()
+
+    def test_default_value_and_protected(self):
+        """
+        By default, requires_permission = False and PROTECTED constraints.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        self.assertIs(vmc.requires_permission, False)
+
+        with self.assertRaises(ProtectedError):
+            p.delete()
+        with self.assertRaises(ProtectedError):
+            s.delete()
+
+        vmc.delete()
+        p.delete()
+        s.delete()
+        tz.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read VMConfig objects. The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('vmconfig-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('vmconfig-detail',
+            args=[vmc.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('vmconfig-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('vmconfig-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('vmconfig-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class DummyVMConfigTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        DummyVMConfig requires vmconfig.
+        """
+        with self.assertRaises(ValidationError):
+            DummyVMConfig().full_clean()
+
+    def test_protected(self):
+        """
+        Check on_delete PROTECTED restriction.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
+        dummyc.full_clean()
+
+        with self.assertRaises(ProtectedError):
+            vmc.delete()
+
+        dummyc.delete()
+        vmc.delete()
+        p.delete()
+        s.delete()
+        tz.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read DummyVMConfig objects. The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
+        dummyc.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('dummyvmconfig-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('dummyvmconfig-detail',
+            args=[dummyc.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('dummyvmconfig-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('dummyvmconfig-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('dummyvmconfig-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class AWSVMConfigTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        AWSVMConfig requires vmconfig.
+        """
+        with self.assertRaises(ValidationError):
+            AWSVMConfig().full_clean()
+
+    def test_protected(self):
+        """
+        Check on_delete PROTECTED restriction.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc)
+        awsc.full_clean()
+
+        with self.assertRaises(ProtectedError):
+            vmc.delete()
+
+        awsc.delete()
+        vmc.delete()
+        p.delete()
+        s.delete()
+        tz.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read AWSVMConfig objects. The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc)
+        awsc.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('awsvmconfig-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('awsvmconfig-detail',
+            args=[awsc.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('awsvmconfig-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('awsvmconfig-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('awsvmconfig-list'), item,
                 format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)

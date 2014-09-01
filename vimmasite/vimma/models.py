@@ -113,3 +113,38 @@ class AWSProvider(models.Model):
     # these will be replaced with AWS-specific fields (credentials, etc.)
     visible_field = models.BooleanField(default=True)
     invisible_field = models.BooleanField(default=True)
+
+
+class VMConfig(models.Model):
+    """
+    A VM Configuration for a Provider. A provider may have several of these.
+
+    This model holds fields common across all VM Configs. Additional data
+    specific to the provider's type is in a model linked via a one-to-one
+    field.
+    """
+    provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
+    name = models.CharField(max_length=50, unique=True)
+    # The default schedule for this VM config. Users are allowed to choose this
+    # schedule for VMs made from this config, even if the schedule itself
+    # requires additional permissions.
+    default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+    # Users need Perms.VM_CONF_INSTANTIATE to create a VM from this config.
+    requires_permission = models.BooleanField(default=False)
+
+
+class DummyVMConfig(models.Model):
+    """
+    Type-specific info for a VMConfig of type Provider.TYPE_DUMMY.
+    """
+    vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
+
+
+class AWSVMConfig(models.Model):
+    """
+    Type-specific info for a VMConfig of type Provider.TYPE_AWS.
+    """
+    vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
+    # These will be replaced with real fields
+    img_id = models.CharField(max_length=50, blank=True)
+    hardware_id = models.CharField(max_length=50, blank=True)

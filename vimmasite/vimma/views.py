@@ -6,6 +6,7 @@ from rest_framework.permissions import (
 
 from vimma.models import (
     Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
+    VMConfig, DummyVMConfig, AWSVMConfig
 )
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden
@@ -61,6 +62,18 @@ class AWSProviderSerializer(serializers.ModelSerializer):
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     model = AWSProvider
     serializer_class = AWSProviderSerializer
+
+
+class VMConfigViewSet(viewsets.ReadOnlyModelViewSet):
+    model = VMConfig
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('name',)
+
+class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
+    model = DummyVMConfig
+
+class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
+    model = AWSVMConfig
 
 
 @login_required_or_forbidden

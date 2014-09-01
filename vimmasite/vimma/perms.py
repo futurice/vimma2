@@ -15,6 +15,8 @@ class Perms:
     USE_SPECIAL_SCHEDULE = 'schedule-use-special'
     # see projects you're not a member of
     READ_ANY_PROJECT = 'read-any-project'
+    # create VMs from a VMConfig which needs this additional permission
+    VM_CONF_INSTANTIATE = 'vm-config-instantiate'
 
 # Collect all permissions so we can pre-populate the DB with them
 ALL_PERMS = {x:getattr(Perms, x) for x in dir(Perms) if not x.startswith('_')}
