@@ -5,11 +5,14 @@
     <script src="{% static 'vimma/js/util.js' %}"></script>
 
     <script>
-      var vimmaApiRoot = '{% url "api-root" %}';
-      var vimmaApiScheduleList = '{% url "schedule-list" %}';
-      var vimmaApiScheduleDetailRoot = apiDetailRootUrl(
-          '{% url "schedule-detail" 0 %}');
-      var vimmaApiTimeZoneList = '{% url "timezone-list" %}';
+      var vimmaApiRoot = '{% url "api-root" %}',
+          vimmaApiScheduleList = '{% url "schedule-list" %}',
+          vimmaApiScheduleDetailRoot = apiDetailRootUrl(
+              '{% url "schedule-detail" 0 %}'),
+          vimmaApiTimeZoneList = '{% url "timezone-list" %}',
+          vimmaApiProjectList = '{% url "project-list" %}',
+          vimmaApiProjectDetailRoot = apiDetailRootUrl(
+              '{% url "project-detail" 0 %}');
     </script>
 
     {% block head %}{% endblock %}

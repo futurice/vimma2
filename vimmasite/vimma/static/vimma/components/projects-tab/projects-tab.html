@@ -1,0 +1,29 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-icons/core-icons.html">
+<link rel="import" href="../bower_components/core-item/core-item.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="../project-list/project-list.html">
+<link rel="import" href="../project-detail/project-detail.html">
+
+<polymer-element name="projects-tab">
+  <template>
+    <template if="{{selectedProjectId == null}}">
+      <project-list on-project-selected="{{projectSelected}}">
+      </project-list>
+    </template>
+
+    <template if="{{selectedProjectId != null}}">
+      <core-item>
+        <paper-button icon="arrow-back" label="Back to list"
+          on-click="{{unselectProject}}">
+        </paper-button>
+      </core-item>
+
+      <project-detail prjid="{{selectedProjectId}}">
+      </project-detail>
+    </template>
+  </template>
+
+  <script src="projects-tab.js"></script>
+</polymer-element>

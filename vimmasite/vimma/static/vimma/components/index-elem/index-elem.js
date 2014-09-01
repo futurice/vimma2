@@ -2,7 +2,7 @@ Polymer('index-elem', {
     selectedId: null,
     tabIds: {
         SCHEDULES: 'schedules',
-        ANOTHER: 'another-tab',
+        PROJECTS: 'projects',
         THIRD: 'third-tab'
     },
     onCoreSelect: function(e, detail, sender) {

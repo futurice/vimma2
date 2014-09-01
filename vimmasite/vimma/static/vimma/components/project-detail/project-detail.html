@@ -1,0 +1,23 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="project-detail" attributes="prjid">
+  <template>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        Project {{model.name}}.
+      </template>
+    </template>
+  </template>
+
+  <script src="project-detail.js"></script>
+</polymer-element>

@@ -29,6 +29,52 @@ function getAjaxErr(xhr, txtStatus, errThrown) {
 }
 
 /*
+ * Get the object at each url in urlArray. If anything fails, call
+ * errCallback(errorText). Else call successCallback(resultsArray).
+ * resultsArray[i] is the item from urlArray[i].
+ */
+function apiGet(urlArray, successCallback, errCallback) {
+    var resultsArray = [],
+        // a call has failed
+        failed = false,
+        // how many calls haven't completed yet
+        remaining = 0;
+
+    urlArray.forEach(function() {
+        resultsArray.push(null);
+    });
+
+    function fetchIdx(idx) {
+        $.ajax({
+            url: urlArray[idx],
+            success: function(data) {
+                if (failed) {
+                    return;
+                }
+                resultsArray[idx] = data;
+                remaining--;
+                if (!remaining) {
+                    successCallback(resultsArray);
+                }
+            },
+            error: function() {
+                if (failed) {
+                    return;
+                }
+                var errTxt = getAjaxErr.apply(this, arguments);
+                errCallback(errTxt);
+                failed = true;
+            }
+        });
+    }
+
+    urlArray.forEach(function(url, idx) {
+        fetchIdx(idx);
+        remaining++;
+    });
+}
+
+/*
  * Start at each url in urlArray, follow .next pages to end.
  * If any call fails, call errCallback(errorText) and stop.
  * Else call successCallback(resultsArray).

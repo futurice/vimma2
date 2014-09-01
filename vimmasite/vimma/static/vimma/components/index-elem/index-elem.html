@@ -3,12 +3,13 @@
 <link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 
 <link rel="import" href="../schedule-list/schedule-list.html">
+<link rel="import" href="../projects-tab/projects-tab.html">
 
 <polymer-element name="index-elem" on-core-select="{{onCoreSelect}}">
   <template>
     <paper-tabs selected="0">
       <paper-tab id="{{tabIds.SCHEDULES}}">Schedules</paper-tab>
-      <paper-tab id="{{tabIds.ANOTHER}}">Another Tab</paper-tab>
+      <paper-tab id="{{tabIds.PROJECTS}}">Projects</paper-tab>
       <paper-tab id="{{tabIds.THIRD}}">A Third Tab</paper-tab>
     </paper-tabs>
 
@@ -16,8 +17,8 @@
       <schedule-list></schedule-list>
     </template>
 
-    <template if="{{selectedId == tabIds.ANOTHER}}">
-      Another tab contents.
+    <template if="{{selectedId == tabIds.PROJECTS}}">
+      <projects-tab></projects-tab>
     </template>
 
     <template if="{{selectedId == tabIds.THIRD}}">

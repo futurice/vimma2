@@ -1,0 +1,29 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-item/core-item.html">
+
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="project-list">
+  <template>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        There are {{projects.length}} projects.
+        <template repeat="{{projects}}">
+          <core-item label="{{name}}" prjid="{{id}}" on-click="{{click}}">
+            <a href=""></a>
+          </core-item>
+        </template>
+      </template>
+    </template>
+  </template>
+
+  <script src="project-list.js"></script>
+</polymer-element>
