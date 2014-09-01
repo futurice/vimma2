@@ -1,10 +1,12 @@
 from django.shortcuts import render
-from rest_framework import viewsets, routers, filters
+from rest_framework import viewsets, routers, filters, serializers
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from vimma.models import Schedule, TimeZone, Project
+from vimma.models import (
+    Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
+)
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden
 
@@ -41,6 +43,24 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return Project.objects.filter()
         return user.profile.projects
+
+
+class ProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Provider
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('name',)
+
+class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    model = DummyProvider
+
+class AWSProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSProvider
+        fields = ('id', 'visible_field',)
+
+class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    model = AWSProvider
+    serializer_class = AWSProviderSerializer
 
 
 @login_required_or_forbidden

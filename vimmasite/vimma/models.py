@@ -76,5 +76,40 @@ class Schedule(models.Model):
     # ‘special’ schedules can't be used by anyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
     is_special = models.BooleanField(default=False)
-    # TODO: find a way to mark a schedule as ‘default’, to pre-select it in the
-    # UI. Either a BooleanField or a singleton with a ForeignKey to Schedule.
+
+
+class Provider(models.Model):
+    """
+    A provider of virtual machines.
+
+    This model holds fields common across all models. Additional data specific
+    to this provider's type (e.g. Amazon Web Services) is held in a linked
+    model via a one-to-one field.
+
+    E.g. each account at Amazon Web Services is a different Provider.
+    """
+    TYPE_DUMMY = 'dummy'
+    TYPE_AWS = 'aws'
+    TYPE_CHOICES = (
+        (TYPE_DUMMY, 'Dummy'),
+        (TYPE_AWS, 'Amazon Web Services'),
+    )
+    name = models.CharField(max_length=50, unique=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+
+
+class DummyProvider(models.Model):
+    """
+    Type-specific info for a Provider of type Provider.TYPE_DUMMY.
+    """
+    provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
+
+
+class AWSProvider(models.Model):
+    """
+    Type-specific info for a Provider of type Provider.TYPE_AWS.
+    """
+    provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
+    # these will be replaced with AWS-specific fields (credentials, etc.)
+    visible_field = models.BooleanField(default=True)
+    invisible_field = models.BooleanField(default=True)

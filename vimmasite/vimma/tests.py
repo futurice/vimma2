@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.test import TestCase
 import json
@@ -11,7 +12,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from vimma import util
-from vimma.models import Permission, Role, Project, Profile, TimeZone, Schedule
+from vimma.models import (
+    Permission, Role, Project, Profile, TimeZone, Schedule, Provider,
+    DummyProvider, AWSProvider,
+)
 from vimma.perms import ALL_PERMS, Perms
 
 
@@ -568,3 +572,196 @@ class WebViewsPermissionTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         check('index')
+
+
+class ProviderTests(TestCase):
+
+    def test_requires_name_and_type(self):
+        """
+        Provider requires name and type fields.
+        """
+        for bad_prov in (
+            Provider(),
+            Provider(name='My Provider'),
+            Provider(type=Provider.TYPE_DUMMY),
+            Provider(name='My Provider', type='no-such-type'),
+            ):
+            with self.assertRaises(ValidationError):
+                bad_prov.full_clean()
+        Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY).full_clean()
+
+    def test_api_permissions(self):
+        """
+        Users can read Provider objects. The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('provider-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('provider-detail', args=[prov.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        item['name'] = 'Renamed'
+        response = self.client.put(reverse('provider-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('provider-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('provider-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class DummyProviderTests(TestCase):
+
+    def test_requires_provider(self):
+        """
+        DummyProvider requires non-null Provider.
+        """
+        with self.assertRaises(IntegrityError):
+            DummyProvider.objects.create()
+
+    def test_protect_provider_delete(self):
+        """
+        Can't delete a Provider still used by a DummyProvider.
+        """
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        d = DummyProvider.objects.create(provider=p)
+        with self.assertRaises(ProtectedError):
+            p.delete()
+        d.delete()
+        p.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read DummyProvider objects. The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('dummyprovider-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('dummyprovider-detail',
+            args=[dummyProv.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('dummyprovider-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('dummyprovider-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('dummyprovider-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class AWSProviderTests(TestCase):
+
+    def test_requires_provider(self):
+        """
+        AWSProvider requires non-null Provider.
+        """
+        with self.assertRaises(IntegrityError):
+            AWSProvider.objects.create()
+
+    def test_protect_provider_delete(self):
+        """
+        Can't delete a Provider still used by a AWSProvider.
+        """
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        a = AWSProvider.objects.create(provider=p)
+        with self.assertRaises(ProtectedError):
+            p.delete()
+        a.delete()
+        p.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read AWSProvider objects. The API doesn't allow writing.
+        """
+        def checkVisibility(apiDict):
+            """
+            Check visible and invisible fields returned by the API.
+            """
+            self.assertTrue('visible_field' in apiDict)
+            self.assertFalse('invisible_field' in apiDict)
+
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_AWS)
+        prov.full_clean()
+        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv.full_clean()
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('awsprovider-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+        checkVisibility(items[0])
+
+        response = self.client.get(reverse('awsprovider-detail',
+            args=[awsProv.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+        checkVisibility(item)
+
+        # can't modify
+        response = self.client.put(reverse('awsprovider-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('awsprovider-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('awsprovider-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
