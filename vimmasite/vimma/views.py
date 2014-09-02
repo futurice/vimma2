@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.shortcuts import render
 from rest_framework import viewsets, routers, filters, serializers
 from rest_framework.permissions import (
@@ -5,11 +6,32 @@ from rest_framework.permissions import (
 )
 
 from vimma.models import (
-    Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
+    Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig
 )
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ('id', 'user', 'projects')
+
+class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Profile
+    serializer_class = ProfileSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('projects',)
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'email')
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    model = User
+    serializer_class = UserSerializer
 
 
 class TimeZoneViewSet(viewsets.ReadOnlyModelViewSet):

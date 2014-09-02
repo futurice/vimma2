@@ -2,6 +2,7 @@ from django.conf.urls import patterns, url, include
 from rest_framework import routers
 
 from vimma.views import (
+    ProfileViewSet, UserViewSet,
     TimeZoneViewSet, ScheduleViewSet, ProjectViewSet,
     ProviderViewSet, DummyProviderViewSet, AWSProviderViewSet,
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
@@ -10,6 +11,8 @@ from vimma.views import (
 
 
 router = routers.DefaultRouter()
+router.register(r'profiles', ProfileViewSet)
+router.register(r'users', UserViewSet)
 router.register(r'timezones', TimeZoneViewSet)
 router.register(r'schedules', ScheduleViewSet)
 router.register(r'projects', ProjectViewSet)

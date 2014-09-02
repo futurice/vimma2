@@ -210,7 +210,7 @@ class ProjectTests(APITestCase):
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class UserTest(TestCase):
+class UserTest(APITestCase):
 
     def test_default_user_has_no_profile(self):
         """
@@ -227,6 +227,117 @@ class UserTest(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         p = u.profile
         self.assertEqual(u.username, p.user.username)
+
+    def test_API(self):
+        """
+        Everyone can read all users. Only some fields are exposed.
+        The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('user-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('user-detail',
+            args=[user.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # check fields
+        self.assertEqual(set(item.keys()), {'id', 'username',
+            'first_name', 'last_name', 'email'})
+
+        # can't modify
+        response = self.client.put(reverse('user-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('user-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('user-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class ProfileTest(APITestCase):
+
+    def test_API(self):
+        """
+        Everyone can read all profiles. Only some fields are exposed.
+        The API doesn't allow writing.
+        """
+        user = util.create_vimma_user('a', 'a@example.com', 'p')
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('profile-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(len(items), 1)
+
+        response = self.client.get(reverse('profile-detail',
+            args=[user.profile.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # check fields
+        self.assertEqual(set(item.keys()), {'id', 'user', 'projects'})
+
+        # can't modify
+        response = self.client.put(reverse('profile-detail',
+            args=[item['id']]), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('profile-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('profile-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_API_filter(self):
+        """
+        Filter profiles in a particular project.
+        """
+        u_a = util.create_vimma_user('a', 'a@example.com', 'p')
+        u_b = util.create_vimma_user('b', 'b@example.com', 'p')
+        u_c = util.create_vimma_user('c', 'c@example.com', 'p')
+
+        p1 = Project.objects.create(name='P1', email='p1@x.com')
+        p1.full_clean()
+        p2 = Project.objects.create(name='P2', email='p2@x.com')
+        p2.full_clean()
+        p3 = Project.objects.create(name='P3', email='p3@x.com')
+        p3.full_clean()
+
+        u_a.profile.projects.add(p1, p2)
+        u_b.profile.projects.add(p2, p3)
+        u_c.profile.projects.add(p3)
+
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get('{}?project={}'.format(
+            reverse('profile-list'), p2.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(set(i['id'] for i in items),
+                {u_a.profile.id, u_b.profile.id})
 
 
 class ScheduleTests(APITestCase):
