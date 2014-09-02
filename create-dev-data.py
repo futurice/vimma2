@@ -7,7 +7,7 @@ from vimma.models import (
 from vimma.perms import Perms
 import json
 
-u1 = create_vimma_user('u1', 'u1@example.com', 'pass')
+u1 = create_vimma_user('u1', 'u1@example.com', 'pass', 'Andrew', 'Adams')
 tz_hki = TimeZone.objects.create(name='Europe/Helsinki')
 TimeZone.objects.create(name='Europe/London')
 TimeZone.objects.create(name='America/Los_Angeles')
@@ -20,7 +20,7 @@ s2 = Schedule.objects.create(name='Always On', timezone=tz_hki,
         )
 s2.full_clean()
 
-u2 = create_vimma_user('u2', 'u2@example.com', 'pass')
+u2 = create_vimma_user('u2', 'u2@example.com', 'pass', 'Barbie', 'Barbara')
 r2 = Role.objects.create(name='Role2')
 for u2Perm in (
         # comment-out any of these
@@ -33,7 +33,7 @@ for u2Perm in (
 
 u2.profile.roles.add(r2)
 
-u3 = create_vimma_user('u3', 'u3@example.com', 'pass')
+u3 = create_vimma_user('u3', 'u3@example.com', 'pass', 'Colonel', 'Cox')
 rOmni = Role.objects.create(name='omnipotent')
 pOmni = Permission.objects.create(name=Perms.OMNIPOTENT)
 rOmni.permissions.add(pOmni)
@@ -44,6 +44,9 @@ u1.profile.projects.add(prj1)
 
 prj2 = Project.objects.create(name='Second Project', email='prj2@example.com')
 u2.profile.projects.add(prj2)
+
+u4 = create_vimma_user('u4', 'u4@example.com', 'pass', 'Dilbert', 'Drape')
+u4.profile.projects.add(prj1)
 
 
 prov1 = Provider.objects.create(name='My First Dummy Provider',

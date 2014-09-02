@@ -1,4 +1,7 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-item/core-item.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 
 <link rel="import" href="../error-display/error-display.html">
 
@@ -14,8 +17,39 @@
       </template>
 
       <template if="{{success}}">
-        Project {{model.name}}.
+        <template bind ref="main">
+        </template>
       </template>
+    </template>
+
+    <template id="main">
+      Project {{model.name}}.
+      <paper-tabs selected="0" on-core-select="{{onCoreSelect}}">
+        <paper-tab tabId="{{tabIds.USERS}}">Users</paper-tab>
+        <paper-tab tabId="{{tabIds.VMS}}">VMs</paper-tab>
+      </paper-tabs>
+
+      <template if="{{selectedTab == tabIds.USERS}}">
+        <template bind ref="user-list">
+        </template>
+      </template>
+
+      <template if="{{selectedTab == tabIds.VMS}}">
+        <template bind ref="vm-list">
+        </template>
+      </template>
+    </template>
+
+    <template id="user-list">
+      {{users.length}} user{{users.length != 1 ? 's': ''}}.
+      <template repeat="{{u in users}}">
+        <core-item label="{{u.first_name + ' ' + u.last_name}}">
+        </core-item>
+      </template>
+    </template>
+
+    <template id="vm-list">
+      VM List
     </template>
   </template>
 

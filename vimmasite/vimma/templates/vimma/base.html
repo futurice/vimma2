@@ -12,7 +12,13 @@
           vimmaApiTimeZoneList = '{% url "timezone-list" %}',
           vimmaApiProjectList = '{% url "project-list" %}',
           vimmaApiProjectDetailRoot = apiDetailRootUrl(
-              '{% url "project-detail" 0 %}');
+              '{% url "project-detail" 0 %}'),
+          vimmaApiProfileList = '{% url "profile-list" %}',
+          vimmaApiProfileDetailRoot = apiDetailRootUrl(
+              '{% url "profile-detail" 0 %}'),
+          vimmaApiUserDetailRoot = apiDetailRootUrl(
+              '{% url "user-detail" 0 %}'),
+          _dummy_end;
     </script>
 
     {% block head %}{% endblock %}
