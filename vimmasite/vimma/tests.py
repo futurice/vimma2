@@ -16,6 +16,7 @@ from vimma.models import (
     Permission, Role, Project, Profile, TimeZone, Schedule,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
+    VM, DummyVM, AWSVM,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -1142,5 +1143,432 @@ class AWSVMConfigTests(APITestCase):
         del item['id']
         response = self.client.post(reverse('awsvmconfig-list'), item,
                 format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class VMTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        VM requires provider, project and default_schedule.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+
+        for bad_vm in (
+                VM(),
+                VM(provider=prv), VM(project=prj), VM(schedule=s),
+                VM(provider=prv, project=prj),
+                VM(provider=prv, schedule=s), VM(project=prj, schedule=s),
+            ):
+            with self.assertRaises(ValidationError):
+                bad_vm.full_clean()
+
+    def test_protected(self):
+        """
+        Test PROTECTED constraints.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+
+        for func in (prv.delete, prj.delete, s.delete):
+            with self.assertRaises(ProtectedError):
+                func()
+
+        vm.delete()
+        prv.delete()
+        prj.delete()
+        s.delete()
+        tz.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read VM objects in their own projects, or in all projects
+        with a permission. The API doesn't allow writing.
+        """
+        ua = util.create_vimma_user('a', 'a@example.com', 'p')
+        ub = util.create_vimma_user('b', 'b@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
+        p1.full_clean()
+        p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
+        p2.full_clean()
+        p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
+        p3.full_clean()
+        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
+        vm1.full_clean()
+        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
+        vm2.full_clean()
+        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
+        vm3.full_clean()
+
+        ua.profile.projects.add(p1, p2)
+        ub.profile.projects.add(p1)
+
+        perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        ub.profile.roles.add(role)
+
+        # user A can only see VMs in his projects
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('vm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({vm1.id, vm2.id}, {x['id'] for x in items})
+
+        response = self.client.get(reverse('vm-detail', args=[vm1.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(reverse('vm-detail', args=[vm3.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # filter by project name
+        response = self.client.get(reverse('vm-list') +
+                '?project=' + str(p1.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({vm1.id}, {x['id'] for x in items})
+
+        # user B can see all VMs in all projects
+        self.assertTrue(self.client.login(username='b', password='p'))
+        response = self.client.get(reverse('vm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({vm1.id, vm2.id, vm3.id}, {x['id'] for x in items})
+
+        for vm_id in (vm1.id, vm3.id):
+            response = self.client.get(reverse('vm-detail', args=[vm_id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            item = response.data
+
+
+        # can't modify
+        response = self.client.put(reverse('vm-detail', args=[item['id']]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('vm-detail', args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('vm-list'), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class DummyVMTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        DummyVM requires vm.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+
+        with self.assertRaises(ValidationError):
+            DummyVM(name='dummy').full_clean()
+
+        DummyVM.objects.create(vm=vm, name='dummy').full_clean()
+
+    def test_protected(self):
+        """
+        Test PROTECTED constraint.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
+        dummyVm.full_clean()
+
+        with self.assertRaises(ProtectedError):
+            vm.delete()
+
+        dummyVm.delete()
+        vm.delete()
+        prv.delete()
+        prj.delete()
+        s.delete()
+        tz.delete()
+
+    def test_api_permissions(self):
+        """
+        Users can read DummyVM objects in their own projects, or in all
+        projects with a permission. The API doesn't allow writing.
+        """
+        ua = util.create_vimma_user('a', 'a@example.com', 'p')
+        ub = util.create_vimma_user('b', 'b@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
+        p1.full_clean()
+        p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
+        p2.full_clean()
+        p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
+        p3.full_clean()
+
+        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
+        vm1.full_clean()
+        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
+        vm2.full_clean()
+        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
+        vm3.full_clean()
+
+        dvm1 = DummyVM.objects.create(vm=vm1, name='dummy 1')
+        dvm1.full_clean()
+        dvm2 = DummyVM.objects.create(vm=vm2, name='dummy 2')
+        dvm2.full_clean()
+        dvm3 = DummyVM.objects.create(vm=vm3, name='dummy 3')
+        dvm3.full_clean()
+
+        ua.profile.projects.add(p1, p2)
+        ub.profile.projects.add(p1)
+
+        perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        ub.profile.roles.add(role)
+
+        # user A can only see DummyVMs in his projects
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('dummyvm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({dvm1.id, dvm2.id}, {x['id'] for x in items})
+
+        response = self.client.get(reverse('dummyvm-detail', args=[dvm1.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(reverse('dummyvm-detail', args=[dvm3.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # user B can see all DummyVMs in all projects
+        self.assertTrue(self.client.login(username='b', password='p'))
+        response = self.client.get(reverse('dummyvm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({dvm1.id, dvm2.id, dvm3.id}, {x['id'] for x in items})
+
+        for dvm_id in (dvm1.id, dvm3.id):
+            response = self.client.get(reverse('dummyvm-detail', args=[dvm_id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            item = response.data
+
+
+        # can't modify
+        response = self.client.put(reverse('dummyvm-detail', args=[item['id']]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('dummyvm-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('dummyvm-list'),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class AWSVMTests(APITestCase):
+
+    def test_required_fields(self):
+        """
+        AWSVM requires vm.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+
+        with self.assertRaises(ValidationError):
+            AWSVM().full_clean()
+
+        AWSVM.objects.create(vm=vm).full_clean()
+
+    def test_protected(self):
+        """
+        Test PROTECTED constraint.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        awsVm = AWSVM.objects.create(vm=vm)
+        awsVm.full_clean()
+
+        with self.assertRaises(ProtectedError):
+            vm.delete()
+
+        awsVm.delete()
+        vm.delete()
+        prv.delete()
+        prj.delete()
+        s.delete()
+        tz.delete()
+
+    def Atest_api_permissions(self):
+        """
+        Users can read AWSVM objects in their own projects, or in all
+        projects with a permission. The API doesn't allow writing.
+        """
+        ua = util.create_vimma_user('a', 'a@example.com', 'p')
+        ub = util.create_vimma_user('b', 'b@example.com', 'p')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
+        p1.full_clean()
+        p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
+        p2.full_clean()
+        p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
+        p3.full_clean()
+
+        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
+        vm1.full_clean()
+        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
+        vm2.full_clean()
+        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
+        vm3.full_clean()
+
+        avm1 = AWSVM.objects.create(vm=vm1)
+        avm1.full_clean()
+        avm2 = AWSVM.objects.create(vm=vm2)
+        avm2.full_clean()
+        avm3 = AWSVM.objects.create(vm=vm3)
+        avm3.full_clean()
+
+        ua.profile.projects.add(p1, p2)
+        ub.profile.projects.add(p1)
+
+        perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        ub.profile.roles.add(role)
+
+        # user A can only see AWSVMs in his projects
+        self.assertTrue(self.client.login(username='a', password='p'))
+        response = self.client.get(reverse('awsvm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({avm1.id, avm2.id}, {x['id'] for x in items})
+
+        response = self.client.get(reverse('awsvm-detail', args=[avm1.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(reverse('awsvm-detail', args=[avm3.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # user B can see all AWSVMs in all projects
+        self.assertTrue(self.client.login(username='b', password='p'))
+        response = self.client.get(reverse('awsvm-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({avm1.id, avm2.id, avm3.id}, {x['id'] for x in items})
+
+        for avm_id in (avm1.id, avm3.id):
+            response = self.client.get(reverse('awsvm-detail', args=[avm_id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            item = response.data
+
+
+        # can't modify
+        response = self.client.put(reverse('awsvm-detail', args=[item['id']]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('awsvm-detail',
+            args=[item['id']]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('awsvm-list'),
+                item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)

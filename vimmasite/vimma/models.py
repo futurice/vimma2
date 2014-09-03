@@ -148,3 +148,30 @@ class AWSVMConfig(models.Model):
     # These will be replaced with real fields
     img_id = models.CharField(max_length=50, blank=True)
     hardware_id = models.CharField(max_length=50, blank=True)
+
+
+class VM(models.Model):
+    """
+    A virtual machine. This model holds only the data common for all VMs from
+    any provider. Additional data specific to the provider's type is in a model
+    linked via a one-to-one field.
+    """
+    provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
+    project = models.ForeignKey(Project, on_delete=models.PROTECT)
+    schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+
+
+class DummyVM(models.Model):
+    """
+    Type-specific data for a VM of type Provider.TYPE_DUMMY.
+    """
+    vm = models.OneToOneField(VM, on_delete=models.PROTECT)
+    name = models.CharField(max_length=50)
+
+
+class AWSVM(models.Model):
+    """
+    Type-specific data for a VM of type Provider.TYPE_AWS.
+    """
+    vm = models.OneToOneField(VM, on_delete=models.PROTECT)
+    # will add real AWS fields here
