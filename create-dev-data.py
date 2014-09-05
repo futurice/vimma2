@@ -3,6 +3,7 @@ from vimma.models import (
     TimeZone, Schedule, Role, Permission, Project,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
+    VM, DummyVM, AWSVM,
 )
 from vimma.perms import Perms
 import json
@@ -65,6 +66,7 @@ prov4 = Provider.objects.create(name='My Second AWS Provider',
         type=Provider.TYPE_AWS)
 AWSProvider.objects.create(provider=prov4)
 
+
 vmc1A = VMConfig.objects.create(provider=prov1, name='Config A',
         default_schedule=s1)
 DummyVMConfig.objects.create(vmconfig=vmc1A)
@@ -82,5 +84,16 @@ AWSVMConfig.objects.create(vmconfig=vmc3A)
 vmc3B = VMConfig.objects.create(provider=prov3, name='Config 3B',
         default_schedule=s2)
 AWSVMConfig.objects.create(vmconfig=vmc3B)
+
+
+vm1 = VM.objects.create(provider=prov1, project=prj1, schedule=s1)
+dvm1 = DummyVM.objects.create(vm=vm1, name='K.I.T.T.')
+vm2 = VM.objects.create(provider=prov2, project=prj2, schedule=s1)
+dvm2 = DummyVM.objects.create(vm=vm2, name='HAL')
+
+vm3 = VM.objects.create(provider=prov3, project=prj1, schedule=s1)
+avm3 = AWSVM.objects.create(vm=vm3)
+vm4 = VM.objects.create(provider=prov3, project=prj1, schedule=s1)
+avm4 = AWSVM.objects.create(vm=vm4)
 
 # newlines at end to ensure everything runs when piping to the python shell
