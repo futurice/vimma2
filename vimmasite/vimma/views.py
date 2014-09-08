@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 from django.shortcuts import render
+import json
 from rest_framework import viewsets, routers, filters, serializers
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
@@ -162,3 +165,43 @@ def test(request):
     JavaScript Unit Tests.
     """
     return render(request, 'vimma/test.html')
+
+
+@login_required_or_forbidden
+def createVM(request):
+    """
+    Create a new VM.
+
+    JSON request body:
+    {
+        project: int,
+        vmconfig: int,
+        schedule: int,
+        data: «provider-specific data»,
+    }
+    """
+    def getHttpErr(errText, code):
+        return HttpResponse(json.dumps({'error': errText}),
+            content_type="application/json", status=code)
+
+    if request.method == 'POST':
+        body = json.loads(request.read().decode('utf-8'))
+
+        try:
+            prj = Project.objects.get(id=body['project'])
+            vmconf = VMConfig.objects.get(id=body['vmconfig'])
+            schedule = Schedule.objects.get(id=body['schedule'])
+        except ObjectDoesNotExist as e:
+            return getHttpErr('{}'.format(e), 404)
+
+        if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, prj):
+            return getHttpErr('You may not create VMs in this project', 403)
+
+        if vmconf.default_schedule.id != schedule.id:
+            if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
+                return getHttpErr('You may not use this schedule', 403)
+
+        return HttpResponse()
+
+    return getHttpErr('Method “' + request.method +
+        '” not allowed. Use POST instead.', 405)

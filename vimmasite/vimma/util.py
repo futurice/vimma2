@@ -72,9 +72,14 @@ def can_do(user, what, data=None):
         return has_perm(user, Perms.EDIT_SCHEDULE)
     elif what == Actions.READ_ANY_PROJECT:
         return has_perm(user, Perms.READ_ANY_PROJECT)
-    elif action == Actions.CREATE_VM_IN_PROJECT:
-        # TODO: implement later
-        return False
+    elif what == Actions.CREATE_VM_IN_PROJECT:
+        prj = data
+        return user.profile.projects.filter(id=prj.id).count() > 0
+    elif what == Actions.USE_SCHEDULE:
+        schedule = data
+        if not schedule.is_special:
+            return True
+        return has_perm(user, Perms.USE_SPECIAL_SCHEDULE)
     else:
         log.warn('Unknown action “{}”'.format(action))
         return False

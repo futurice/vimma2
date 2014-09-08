@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from vimma import util
+from vimma.actions import Actions
 from vimma.models import (
     Permission, Role, Project, Profile, TimeZone, Schedule,
     Provider, DummyProvider, AWSProvider,
@@ -1586,3 +1587,144 @@ class AWSVMTests(APITestCase):
                 item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class CreateVMTests(TestCase):
+
+    def test_login_required(self):
+        """
+        The user must be logged in.
+        """
+        response = self.client.get(reverse('createVM'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unsupported_methods(self):
+        """
+        Only POST is supported (e.g. GET, PUT, DELETE are not).
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        url = reverse('createVM')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        for meth in self.client.get, self.client.put, self.client.delete:
+            response = meth(url)
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_perms_and_not_found(self):
+        """
+        Test user permissions when creating a VM, or requested data not found.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=prov)
+        vmc.full_clean()
+        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
+        dummyc.full_clean()
+
+        url = reverse('createVM')
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        u.profile.projects.add(prj)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # non-existent object IDs
+        for data in ({'project': 100, 'vmconfig': vmc.id, 'schedule': s.id},
+                {'project': prj.id, 'vmconfig': 100, 'schedule': s.id},
+                {'project': prj.id, 'vmconfig': vmc.id, 'schedule': 100}):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps(data))
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can create VM in own project
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # can't use special schedule
+        s2 = Schedule.objects.create(name='s2', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]), is_special=True)
+        s2.full_clean()
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s2.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # can use special schedule if it's the vm config's default
+        vmc.default_schedule=s2
+        vmc.save()
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s2.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # can use special schedule if the user has permission
+        perm = Permission.objects.create(name=Perms.USE_SPECIAL_SCHEDULE)
+        perm.full_clean()
+        role = Role.objects.create(name='SpecSched Role')
+        role.full_clean()
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        s3 = Schedule.objects.create(name='s3', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]), is_special=True)
+        s3.full_clean()
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s3.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class CanDoTests(TestCase):
+
+    def test_create_vm_in_project(self):
+        prj1 = Project.objects.create(name='prj1', email='prj1@x.com')
+        prj1.full_clean()
+        prj2 = Project.objects.create(name='prj2', email='prj2@x.com')
+        prj2.full_clean()
+        u1 = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
+        self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
+        u1.profile.projects.add(prj1)
+        self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
+        self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
+
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='all powerful')
+        role.permissions.add(perm)
+        u1.profile.roles.add(role)
+        self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
+        self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
