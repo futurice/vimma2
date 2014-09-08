@@ -120,6 +120,8 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
 class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
     model = DummyVM
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vm',)
 
     def get_queryset(self):
         user = self.request.user
@@ -133,6 +135,8 @@ class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
     model = AWSVM
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vm',)
 
     def get_queryset(self):
         user = self.request.user

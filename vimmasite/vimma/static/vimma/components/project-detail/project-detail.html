@@ -3,6 +3,7 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../vm-detail/vm-detail.html">
 
 <polymer-element name="project-detail" attributes="prjid">
   <template>
@@ -48,7 +49,15 @@
     </template>
 
     <template id="vm-list">
-      VM List
+      Showing {{vms.length}} VMs.
+
+      <ul>
+        <template repeat="{{vm in vms}}">
+          <li>
+            <vm-detail vmid="{{vm.id}}"></vm-detail>
+          </li>
+        </template>
+      </ul>
     </template>
   </template>
 

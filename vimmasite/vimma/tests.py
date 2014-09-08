@@ -1398,6 +1398,13 @@ class DummyVMTests(APITestCase):
         response = self.client.get(reverse('dummyvm-detail', args=[dvm3.id]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+        # filter by .vm field
+        response = self.client.get(reverse('dummyvm-list') +
+                '?vm=' + str(dvm1.vm.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({dvm1.vm.id}, {x['id'] for x in items})
+
         # user B can see all DummyVMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))
         response = self.client.get(reverse('dummyvm-list'))
@@ -1481,7 +1488,7 @@ class AWSVMTests(APITestCase):
         s.delete()
         tz.delete()
 
-    def Atest_api_permissions(self):
+    def test_api_permissions(self):
         """
         Users can read AWSVM objects in their own projects, or in all
         projects with a permission. The API doesn't allow writing.
@@ -1540,6 +1547,13 @@ class AWSVMTests(APITestCase):
 
         response = self.client.get(reverse('awsvm-detail', args=[avm3.id]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # filter by .vm field
+        response = self.client.get(reverse('awsvm-list') +
+                '?vm=' + str(avm1.vm.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({avm1.vm.id}, {x['id'] for x in items})
 
         # user B can see all AWSVMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))

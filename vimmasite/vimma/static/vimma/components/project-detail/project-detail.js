@@ -8,6 +8,7 @@ Polymer('project-detail', {
     profilesById: null, // {id1: p1, id2: p2, …}
     users: null,    // [u1, u2, …]
     usersById: null,    // {id1: u1, id2: u2, …}
+    vms: null,
 
     ready: function() {
         this.reload();
@@ -22,6 +23,7 @@ Polymer('project-detail', {
         this.profilesById = null;
         this.users = null;
         this.usersById = null;
+        this.vms = null;
 
         this.loadProject();
     },
@@ -79,9 +81,17 @@ Polymer('project-detail', {
                 byId[u.id] = u;
             });
             this.usersById = byId;
-            this.loadSuccess();
+            this.loadVMs();
         }).bind(this);
         apiGet(urls, ok, this.loadFail.bind(this));
+    },
+    loadVMs: function() {
+        var ok = (function(resultArr) {
+            this.vms = resultArr[0];
+            this.loadSuccess();
+        }).bind(this);
+        apiGetAll([vimmaApiVMList + '?project=' + this.prjid],
+                ok, this.loadFail.bind(this));
     },
 
     tabIds: {

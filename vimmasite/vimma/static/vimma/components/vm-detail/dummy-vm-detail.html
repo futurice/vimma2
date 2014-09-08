@@ -1,0 +1,30 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="dummy-vm-detail" attributes="vmid">
+  <template>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        <template bind ref="main">
+        </template>
+      </template>
+    </template>
+
+    <template id="main">
+      Dummy VM “{{dummyvm.name}}”
+    </template>
+  </template>
+
+  <script src="dummy-vm-detail.js"></script>
+</polymer-element>

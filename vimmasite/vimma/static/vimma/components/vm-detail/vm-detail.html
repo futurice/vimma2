@@ -1,0 +1,46 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="dummy-vm-detail.html">
+<link rel="import" href="aws-vm-detail.html">
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="vm-detail" attributes="vmid">
+  <template>
+    Hello VM id {{vmid}}.
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        <template bind ref="vm">
+        </template>
+      </template>
+    </template>
+
+    <template id="vm">
+      <template if="{{provider.type == 'dummy'}}">
+        <dummy-vm-detail vmid="{{vmid}}"></dummy-vm-detail>
+      </template>
+
+      <template if="{{provider.type == 'aws'}}">
+        <aws-vm-detail vmid="{{vmid}}"></aws-vm-detail>
+      </template>
+
+      <template if="{{provider.type != 'dummy' && provider.type != 'aws'}}">
+        <error-display
+          text="{{'Unknown vm provider type: “' + provider.type + '”'}}">
+        </error-display>
+      </template>
+    </template>
+  </template>
+
+  <script src="vm-detail.js"></script>
+</polymer-element>
