@@ -1,0 +1,94 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="create-vm-dummy-data.html">
+
+<polymer-element name="create-vm" attributes="prjid">
+  <template>
+    <link rel="stylesheet" type="text/css" href="create-vm.css">
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        <template bind ref="main">
+        </template>
+      </template>
+    </template>
+
+    <template id="main">
+      Create a VM<br>
+      <label for="project">Project:</label>
+      <core-dropdown id="project" label="Select a project…"
+          selected="{{prjid}}" valueattr="key"
+          on-core-select="{{projectSelected}}">
+        <template repeat="{{p in projects}}">
+          <core-item label="{{p.name}}" key="{{p.id}}"></core-item>
+        </template>
+      </core-dropdown>
+      <br>
+
+      <label for="provider">Provider:</label>
+      <core-dropdown id="provider" label="Select a provider…"
+          on-core-select="{{providerSelected}}">
+        <template repeat="{{p in providers}}">
+          <core-item label="{{p.name}}" key="{{p.id}}"></core-item>
+        </template>
+      </core-dropdown>
+      <br>
+
+      <label for="vmconfig">VM Configuration:</label>
+      <core-dropdown id="vmconfig" label="Select a VM configuration…"
+          selected="{{vmconfigid}}" valueattr="key"
+          on-core-select="{{vmconfigSelected}}">
+        <template repeat="{{c in vmconfigsForProvider}}">
+          <core-item label="{{c.name}}" key="{{c.id}}"></core-item>
+        </template>
+      </core-dropdown>
+      <br>
+
+      <label for="schedule">Schedule:</label>
+      <core-dropdown id="schedule" label="Select a schedule…"
+          on-core-select="{{scheduleSelected}}">
+        <template repeat="{{s in schedules}}">
+          <core-item label="{{s.name}}" key="{{s.id}}"></core-item>
+        </template>
+      </core-dropdown>
+      <br>
+
+      {{prjid}}, {{provid}}, {{vmconfigid}}, {{scheduleid}} |
+      {{newVMType}} {{newVMData}}<br>
+
+      <template if="{{newVMType == 'dummy'}}">
+        <create-vm-dummy-data data="{{newVMData}}">
+        </create-vm-dummy-data>
+      </template>
+
+      <template if="{{newVMType != null && newVMType != 'dummy'}}">
+        <error-display text="Unknown VM Type “{{newVMType}}”."></error-display>
+        <br>
+      </template>
+
+      <paper-button id="create" icon="create" label="Create VM" raisedButton
+        class="{{ {highlight: highlightCreateBtn} | tokenList }}"
+        on-click="{{createVM}}" disabled="{{ajaxInProgress}}">
+      </paper-button>
+      <template if={{!ajaxInProgress}}>
+        <template if={{!ajaxSuccess}}>
+          <br>
+          <error-display text={{ajaxErrTxt}}></error-display>
+        </template>
+      </template>
+    </template>
+  </template>
+
+  <script src="create-vm.js"></script>
+</polymer-element>

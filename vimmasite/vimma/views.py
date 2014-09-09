@@ -7,7 +7,10 @@ from rest_framework import viewsets, routers, filters, serializers
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
+import sys
+import traceback
 
+from vimma import vmutil
 from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
@@ -184,24 +187,33 @@ def createVM(request):
         return HttpResponse(json.dumps({'error': errText}),
             content_type="application/json", status=code)
 
-    if request.method == 'POST':
-        body = json.loads(request.read().decode('utf-8'))
+    if request.method != 'POST':
+        return getHttpErr('Method “' + request.method +
+            '” not allowed. Use POST instead.', 405)
 
-        try:
-            prj = Project.objects.get(id=body['project'])
-            vmconf = VMConfig.objects.get(id=body['vmconfig'])
-            schedule = Schedule.objects.get(id=body['schedule'])
-        except ObjectDoesNotExist as e:
-            return getHttpErr('{}'.format(e), 404)
+    body = json.loads(request.read().decode('utf-8'))
 
-        if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, prj):
-            return getHttpErr('You may not create VMs in this project', 403)
+    try:
+        prj = Project.objects.get(id=body['project'])
+        vmconf = VMConfig.objects.get(id=body['vmconfig'])
+        schedule = Schedule.objects.get(id=body['schedule'])
+    except ObjectDoesNotExist as e:
+        return getHttpErr('{}'.format(e), 404)
 
-        if vmconf.default_schedule.id != schedule.id:
-            if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
-                return getHttpErr('You may not use this schedule', 403)
+    if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, prj):
+        return getHttpErr('You may not create VMs in this project', 403)
 
+    if vmconf.default_schedule.id != schedule.id:
+        if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
+            return getHttpErr('You may not use this schedule', 403)
+
+    if request.META['SERVER_NAME'] == "testserver":
+        # Don't create the VMs when running tests
         return HttpResponse()
 
-    return getHttpErr('Method “' + request.method +
-        '” not allowed. Use POST instead.', 405)
+    try:
+        vmutil.createVM(vmconf, prj, schedule, body['data'])
+        return HttpResponse()
+    except:
+        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        return getHttpErr(msg, 500)

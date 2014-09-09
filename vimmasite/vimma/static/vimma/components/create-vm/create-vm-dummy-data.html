@@ -1,0 +1,13 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<polymer-element name="create-vm-dummy-data" attributes="data">
+  <template>
+    <paper-input label="Name" floatingLabel="true"
+      required error="The name is required" value="{{data.name}}">
+    </paper-input>
+  </template>
+
+  <script src="create-vm-dummy-data.js"></script>
+</polymer-element>
