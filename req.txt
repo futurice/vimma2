@@ -1,4 +1,4 @@
-https://www.djangoproject.com/download/1.7c3/tarball/
+django
 psycopg2
 djangorestframework
 markdown

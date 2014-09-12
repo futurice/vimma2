@@ -18,7 +18,7 @@ Set up local_settings.py:
 ― Choose the DB (the file has instructions for DBs that need additional setup)
 cd vimmasite
 cp local_settings.py.example local_settings.py
-cd ..
+cd -
 
 During initial development don't use migrations. There's too much change and
 experimentation. Instead, create the data model every time.
@@ -29,7 +29,7 @@ rm -f vimmasite/vimma/migrations/0*.py
 Install PolymerJS:
 cd vimmasite/vimma/static/vimma/components
 bower install Polymer/polymer Polymer/core-elements Polymer/paper-elements
-cd ../../../../..
+cd -
 
 
 Run Tests:
