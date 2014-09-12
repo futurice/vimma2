@@ -316,7 +316,7 @@ class ProfileTest(APITestCase):
 
     def test_API_filter(self):
         """
-        Filter profiles in a particular project.
+        Filter profiles by: project, user.
         """
         u_a = util.create_vimma_user('a', 'a@example.com', 'p')
         u_b = util.create_vimma_user('b', 'b@example.com', 'p')
@@ -334,12 +334,24 @@ class ProfileTest(APITestCase):
         u_c.profile.projects.add(p3)
 
         self.assertTrue(self.client.login(username='a', password='p'))
-        response = self.client.get('{}?project={}'.format(
+        response = self.client.get('{}?projects={}'.format(
             reverse('profile-list'), p2.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(set(i['id'] for i in items),
                 {u_a.profile.id, u_b.profile.id})
+
+        response = self.client.get(reverse('profile-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(set(i['id'] for i in items),
+                {u_a.profile.id, u_b.profile.id, u_c.profile.id})
+
+        response = self.client.get('{}?user={}'.format(
+            reverse('profile-list'), u_a.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual(set(i['id'] for i in items), {u_a.profile.id})
 
 
 class ScheduleTests(APITestCase):

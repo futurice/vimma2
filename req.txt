@@ -2,5 +2,5 @@ django
 psycopg2
 djangorestframework
 markdown
-django-filter
+django-filter==0.6
 pytz

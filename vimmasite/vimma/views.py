@@ -29,7 +29,7 @@ class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
     model = Profile
     serializer_class = ProfileSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('projects',)
+    filter_fields = ('projects', 'user')
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

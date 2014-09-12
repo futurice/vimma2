@@ -1,0 +1,62 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../show-count/show-count.html">
+<link rel="import" href="../vm-detail/vm-detail.html">
+
+<polymer-element name="vm-list">
+  <template>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{!success}}">
+        <error-display text={{errorText}}></error-display>
+      </template>
+
+      <template if="{{success}}">
+        <template bind ref="main">
+        </template>
+      </template>
+    </template>
+
+    <template id="main">
+      <h1>
+        <show-count n="{{vmsInOwnProjects.length}}" name="VM"></show-count> 
+        in your projects
+      </h1>
+      <ul>
+        <template repeat="{{vm in vmsInOwnProjects}}">
+          <li>
+            <vm-detail vmid="{{vm.id}}"></vm-detail>
+          </li>
+        </template>
+      </ul>
+
+      <h1>
+        <show-count n="{{vmsInOtherProjects.length}}" name="VM"></show-count>
+        in other projects
+      </h1>
+      <button type="button" on-click="{{toggleOtherVMs}}">
+        {{showOtherVMs ? 'Hide' : 'Show'}}
+      </button>
+      <br>
+      <template if="{{showOtherVMs}}">
+        <ul>
+        <template repeat="{{vm in vmsInOtherProjects}}">
+          <li>
+            <vm-detail vmid="{{vm.id}}"></vm-detail>
+          </li>
+        </template>
+        <ul>
+      </template>
+
+      <create-vm on-vm-created="{{reload}}"></create-vm>
+    </template>
+  </template>
+
+  <script src="vm-list.js"></script>
+</polymer-element>
