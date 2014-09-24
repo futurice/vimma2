@@ -1,0 +1,13 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<polymer-element name="create-vm-aws-data" attributes="data">
+  <template>
+    <paper-input label="Name (VM Tag)" floatingLabel="true"
+      value="{{data.nameTag}}">
+    </paper-input>
+  </template>
+
+  <script src="create-vm-aws-data.js"></script>
+</polymer-element>

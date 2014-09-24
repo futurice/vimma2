@@ -4,6 +4,7 @@
 
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="create-vm-dummy-data.html">
+<link rel="import" href="create-vm-aws-data.html">
 
 <polymer-element name="create-vm" attributes="prjid">
   <template>
@@ -72,7 +73,12 @@
         </create-vm-dummy-data>
       </template>
 
-      <template if="{{newVMType != null && newVMType != 'dummy'}}">
+      <template if="{{newVMType == 'aws'}}">
+        <create-vm-aws-data data="{{newVMData}}">
+        </create-vm-aws-data>
+      </template>
+
+      <template if="{{newVMType != null && newVMType != 'dummy' && newVMType != 'aws'}}">
         <error-display text="Unknown VM Type “{{newVMType}}”."></error-display>
         <br>
       </template>

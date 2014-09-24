@@ -86,7 +86,7 @@ class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
 class AWSProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = AWSProvider
-        fields = ('id', 'visible_field',)
+        fields = ('id',)
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     model = AWSProvider

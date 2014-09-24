@@ -58,9 +58,11 @@ prov2 = Provider.objects.create(name='My Second Dummy Provider',
         type=Provider.TYPE_DUMMY)
 DummyProvider.objects.create(provider=prov2)
 
-prov3 = Provider.objects.create(name='My First AWS Provider',
+prov3 = Provider.objects.create(name='AWS Vimma Provider',
         type=Provider.TYPE_AWS)
-AWSProvider.objects.create(provider=prov3)
+AWSProvider.objects.create(provider=prov3,
+        access_key_id=AWS_ACCESS_KEY_ID,
+        access_key_secret=AWS_ACCESS_KEY_SECRET)
 
 prov4 = Provider.objects.create(name='My Second AWS Provider',
         type=Provider.TYPE_AWS)
@@ -78,9 +80,10 @@ vmc2A = VMConfig.objects.create(provider=prov2, name='Config 2A',
         default_schedule=s2)
 DummyVMConfig.objects.create(vmconfig=vmc2A)
 
-vmc3A = VMConfig.objects.create(provider=prov3, name='Config 3A',
+vmc3A = VMConfig.objects.create(provider=prov3, name='Amazon Linux, t2.micro',
         default_schedule=s1)
-AWSVMConfig.objects.create(vmconfig=vmc3A)
+AWSVMConfig.objects.create(vmconfig=vmc3A,
+        ami_id='ami-748e2903', instance_type='t2.micro')
 vmc3B = VMConfig.objects.create(provider=prov3, name='Config 3B',
         default_schedule=s2)
 AWSVMConfig.objects.create(vmconfig=vmc3B)
@@ -90,10 +93,5 @@ vm1 = VM.objects.create(provider=prov1, project=prj1, schedule=s1)
 dvm1 = DummyVM.objects.create(vm=vm1, name='K.I.T.T.')
 vm2 = VM.objects.create(provider=prov2, project=prj2, schedule=s1)
 dvm2 = DummyVM.objects.create(vm=vm2, name='HAL')
-
-vm3 = VM.objects.create(provider=prov3, project=prj1, schedule=s1)
-avm3 = AWSVM.objects.create(vm=vm3)
-vm4 = VM.objects.create(provider=prov3, project=prj1, schedule=s1)
-avm4 = AWSVM.objects.create(vm=vm4)
 
 # newlines at end to ensure everything runs when piping to the python shell

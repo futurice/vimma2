@@ -110,9 +110,9 @@ class AWSProvider(models.Model):
     Type-specific info for a Provider of type Provider.TYPE_AWS.
     """
     provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
-    # these will be replaced with AWS-specific fields (credentials, etc.)
-    visible_field = models.BooleanField(default=True)
-    invisible_field = models.BooleanField(default=True)
+    # these must not be exposed via the API
+    access_key_id = models.CharField(max_length=100, blank=True)
+    access_key_secret = models.CharField(max_length=100, blank=True)
 
 
 class VMConfig(models.Model):
@@ -145,9 +145,9 @@ class AWSVMConfig(models.Model):
     Type-specific info for a VMConfig of type Provider.TYPE_AWS.
     """
     vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
-    # These will be replaced with real fields
-    img_id = models.CharField(max_length=50, blank=True)
-    hardware_id = models.CharField(max_length=50, blank=True)
+    # Amazon Machine Image ID
+    ami_id = models.CharField(max_length=50, blank=True)
+    instance_type = models.CharField(max_length=50, blank=True)
 
 
 class VM(models.Model):

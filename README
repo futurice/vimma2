@@ -20,6 +20,11 @@ cd vimmasite
 cp local_settings.py.example local_settings.py
 cd -
 
+Set up AWS credentials for dev testing:
+cd dev-data
+cp secrets.py.template secrets.py
+cd -
+
 During initial development don't use migrations. There's too much change and
 experimentation. Instead, create the data model every time.
 Remember to run this every time you make a change (or update your repository):
@@ -41,7 +46,7 @@ Run the webserver:
 rm -f vimmasite/db.sqlite3 vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 ./vimmasite/manage.py migrate
-./vimmasite/manage.py shell <create-dev-data.py
+cat dev-data/secrets.py dev-data/make-data.py | ./vimmasite/manage.py shell
 REMOTE_USER=u2 ./vimmasite/manage.py runserver
 
 http://localhost:8000/vimma/
