@@ -1602,13 +1602,18 @@ class AWSVMTests(APITestCase):
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class CreateVMTests(TestCase):
+class CreatePowerOnOffRebootDestroyVMTests(TestCase):
+    """
+    Test the above operations on a VM, as the permissions are related.
+    """
 
     def test_login_required(self):
         """
         The user must be logged in.
         """
-        response = self.client.get(reverse('createVM'))
+        for view_name in ('createVM', 'powerOnVM', 'powerOffVM', 'rebootVM',
+                'destroyVM'):
+            response = self.client.get(reverse(view_name))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_unsupported_methods(self):
@@ -1616,14 +1621,15 @@ class CreateVMTests(TestCase):
         Only POST is supported (e.g. GET, PUT, DELETE are not).
         """
         util.create_vimma_user('a', 'a@example.com', 'pass')
-        url = reverse('createVM')
         self.assertTrue(self.client.login(username='a', password='pass'))
-        for meth in self.client.get, self.client.put, self.client.delete:
-            response = meth(url)
-            self.assertEqual(response.status_code,
-                    status.HTTP_405_METHOD_NOT_ALLOWED)
+        for url in map(reverse, ('createVM', 'powerOnVM', 'powerOffVM',
+            'rebootVM', 'destroyVM')):
+            for meth in self.client.get, self.client.put, self.client.delete:
+                response = meth(url)
+                self.assertEqual(response.status_code,
+                        status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def test_perms_and_not_found(self):
+    def test_create_perms_and_not_found(self):
         """
         Test user permissions when creating a VM, or requested data not found.
         """
@@ -1719,6 +1725,64 @@ class CreateVMTests(TestCase):
                     'vmconfig': vmc.id,
                     'schedule': s3.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_powerOnOffRebootDestroy_perms_and_not_found(self):
+        """
+        Test user permissions & ‘not found’ for the above VM operations.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm.full_clean()
+        dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
+        dummyVm.full_clean()
+
+        url_names = ('powerOnVM', 'powerOffVM', 'rebootVM', 'destroyVM')
+
+        # non-existent VM ID
+        for url in map(reverse, url_names):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps({'vmid': 100, 'data': None}))
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can perform the actions in own project
+        u.profile.projects.add(prj)
+        for url in map(reverse, url_names):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps({'vmid': vm.id, 'data': None}))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # forbidden outside own projects
+        u.profile.projects.remove(prj)
+        for url in map(reverse, url_names):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps({'vmid': vm.id, 'data': None}))
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # ok if omnipotent
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='all powerful')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        for url in map(reverse, url_names):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps({'vmid': vm.id, 'data': None}))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class CanDoTests(TestCase):

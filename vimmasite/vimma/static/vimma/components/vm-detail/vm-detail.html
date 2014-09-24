@@ -9,6 +9,11 @@
 <polymer-element name="vm-detail" attributes="vmid">
   <template>
     Hello VM id {{vmid}}.
+    <br>
+    <paper-button icon="refresh" label="Refresh" on-click="{{reload}}"
+        raisedButton disabled?="{{loading}}">
+    </paper-button>
+    <br>
 
     <template if="{{loading}}">
       Loading…

@@ -2,6 +2,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import HttpResponse
 import json
 import logging
 import pytz
@@ -58,6 +59,14 @@ def login_required_or_forbidden(view_func):
     return wrapped_view
 
 
+def get_http_json_err(errText, code):
+    """
+    Return HttpResponse with json {error: errText} and given status code.
+    """
+    return HttpResponse(json.dumps({'error': errText}),
+            content_type="application/json", status=code)
+
+
 def can_do(user, what, data=None):
     """
     Check if user is omnipotent or is allowed to do ‘what’.
@@ -73,6 +82,9 @@ def can_do(user, what, data=None):
     elif what == Actions.READ_ANY_PROJECT:
         return has_perm(user, Perms.READ_ANY_PROJECT)
     elif what == Actions.CREATE_VM_IN_PROJECT:
+        prj = data
+        return user.profile.projects.filter(id=prj.id).count() > 0
+    elif what == Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT:
         prj = data
         return user.profile.projects.filter(id=prj.id).count() > 0
     elif what == Actions.USE_SCHEDULE:

@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import render
 import json
-from rest_framework import viewsets, routers, filters, serializers
+from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
@@ -17,7 +17,7 @@ from vimma.models import (
     VM, DummyVM, AWSVM,
 )
 from vimma.actions import Actions
-from vimma.util import can_do, login_required_or_forbidden
+from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -171,7 +171,7 @@ def test(request):
 
 
 @login_required_or_forbidden
-def createVM(request):
+def create_vm(request):
     """
     Create a new VM.
 
@@ -183,13 +183,10 @@ def createVM(request):
         data: «provider-specific data»,
     }
     """
-    def getHttpErr(errText, code):
-        return HttpResponse(json.dumps({'error': errText}),
-            content_type="application/json", status=code)
-
     if request.method != 'POST':
-        return getHttpErr('Method “' + request.method +
-            '” not allowed. Use POST instead.', 405)
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
 
@@ -198,22 +195,164 @@ def createVM(request):
         vmconf = VMConfig.objects.get(id=body['vmconfig'])
         schedule = Schedule.objects.get(id=body['schedule'])
     except ObjectDoesNotExist as e:
-        return getHttpErr('{}'.format(e), 404)
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
     if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, prj):
-        return getHttpErr('You may not create VMs in this project', 403)
+        return get_http_json_err('You may not create VMs in this project',
+                status.HTTP_403_FORBIDDEN)
 
     if vmconf.default_schedule.id != schedule.id:
         if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
-            return getHttpErr('You may not use this schedule', 403)
+            return get_http_json_err('You may not use this schedule',
+                    status.HTTP_403_FORBIDDEN)
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't create the VMs when running tests
         return HttpResponse()
 
     try:
-        vmutil.createVM(vmconf, prj, schedule, body['data'])
+        vmutil.create_vm(vmconf, prj, schedule, body['data'])
         return HttpResponse()
     except:
         msg = traceback.format_exception_only(*sys.exc_info()[:2])
-        return getHttpErr(msg, 500)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def power_on_vm(request):
+    # TODO: test login_required_or_forbidden, test permissions
+    """
+    Power on a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        data: «provider-specific data»,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    body = json.loads(request.read().decode('utf-8'))
+    try:
+        vm = VM.objects.get(id=body['vmid'])
+    except ObjectDoesNotExist as e:
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
+
+    if not can_do(request.user,
+            Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
+        return get_http_json_err('You may not power on VMs in this project',
+                status.HTTP_403_FORBIDDEN)
+
+    if request.META['SERVER_NAME'] == "testserver":
+        # Don't perform the action when running tests
+        return HttpResponse()
+    # TODO: implement
+    return HttpResponse()
+
+
+@login_required_or_forbidden
+def power_off_vm(request):
+    # TODO: test login_required_or_forbidden, test permissions
+    """
+    Power off a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        data: «provider-specific data»,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    body = json.loads(request.read().decode('utf-8'))
+    try:
+        vm = VM.objects.get(id=body['vmid'])
+    except ObjectDoesNotExist as e:
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
+
+    if not can_do(request.user,
+            Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
+        return get_http_json_err('You may not power off VMs in this project',
+                status.HTTP_403_FORBIDDEN)
+
+    if request.META['SERVER_NAME'] == "testserver":
+        # Don't perform the action when running tests
+        return HttpResponse()
+    # TODO: implement
+    return HttpResponse()
+
+
+@login_required_or_forbidden
+def reboot_vm(request):
+    # TODO: test login_required_or_forbidden, test permissions
+    """
+    Reboot a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        data: «provider-specific data»,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    body = json.loads(request.read().decode('utf-8'))
+    try:
+        vm = VM.objects.get(id=body['vmid'])
+    except ObjectDoesNotExist as e:
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
+
+    if not can_do(request.user,
+            Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
+        return get_http_json_err('You may not reboot VMs in this project',
+                status.HTTP_403_FORBIDDEN)
+
+    if request.META['SERVER_NAME'] == "testserver":
+        # Don't perform the action when running tests
+        return HttpResponse()
+    # TODO: implement
+    return HttpResponse()
+
+
+@login_required_or_forbidden
+def destroy_vm(request):
+    # TODO: test login_required_or_forbidden, test permissions
+    """
+    Destroy a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        data: «provider-specific data»,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    body = json.loads(request.read().decode('utf-8'))
+    try:
+        vm = VM.objects.get(id=body['vmid'])
+    except ObjectDoesNotExist as e:
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
+
+    if not can_do(request.user,
+            Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
+        return get_http_json_err('You may not destroy VMs in this project',
+                status.HTTP_403_FORBIDDEN)
+
+    if request.META['SERVER_NAME'] == "testserver":
+        # Don't perform the action when running tests
+        return HttpResponse()
+    # TODO: implement
+    return HttpResponse()

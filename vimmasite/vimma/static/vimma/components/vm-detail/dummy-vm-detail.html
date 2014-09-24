@@ -16,13 +16,31 @@
       </template>
 
       <template if="{{success}}">
-        <template bind ref="main">
-        </template>
+        <template bind ref="main"></template>
       </template>
     </template>
 
     <template id="main">
       Dummy VM “{{dummyvm.name}}”
+      <br>
+
+      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOn}}">
+        Turn ON
+      </button>
+      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOff}}">
+        Turn OFF
+      </button>
+      <button disabled?="{{ajaxInProgress}}" on-click="{{reboot}}">
+        Reboot
+      </button>
+      <button disabled?="{{ajaxInProgress}}" on-click="{{destroy}}">
+        Destroy
+      </button>
+
+      <template if="{{!ajaxInProgress && !ajaxSuccess}}">
+        <br>
+        <error-display text={{ajaxErrTxt}}></error-display>
+      </template>
     </template>
   </template>
 

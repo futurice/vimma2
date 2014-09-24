@@ -7,7 +7,7 @@ from vimma.models import (
 
 
 @transaction.atomic
-def createVM(vmconfig, project, schedule, data):
+def create_vm(vmconfig, project, schedule, data):
     """
     Create and return a new VM or throw an exception.
 
@@ -17,13 +17,13 @@ def createVM(vmconfig, project, schedule, data):
     vm = VM.objects.create(provider=prov, project=project, schedule=schedule)
     vm.full_clean()
     if prov.type == Provider.TYPE_DUMMY:
-        createDummyVM(vm, data)
+        create_dummy_vm(vm, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(prov.type))
     return vm
 
 
-def createDummyVM(vm, data):
+def create_dummy_vm(vm, data):
     """
     Create and return a dummy VM, linking to parent ‘vm’, from ‘data’.
 
