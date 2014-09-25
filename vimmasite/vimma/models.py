@@ -167,6 +167,11 @@ class DummyVM(models.Model):
     """
     vm = models.OneToOneField(VM, on_delete=models.PROTECT)
     name = models.CharField(max_length=50)
+    # free-form text, meant to be read by the user
+    status = models.CharField(max_length=50, blank=True)
+    # these 2 fields simulate the real machine state, managed by the Provider
+    destroyed = models.BooleanField(default=False)
+    poweredon = models.BooleanField(default=False)
 
 
 class AWSVM(models.Model):

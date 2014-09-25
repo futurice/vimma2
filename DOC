@@ -1,5 +1,9 @@
 Create and manage VMs from a provider, such as Amazon Web Services.
 
+
+Permissions:
+===========
+
 A user belongs to a set of Projects. VMs are assigned to projects not users.
 
 Some actions require permissions. A Role is a set of permissions. A user
@@ -17,3 +21,23 @@ in the projects they're part of. To avoid permission explosion, we don't define
 permissions for each case we want to allow, e.g.
 create_vm_without_prj_membership, but instead allow superusers to perform these
 actions.
+vimma.util.can_do(…) performs the checks.
+
+
+Transactions & Celery Tasks:
+===========================
+
+Commit the DB data before launching a Celery task that uses it. Otherwise there
+is a race condition: the task might start before you commit the data, and won't
+find the data.
+http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
+
+Functions which must be called only inside a transaction (or only outside one)
+say it in their docstrings.
+
+Functions which need to perform actions after a commit say it in their
+docstrings and return these callables as an extra argument. The caller must
+execute them after committing (or say it in the docstring and pass them to its
+caller).
+If the transaction.atomic block isn't successful (i.e. rollback instead of
+commit) these callbacks must not be run.

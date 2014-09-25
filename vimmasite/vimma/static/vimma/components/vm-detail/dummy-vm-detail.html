@@ -21,7 +21,9 @@
     </template>
 
     <template id="main">
-      Dummy VM “{{dummyvm.name}}”
+      Dummy VM “{{dummyvm.name}}”, status “{{dummyvm.status}}”,
+      powered {{dummyvm.poweredon ? 'On' : 'Off'}},
+      destroyed? {{dummyvm.destroyed}}.
       <br>
 
       <button disabled?="{{ajaxInProgress}}" on-click="{{powerOn}}">

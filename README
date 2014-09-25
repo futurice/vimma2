@@ -42,11 +42,27 @@ rm -f vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 ./vimmasite/manage.py test vimma --settings=test_settings
 
-Run the webserver:
+
+To run the project:
+
+Reset DB data and migrations:
 rm -f vimmasite/db.sqlite3 vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 ./vimmasite/manage.py migrate
 cat dev-data/secrets.py dev-data/make-data.py | ./vimmasite/manage.py shell
+
+Start rabbitmq:
+rabbitmq-server
+
+Start celery:
+cd vimmasite
+celery -A vimma.celery:app worker -l info
+
+Start the celery periodic task scheduler:
+cd vimmasite
+celery -A vimma.celery:app beat -l info
+
+Run the webserver:
 REMOTE_USER=u2 ./vimmasite/manage.py runserver
 
 http://localhost:8000/vimma/

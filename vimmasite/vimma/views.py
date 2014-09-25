@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import render
 import json
+import logging
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
@@ -18,6 +19,9 @@ from vimma.models import (
 )
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
+
+
+log = logging.getLogger(__name__)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -215,12 +219,12 @@ def create_vm(request):
         return HttpResponse()
     except:
         msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @login_required_or_forbidden
 def power_on_vm(request):
-    # TODO: test login_required_or_forbidden, test permissions
     """
     Power on a VM.
 
@@ -249,13 +253,18 @@ def power_on_vm(request):
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
-    # TODO: implement
-    return HttpResponse()
+
+    try:
+        vmutil.power_on_vm(vm, body['data'])
+        return HttpResponse()
+    except:
+        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        log.error(msg)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @login_required_or_forbidden
 def power_off_vm(request):
-    # TODO: test login_required_or_forbidden, test permissions
     """
     Power off a VM.
 
@@ -284,13 +293,18 @@ def power_off_vm(request):
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
-    # TODO: implement
-    return HttpResponse()
+
+    try:
+        vmutil.power_off_vm(vm, body['data'])
+        return HttpResponse()
+    except:
+        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        log.error(msg)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @login_required_or_forbidden
 def reboot_vm(request):
-    # TODO: test login_required_or_forbidden, test permissions
     """
     Reboot a VM.
 
@@ -319,13 +333,18 @@ def reboot_vm(request):
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
-    # TODO: implement
-    return HttpResponse()
+
+    try:
+        vmutil.reboot_vm(vm, body['data'])
+        return HttpResponse()
+    except:
+        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        log.error(msg)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @login_required_or_forbidden
 def destroy_vm(request):
-    # TODO: test login_required_or_forbidden, test permissions
     """
     Destroy a VM.
 
@@ -354,5 +373,11 @@ def destroy_vm(request):
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
-    # TODO: implement
-    return HttpResponse()
+
+    try:
+        vmutil.destroy_vm(vm, body['data'])
+        return HttpResponse()
+    except:
+        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        log.error(msg)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
