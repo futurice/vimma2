@@ -2,10 +2,13 @@ import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.utils import OperationalError
 from django.http import HttpResponse
 import json
 import logging
 import pytz
+import random
+import time
 
 from vimma.models import Profile
 from vimma.perms import Perms
@@ -108,3 +111,22 @@ def schedule_at_tstamp(schedule, tstamp):
     row = aware.weekday()
     col = aware.hour * 2 + aware.minute // 30
     return json.loads(schedule.matrix)[row][col]
+
+
+def retry_transaction(call, max_retries=5, start_delay_millis=100):
+    """
+    Call ‘call’, if it fails retry up to max_retries with exponential backoff.
+
+    Wait random(0, start_delay_millis*2**i) before retry i.
+    """
+    while True:
+        try:
+            call()
+            return
+        except OperationalError:
+            if max_retries > 0:
+                max_retries -= 1
+                time.sleep(random.randint(0, start_delay_millis) / 1000)
+                start_delay_millis *= 2
+            else:
+                raise

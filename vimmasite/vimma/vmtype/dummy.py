@@ -5,6 +5,7 @@ from vimma.celery import app
 from vimma.models import (
     DummyVM,
 )
+from vimma.util import retry_transaction
 
 
 log = logging.getLogger(__name__)
@@ -156,10 +157,13 @@ def do_destroy_vm(dummy_vm_id):
 
 @app.task
 def update_vm_status(dummy_vm_id):
-    with transaction.atomic():
-        dvm = DummyVM.objects.get(id=dummy_vm_id)
-        if dvm.destroyed:
-            dvm.status = 'destroyed'
-        else:
-            dvm.status = 'powered ' + ('on' if dvm.poweredon else 'off')
-        dvm.save()
+    def call():
+        with transaction.atomic():
+            dvm = DummyVM.objects.get(id=dummy_vm_id)
+            if dvm.destroyed:
+                dvm.status = 'destroyed'
+            else:
+                dvm.status = 'powered ' + ('on' if dvm.poweredon else 'off')
+            dvm.save()
+
+    retry_transaction(call)
