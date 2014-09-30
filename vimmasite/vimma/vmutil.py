@@ -5,7 +5,7 @@ from vimma.celery import app
 from vimma.models import (
     Provider, VM,
 )
-import vimma.vmtype.dummy
+import vimma.vmtype.dummy, vimma.vmtype.aws
 
 
 log = logging.getLogger(__name__)
@@ -30,8 +30,11 @@ def create_vm(vmconfig, project, schedule, data):
                 schedule=schedule)
         vm.full_clean()
 
-        if prov.type == Provider.TYPE_DUMMY:
+        t = prov.type
+        if t == Provider.TYPE_DUMMY:
             dvm, callables = vimma.vmtype.dummy.create_vm(vm, data)
+        elif t == Provider.TYPE_AWS:
+            awsvm, callables = vimma.vmtype.aws.create_vm(vmconfig, vm, data)
         else:
             raise ValueError('Unknown provider type “{}”'.format(prov.type))
 

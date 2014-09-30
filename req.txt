@@ -5,3 +5,4 @@ markdown
 django-filter==0.6
 pytz
 celery
+boto

@@ -7,6 +7,14 @@
     <paper-input label="Name (VM Tag)" floatingLabel="true"
       value="{{data.nameTag}}">
     </paper-input>
+
+    <label for="region">Region:</label>
+    <core-dropdown id="region" selected="{{data.region}}" valueattr="label"
+      on-core-select="{{regionSelected}}">
+      <template repeat="{{r in regions}}">
+        <core-item label="{{r}}"></core-item>
+      </template>
+    </core-dropdown>
   </template>
 
   <script src="create-vm-aws-data.js"></script>

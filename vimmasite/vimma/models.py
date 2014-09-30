@@ -179,4 +179,9 @@ class AWSVM(models.Model):
     Type-specific data for a VM of type Provider.TYPE_AWS.
     """
     vm = models.OneToOneField(VM, on_delete=models.PROTECT)
-    # will add real AWS fields here
+    # free-form text, shown to the user
+    status = models.CharField(max_length=100, blank=True)
+    # AWS fields:
+    region = models.CharField(max_length=20, blank=True)
+    reservation_id = models.CharField(max_length=50, blank=True)
+    instance_id = models.CharField(max_length=50, blank=True)

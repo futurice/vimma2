@@ -22,7 +22,11 @@
     </template>
 
     <template id="main">
-      AWS VM, ids {{vm.id}}/{{awsvm.id}}.
+      AWS VM, vm.id {{vm.id}} / awsvm.id {{awsvm.id}}.<br>
+      Status: ‘{{awsvm.status}}’<br>
+      Region: ‘{{awsvm.region}}’<br>
+      Reservation id: ‘{{awsvm.reservation_id}}’<br>
+      Instance id: ‘{{awsvm.instance_id}}’<br>
     </template>
   </template>
 

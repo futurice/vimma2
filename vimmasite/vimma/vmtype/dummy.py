@@ -21,7 +21,7 @@ def create_vm(vm, data):
     }
 
     This function must be called inside a transaction. The caller must execute
-    the callables only after committing.
+    the returned callables only after committing.
     """
     dummyVM = DummyVM.objects.create(vm=vm, name=data['name'],
             status='creating…')
