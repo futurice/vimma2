@@ -218,7 +218,8 @@ def create_vm(request):
         vmutil.create_vm(vmconf, prj, schedule, body['data'])
         return HttpResponse()
     except:
-        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
         log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -258,7 +259,8 @@ def power_on_vm(request):
         vmutil.power_on_vm(vm, body['data'])
         return HttpResponse()
     except:
-        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
         log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -298,7 +300,8 @@ def power_off_vm(request):
         vmutil.power_off_vm(vm, body['data'])
         return HttpResponse()
     except:
-        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
         log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -338,7 +341,8 @@ def reboot_vm(request):
         vmutil.reboot_vm(vm, body['data'])
         return HttpResponse()
     except:
-        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
         log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -378,6 +382,7 @@ def destroy_vm(request):
         vmutil.destroy_vm(vm, body['data'])
         return HttpResponse()
     except:
-        msg = traceback.format_exception_only(*sys.exc_info()[:2])
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
         log.error(msg)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)

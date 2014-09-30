@@ -49,7 +49,8 @@ def do_create_vm(aws_vm_config_id, aws_vm_id):
             with transaction.atomic():
                 aws_vm = AWSVM.objects.get(id=aws_vm_id)
                 # ideally:
-                # msg = traceback.format_exception_only(*sys.exc_info()[:2])
+                # lines = traceback.format_exception_only(*sys.exc_info()[:2])
+                # msg = ''.join(lines)
                 # aws_vm.status = msg[:status_field.max_length]
                 aws_vm.status = 'Error (check logs)'
                 aws_vm.save()
