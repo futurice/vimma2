@@ -1,27 +1,19 @@
 Polymer('dummy-vm-detail', {
+    /* same as for <vm-detail> */
+    loading: true,
+    loadingSucceeded: null,
+
     vm: null,
     dummyvm: null,
 
-    loading: true,
-    success: null,
-    errorText: null,
-
-    /*
-     * The VM is loaded and performing an AJAX operation, e.g. requesting a
-     * reboot.
-     */
-    ajaxInProgress: false,
-    ajaxSuccess: true,
-    ajaxErrTxt: '',
-
-    ready: function() {
+    attached: function() {
         this.reload();
     },
 
     reload: function() {
+        this.fire('ajax-start');
         this.loading = true;
-        this.success = null;
-        this.errorText = null;
+        this.loadingSucceeded = null;
 
         this.vm = null;
         this.dummyvm = null;
@@ -29,13 +21,16 @@ Polymer('dummy-vm-detail', {
         this.loadVM();
     },
     loadFail: function(errorText) {
+        this.fire('ajax-end', {success: false, errorText: errorText});
+
         this.loading = false;
-        this.success = false;
-        this.errorText = errorText;
+        this.loadingSucceeded = false;
     },
     loadSuccess: function() {
+        this.fire('ajax-end', {success: true});
+
         this.loading = false;
-        this.success = true;
+        this.loadingSucceeded = true;
     },
 
     loadVM: function() {
@@ -50,7 +45,7 @@ Polymer('dummy-vm-detail', {
     },
 
     ajaxRequest: function(url, data) {
-        this.ajaxInProgress = true;
+        this.fire('ajax-start');
         $.ajax({
             url: url,
             type: 'POST',
@@ -62,15 +57,12 @@ Polymer('dummy-vm-detail', {
                 vmid: this.vm.id,
                 data: data
             }),
-            complete: (function(data) {
-                this.ajaxInProgress = false;
-            }).bind(this),
             success: (function(data) {
-                this.ajaxSuccess = true;
+                this.fire('ajax-end', {success: true});
             }).bind(this),
             error: (function() {
-                this.ajaxSuccess = false;
-                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.fire('ajax-end', {success: false, errorText: errorText});
             }).bind(this)
         });
     },

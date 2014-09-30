@@ -1,19 +1,19 @@
 Polymer('aws-vm-detail', {
+    /* same as for <vm-detail> */
+    loading: true,
+    loadingSucceeded: null,
+
     vm: null,
     awsvm: null,
 
-    loading: true,
-    success: null,
-    errorText: null,
-
-    ready: function() {
+    attached: function() {
         this.reload();
     },
 
     reload: function() {
+        this.fire('ajax-start');
         this.loading = true;
-        this.success = null;
-        this.errorText = null;
+        this.loadingSucceeded = null;
 
         this.vm = null;
         this.awsvm = null;
@@ -21,13 +21,16 @@ Polymer('aws-vm-detail', {
         this.loadVM();
     },
     loadFail: function(errorText) {
+        this.fire('ajax-end', {success: false, errorText: errorText});
+
         this.loading = false;
-        this.success = false;
-        this.errorText = errorText;
+        this.loadingSucceeded = false;
     },
     loadSuccess: function() {
+        this.fire('ajax-end', {success: true});
+
         this.loading = false;
-        this.success = true;
+        this.loadingSucceeded = true;
     },
 
     loadVM: function() {
