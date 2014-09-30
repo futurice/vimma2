@@ -39,18 +39,17 @@ def create_vm(vm, data):
 
 def power_on_vm(vm, data):
     """
-    Power on VM → callables.
+    Power on VM.
 
     ‘data’ is not used.
 
-    This function must be called inside a transaction. The caller must execute
-    the callables only after committing.
+    This function must not be called inside a transaction.
     """
-    dummy_vm = vm.dummyvm
-    dummy_vm.status = 'powering on…'
-    dummy_vm.save()
-    callables = [lambda: do_power_on_vm.delay(dummy_vm.id)]
-    return callables
+    with transaction.atomic():
+        dummy_vm = vm.dummyvm
+        dummy_vm.status = 'powering on…'
+        dummy_vm.save()
+    do_power_on_vm.delay(dummy_vm.id)
 
 
 @app.task
@@ -62,25 +61,24 @@ def do_power_on_vm(dummy_vm_id):
             log.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
                 'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
                     dvm))
-        else:
-            dvm.poweredon = True
+            return
+        dvm.poweredon = True
         dvm.save()
 
 
 def power_off_vm(vm, data):
     """
-    Power off VM → callables.
+    Power off VM.
 
     ‘data’ is not used.
 
-    This function must be called inside a transaction. The caller must execute
-    the callables only after committing.
+    This function must not be called inside a transaction.
     """
-    dummy_vm = vm.dummyvm
-    dummy_vm.status = 'powering off…'
-    dummy_vm.save()
-    callables = [lambda: do_power_off_vm.delay(dummy_vm.id)]
-    return callables
+    with transaction.atomic():
+        dummy_vm = vm.dummyvm
+        dummy_vm.status = 'powering off…'
+        dummy_vm.save()
+    do_power_off_vm.delay(dummy_vm.id)
 
 
 @app.task
@@ -91,25 +89,24 @@ def do_power_off_vm(dummy_vm_id):
             log.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
                 'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
                     dvm))
-        else:
-            dvm.poweredon = False
+            return
+        dvm.poweredon = False
         dvm.save()
 
 
 def reboot_vm(vm, data):
     """
-    Reboot VM → callables.
+    Reboot VM.
 
     ‘data’ is not used.
 
-    This function must be called inside a transaction. The caller must execute
-    the callables only after committing.
+    This function must not be called inside a transaction.
     """
-    dummy_vm = vm.dummyvm
-    dummy_vm.status = 'rebooting…'
-    dummy_vm.save()
-    callables = [lambda: do_reboot_vm.delay(dummy_vm.id)]
-    return callables
+    with transaction.atomic():
+        dummy_vm = vm.dummyvm
+        dummy_vm.status = 'rebooting…'
+        dummy_vm.save()
+    do_reboot_vm.delay(dummy_vm.id)
 
 
 @app.task
@@ -120,25 +117,24 @@ def do_reboot_vm(dummy_vm_id):
             log.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
                 'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
                     dvm))
-        else:
-            dvm.poweredon = True
+            return
+        dvm.poweredon = True
         dvm.save()
 
 
 def destroy_vm(vm, data):
     """
-    Destroy VM → callables.
+    Destroy VM.
 
     ‘data’ is not used.
 
-    This function must be called inside a transaction. The caller must execute
-    the callables only after committing.
+    This function must not be called inside a transaction.
     """
-    dummy_vm = vm.dummyvm
-    dummy_vm.status = 'destroying…'
-    dummy_vm.save()
-    callables = [lambda: do_destroy_vm.delay(dummy_vm.id)]
-    return callables
+    with transaction.atomic():
+        dummy_vm = vm.dummyvm
+        dummy_vm.status = 'destroying…'
+        dummy_vm.save()
+    do_destroy_vm.delay(dummy_vm.id)
 
 
 @app.task
@@ -149,9 +145,9 @@ def do_destroy_vm(dummy_vm_id):
             log.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
                 'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
                     dvm))
-        else:
-            dvm.poweredon = False
-            dvm.destroyed = True
+            return
+        dvm.poweredon = False
+        dvm.destroyed = True
         dvm.save()
 
 

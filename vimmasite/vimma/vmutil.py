@@ -21,6 +21,8 @@ def create_vm(vmconfig, project, schedule, data):
     log.info(('Create VM: config ‘{.name}’, project ‘{.name}’, ' +
         'schedule ‘{.name}’, data ‘{}’').format(vmconfig, project, schedule,
             data))
+    # The transaction guarantees that if the vmtype.* call fails, the generic
+    # VM object won't be present in the DB.
     callables = []
     with transaction.atomic():
         prov = vmconfig.provider
@@ -46,24 +48,24 @@ def power_on_vm(vm, data):
     This function must not be called inside a transaction.
     """
     # In the general case, the type-specific function will modify data (e.g.
-    # set the state to ‘requesting power on…’) and return callbacks (e.g.
-    # celery tasks). The callbacks must run after the data modifications have
-    # been committed, not the other way around (i.e. overwriting the callback
-    # results such as ‘powered on’ with ‘requesting power on…’).
+    # set the state to ‘requesting power on…’) and schedule (celery) tasks.
+    # The tasks must run after the data modifications have been committed, not
+    # the other way around (i.e. overwriting the task results such as
+    # ‘powered on’ with ‘requesting power on…’).
     #
-    # For this same reason, the other similar functions have the same
-    # transaction-related requirement.
+    # For this reason, the other similar functions have the same
+    # transaction-related requirement (so they can commit the data themselves
+    # before scheduling the task).
+    #
+    # Unlike create_vm(), this function doesn't make DB writes which must be
+    # undone if the vmtype.* call fails. So not starting a transaction here.
+    # Although both this function and the callee access related DB data.
     log.info('Power ON VM ‘{.id}’, data ‘{}’'.format(vm, data))
-    callables = []
-    with transaction.atomic():
-        t = vm.provider.type
-        if t == Provider.TYPE_DUMMY:
-            callables = vimma.vmtype.dummy.power_on_vm(vm, data)
-        else:
-            raise ValueError('Unknown provider type “{}”'.format(t))
-
-    for c in callables:
-        c()
+    t = vm.provider.type
+    if t == Provider.TYPE_DUMMY:
+        vimma.vmtype.dummy.power_on_vm(vm, data)
+    else:
+        raise ValueError('Unknown provider type “{}”'.format(t))
 
 
 def power_off_vm(vm, data):
@@ -74,16 +76,11 @@ def power_off_vm(vm, data):
     This function must not be called inside a transaction.
     """
     log.info('Power OFF VM ‘{.id}’, data ‘{}’'.format(vm, data))
-    callables = []
-    with transaction.atomic():
-        t = vm.provider.type
-        if t == Provider.TYPE_DUMMY:
-            callables = vimma.vmtype.dummy.power_off_vm(vm, data)
-        else:
-            raise ValueError('Unknown provider type “{}”'.format(t))
-
-    for c in callables:
-        c()
+    t = vm.provider.type
+    if t == Provider.TYPE_DUMMY:
+        vimma.vmtype.dummy.power_off_vm(vm, data)
+    else:
+        raise ValueError('Unknown provider type “{}”'.format(t))
 
 
 def reboot_vm(vm, data):
@@ -94,16 +91,11 @@ def reboot_vm(vm, data):
     This function must not be called inside a transaction.
     """
     log.info('Reboot VM ‘{.id}’, data ‘{}’'.format(vm, data))
-    callables = []
-    with transaction.atomic():
-        t = vm.provider.type
-        if t == Provider.TYPE_DUMMY:
-            callables = vimma.vmtype.dummy.reboot_vm(vm, data)
-        else:
-            raise ValueError('Unknown provider type “{}”'.format(t))
-
-    for c in callables:
-        c()
+    t = vm.provider.type
+    if t == Provider.TYPE_DUMMY:
+        vimma.vmtype.dummy.reboot_vm(vm, data)
+    else:
+        raise ValueError('Unknown provider type “{}”'.format(t))
 
 
 def destroy_vm(vm, data):
@@ -114,16 +106,11 @@ def destroy_vm(vm, data):
     This function must not be called inside a transaction.
     """
     log.info('Destroy VM ‘{.id}’, data ‘{}’'.format(vm, data))
-    callables = []
-    with transaction.atomic():
-        t = vm.provider.type
-        if t == Provider.TYPE_DUMMY:
-            callables = vimma.vmtype.dummy.destroy_vm(vm, data)
-        else:
-            raise ValueError('Unknown provider type “{}”'.format(t))
-
-    for c in callables:
-        c()
+    t = vm.provider.type
+    if t == Provider.TYPE_DUMMY:
+        vimma.vmtype.dummy.destroy_vm(vm, data)
+    else:
+        raise ValueError('Unknown provider type “{}”'.format(t))
 
 
 @app.task
@@ -135,11 +122,12 @@ def update_all_vms_status():
     VM object.
     """
     with transaction.atomic():
-        for vm in VM.objects.filter():
-            # don't allow a single VM to break the loop, e.g. with missing
-            # foreign keys. Make a separate task for each instead of handling
-            # all in this task.
-            update_vm_status.delay(vm.id)
+        vm_ids = map(lambda v: v.id, VM.objects.filter())
+    for x in vm_ids:
+        # don't allow a single VM to break the loop, e.g. with missing
+        # foreign keys. Make a separate task for each instead of handling
+        # all in this task.
+        update_vm_status.delay(x)
 
 
 @app.task
@@ -147,10 +135,9 @@ def update_vm_status(vm_id):
     """
     Check & update the status of the VM.
     """
-    with transaction.atomic():
-        vm = VM.objects.get(id=vm_id)
-        t = vm.provider.type
-        if t == Provider.TYPE_DUMMY:
-            vimma.vmtype.dummy.update_vm_status.delay(vm.dummyvm.id)
-        else:
-            log.error('Unknown provider type “{}”'.format(t))
+    vm = VM.objects.get(id=vm_id)
+    t = vm.provider.type
+    if t == Provider.TYPE_DUMMY:
+        vimma.vmtype.dummy.update_vm_status.delay(vm.dummyvm.id)
+    else:
+        log.error('Unknown provider type “{}”'.format(t))
