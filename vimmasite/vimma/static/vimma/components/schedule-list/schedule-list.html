@@ -47,13 +47,13 @@
         on-input="{{nameEdited}}">
       </paper-input>
       <br>
-      <core-dropdown label="Select a TimeZone"
+      <core-dropdown-menu label="Select a TimeZone"
         on-core-select="{{timezoneSelected}}">
         <template repeat="{{tz in timezones}}">
           <core-item label="{{tz.name}}" tzid="{{tz.id}}">
           </core-item>
         </template>
-      </core-dropdown>
+      </core-dropdown-menu>
       <br>
       <paper-button id="create" icon="create" label="Create" raisedButton
         on-click={{create}} disabled="{{ajaxInProgress}}"

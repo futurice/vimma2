@@ -18,12 +18,12 @@
     </matrix-editor>
 
     TimeZone:
-    <core-dropdown selected="{{editModel.timezone}}" valueattr="tzid"
+    <core-dropdown-menu selected="{{editModel.timezone}}" valueattr="tzid"
       on-core-select="{{timezoneSelected}}">
       <template repeat="{{tz in timezones}}">
         <core-item label="{{tz.name}}" tzid="{{tz.id}}"></core-item>
       </template>
-    </core-dropdown>
+    </core-dropdown-menu>
     <br>
     <input id="is_special" type="checkbox" checked="{{editModel.is_special}}">
     <label for="is_special">

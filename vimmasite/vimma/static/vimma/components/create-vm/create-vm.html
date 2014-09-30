@@ -28,41 +28,41 @@
     <template id="main">
       <h1>Create a VM</h1>
       <label for="project">Project:</label>
-      <core-dropdown id="project" label="Select a project…"
+      <core-dropdown-menu id="project" label="Select a project…"
           selected="{{prjid}}" valueattr="key"
           on-core-select="{{projectSelected}}">
         <template repeat="{{p in projects}}">
           <core-item label="{{p.name}}" key="{{p.id}}"></core-item>
         </template>
-      </core-dropdown>
+      </core-dropdown-menu>
       <br>
 
       <label for="provider">Provider:</label>
-      <core-dropdown id="provider" label="Select a provider…"
+      <core-dropdown-menu id="provider" label="Select a provider…"
           on-core-select="{{providerSelected}}">
         <template repeat="{{p in providers}}">
           <core-item label="{{p.name}}" key="{{p.id}}"></core-item>
         </template>
-      </core-dropdown>
+      </core-dropdown-menu>
       <br>
 
       <label for="vmconfig">VM Configuration:</label>
-      <core-dropdown id="vmconfig" label="Select a VM configuration…"
+      <core-dropdown-menu id="vmconfig" label="Select a VM configuration…"
           selected="{{vmconfigid}}" valueattr="key"
           on-core-select="{{vmconfigSelected}}">
         <template repeat="{{c in vmconfigsForProvider}}">
           <core-item label="{{c.name}}" key="{{c.id}}"></core-item>
         </template>
-      </core-dropdown>
+      </core-dropdown-menu>
       <br>
 
       <label for="schedule">Schedule:</label>
-      <core-dropdown id="schedule" label="Select a schedule…"
+      <core-dropdown-menu id="schedule" label="Select a schedule…"
           on-core-select="{{scheduleSelected}}">
         <template repeat="{{s in schedules}}">
           <core-item label="{{s.name}}" key="{{s.id}}"></core-item>
         </template>
-      </core-dropdown>
+      </core-dropdown-menu>
       <br>
 
       {{prjid}}, {{provid}}, {{vmconfigid}}, {{scheduleid}} |
