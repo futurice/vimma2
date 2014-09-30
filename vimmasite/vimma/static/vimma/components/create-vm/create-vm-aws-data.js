@@ -28,6 +28,7 @@ Polymer('create-vm-aws-data', {
             'eu-west-1',
             'us-west-1'
         ];
+        this.regions.sort();
 
         this.setDefaultData();
     },
