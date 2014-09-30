@@ -19,20 +19,6 @@
       Dummy VM “{{dummyvm.name}}”, status “{{dummyvm.status}}”,
       powered {{dummyvm.poweredon ? 'On' : 'Off'}},
       destroyed? {{dummyvm.destroyed}}.
-      <br>
-
-      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOn}}">
-        Turn ON
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOff}}">
-        Turn OFF
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{reboot}}">
-        Reboot
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{destroy}}">
-        Destroy
-      </button>
     </template>
   </template>
 

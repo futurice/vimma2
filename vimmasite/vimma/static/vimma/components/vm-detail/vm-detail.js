@@ -97,5 +97,42 @@ Polymer('vm-detail', {
         }).bind(this);
         apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/'],
                 ok, this.loadFail.bind(this));
+    },
+
+    // could be better named
+    vmOperation: function(url, data) {
+        this.fire('ajax-start');
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json; charset=UTF-8',
+            headers: {
+                'X-CSRFToken': $.cookie('csrftoken')
+            },
+            data: JSON.stringify({
+                vmid: this.vm.id,
+                data: data
+            }),
+            success: (function(data) {
+                this.fire('ajax-end', {success: true});
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.fire('ajax-end', {success: false, errorText: errorText});
+            }).bind(this)
+        });
+    },
+
+    powerOn: function() {
+        this.vmOperation(vimmaEndpointPowerOnVM, null);
+    },
+    powerOff: function() {
+        this.vmOperation(vimmaEndpointPowerOffVM, null);
+    },
+    reboot: function() {
+        this.vmOperation(vimmaEndpointRebootVM, null);
+    },
+    destroy: function() {
+        this.vmOperation(vimmaEndpointDestroyVM, null);
     }
 });
