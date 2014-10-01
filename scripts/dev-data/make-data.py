@@ -1,3 +1,8 @@
+# https://docs.djangoproject.com/en/1.7/releases/1.7/#standalone-scripts
+import django
+django.setup()
+
+
 from vimma.util import create_vimma_user
 from vimma.models import (
     TimeZone, Schedule, Role, Permission, Project,
@@ -7,6 +12,9 @@ from vimma.models import (
 )
 from vimma.perms import Perms
 import json
+
+import secrets
+
 
 u1 = create_vimma_user('u1', 'u1@example.com', 'pass', 'Andrew', 'Adams')
 tz_hki = TimeZone.objects.create(name='Europe/Helsinki')
@@ -61,8 +69,8 @@ DummyProvider.objects.create(provider=prov2)
 prov3 = Provider.objects.create(name='AWS Vimma Provider',
         type=Provider.TYPE_AWS)
 AWSProvider.objects.create(provider=prov3,
-        access_key_id=AWS_ACCESS_KEY_ID,
-        access_key_secret=AWS_ACCESS_KEY_SECRET)
+        access_key_id=secrets.AWS_ACCESS_KEY_ID,
+        access_key_secret=secrets.AWS_ACCESS_KEY_SECRET)
 
 prov4 = Provider.objects.create(name='My Second AWS Provider',
         type=Provider.TYPE_AWS)
@@ -93,5 +101,3 @@ vm1 = VM.objects.create(provider=prov1, project=prj1, schedule=s1)
 dvm1 = DummyVM.objects.create(vm=vm1, name='K.I.T.T.')
 vm2 = VM.objects.create(provider=prov2, project=prj2, schedule=s1)
 dvm2 = DummyVM.objects.create(vm=vm2, name='HAL')
-
-# newlines at end to ensure everything runs when piping to the python shell

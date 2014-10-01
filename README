@@ -4,14 +4,16 @@ Vimma is distributed under the BSD 3-clause license, see the file COPYING.
 
 The DOC file has some explanations about the structure & features.
 
+The scripts/ directory has scripts for common commands (e.g. creating a python
+virtual environment, starting the task queue). They are only a convenience: you
+may instead alter & run the commands yourself, e.g. with different arguments,
+with a different (or no) virtual environment.
+
 
 Installation:
 
 Use Python3, e.g. in a virtual environment:
-virtualenv -p python3 env
-. env/bin/activate
-
-pip install -r req.txt
+./scripts/venv-reset.py
 
 Set up local_settings.py:
 ― Type a random string for the SECRET_KEY
@@ -21,49 +23,37 @@ cp local_settings.py.example local_settings.py
 cd -
 
 Set up AWS credentials for dev testing:
-cd dev-data
+cd scripts/dev-data
 cp secrets.py.template secrets.py
 cd -
 
-During initial development don't use migrations. There's too much change and
-experimentation. Instead, create the data model every time.
-Remember to run this every time you make a change (or update your repository):
-rm -f vimmasite/vimma/migrations/0*.py
-./vimmasite/manage.py makemigrations
+During initial development don't use migrations. Instead, delete & create them
+every time (the helper scripts call scripts/migrations-reset.py).
 
 Install PolymerJS:
-cd vimmasite/vimma/static/vimma/components
-bower install Polymer/polymer Polymer/core-elements Polymer/paper-elements
-cd -
+./scripts/polymerjs-reset.py
 
 
 Run Tests:
-rm -f vimmasite/vimma/migrations/0*.py
-./vimmasite/manage.py makemigrations
-./vimmasite/manage.py test vimma --settings=test_settings
+./scripts/test.py
 
 
 To run the project:
 
-Reset DB data and migrations:
-rm -f vimmasite/db.sqlite3 vimmasite/vimma/migrations/0*.py
-./vimmasite/manage.py makemigrations
-./vimmasite/manage.py migrate
-cat dev-data/secrets.py dev-data/make-data.py | ./vimmasite/manage.py shell
+Reset DB and migrations, create dummy data:
+./scripts/db-reset.py
 
 Start rabbitmq:
 rabbitmq-server
 
 Start celery:
-cd vimmasite
-celery -A vimma.celery:app worker -l info
+./scripts/worker.py
 
 Start the celery periodic task scheduler:
-cd vimmasite
-celery -A vimma.celery:app beat -l info
+./scripts/beat.py
 
 Run the webserver:
-REMOTE_USER=u2 ./vimmasite/manage.py runserver
+./scripts/webserver.py
 
 http://localhost:8000/vimma/
 http://localhost:8000/vimma/test

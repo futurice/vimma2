@@ -11,7 +11,5 @@ vimmasite/vimma/migrations/0*.py
 
 /vimma.log*
 
-# celery puts its logs here, with the instructions in the README
-/vimmasite/vimma.log*
-/vimmasite/celerybeat.pid
-/vimmasite/celerybeat-schedule.db
+/celerybeat.pid
+/celerybeat-schedule
