@@ -30,30 +30,19 @@ cd -
 During initial development don't use migrations. Instead, delete & create them
 every time (the helper scripts call scripts/migrations-reset.py).
 
-Install PolymerJS:
-./scripts/polymerjs-reset.py
+./scripts/polymerjs-reset.py	# install PolymerJS
 
 
-Run Tests:
-./scripts/test.py
+./scripts/test.py	# run tests
 
 
 To run the project:
 
-Reset DB and migrations, create dummy data:
-./scripts/db-reset.py
-
-Start rabbitmq:
-rabbitmq-server
-
-Start celery:
-./scripts/worker.py
-
-Start the celery periodic task scheduler:
-./scripts/beat.py
-
-Run the webserver:
-./scripts/webserver.py
+./scripts/db-reset.py	# reset DB and migrations, create dummy data
+rabbitmq-server		# start rabbitmq
+./scripts/worker.py	# start celery worker
+./scripts/beat.py	# start celery beat (periodic task scheduler)
+./scripts/webserver.py	# start the webserver
 
 http://localhost:8000/vimma/
 http://localhost:8000/vimma/test
