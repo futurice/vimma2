@@ -66,7 +66,7 @@ def power_on_vm(vm, data):
     log.info('Power ON VM ‘{.id}’, data ‘{}’'.format(vm, data))
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_on_vm(vm, data)
+        vimma.vmtype.dummy.power_on_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
@@ -81,7 +81,7 @@ def power_off_vm(vm, data):
     log.info('Power OFF VM ‘{.id}’, data ‘{}’'.format(vm, data))
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_off_vm(vm, data)
+        vimma.vmtype.dummy.power_off_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
@@ -96,7 +96,7 @@ def reboot_vm(vm, data):
     log.info('Reboot VM ‘{.id}’, data ‘{}’'.format(vm, data))
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.reboot_vm(vm, data)
+        vimma.vmtype.dummy.reboot_vm(vm.id, data)
     elif t == Provider.TYPE_AWS:
         vimma.vmtype.aws.reboot_vm(vm.id, data)
     else:
@@ -113,7 +113,7 @@ def destroy_vm(vm, data):
     log.info('Destroy VM ‘{.id}’, data ‘{}’'.format(vm, data))
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.destroy_vm(vm, data)
+        vimma.vmtype.dummy.destroy_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
@@ -143,8 +143,8 @@ def update_vm_status(vm_id):
     vm = VM.objects.get(id=vm_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.update_vm_status.delay(vm.dummyvm.id)
+        vimma.vmtype.dummy.update_vm_status.delay(vm.id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.update_vm_status.delay(vm.awsvm.id)
+        vimma.vmtype.aws.update_vm_status.delay(vm.id)
     else:
         log.error('Unknown provider type “{}”'.format(t))

@@ -3,6 +3,7 @@ import logging
 
 from vimma.celery import app
 from vimma.models import (
+    VM,
     DummyVM,
 )
 from vimma.util import retry_transaction
@@ -37,7 +38,7 @@ def create_vm(vm, data):
     return dummyVM, callables
 
 
-def power_on_vm(vm, data):
+def power_on_vm(vm_id, data):
     """
     Power on VM.
 
@@ -46,7 +47,7 @@ def power_on_vm(vm, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = vm.dummyvm
+        dummy_vm = VM.objects.get(id=vm_id).dummyvm
         dummy_vm.status = 'powering on…'
         dummy_vm.save()
     do_power_on_vm.delay(dummy_vm.id)
@@ -66,7 +67,7 @@ def do_power_on_vm(dummy_vm_id):
         dvm.save()
 
 
-def power_off_vm(vm, data):
+def power_off_vm(vm_id, data):
     """
     Power off VM.
 
@@ -75,7 +76,7 @@ def power_off_vm(vm, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = vm.dummyvm
+        dummy_vm = VM.objects.get(id=vm_id).dummyvm
         dummy_vm.status = 'powering off…'
         dummy_vm.save()
     do_power_off_vm.delay(dummy_vm.id)
@@ -94,7 +95,7 @@ def do_power_off_vm(dummy_vm_id):
         dvm.save()
 
 
-def reboot_vm(vm, data):
+def reboot_vm(vm_id, data):
     """
     Reboot VM.
 
@@ -103,7 +104,7 @@ def reboot_vm(vm, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = vm.dummyvm
+        dummy_vm = VM.objects.get(id=vm_id).dummyvm
         dummy_vm.status = 'rebooting…'
         dummy_vm.save()
     do_reboot_vm.delay(dummy_vm.id)
@@ -122,7 +123,7 @@ def do_reboot_vm(dummy_vm_id):
         dvm.save()
 
 
-def destroy_vm(vm, data):
+def destroy_vm(vm_id, data):
     """
     Destroy VM.
 
@@ -131,7 +132,7 @@ def destroy_vm(vm, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = vm.dummyvm
+        dummy_vm = VM.objects.get(id=vm_id).dummyvm
         dummy_vm.status = 'destroying…'
         dummy_vm.save()
     do_destroy_vm.delay(dummy_vm.id)
@@ -152,10 +153,10 @@ def do_destroy_vm(dummy_vm_id):
 
 
 @app.task
-def update_vm_status(dummy_vm_id):
+def update_vm_status(vm_id):
     def call():
         with transaction.atomic():
-            dvm = DummyVM.objects.get(id=dummy_vm_id)
+            dvm = VM.objects.get(id=vm_id).dummyvm
             if dvm.destroyed:
                 dvm.status = 'destroyed'
             else:

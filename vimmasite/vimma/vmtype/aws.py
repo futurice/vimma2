@@ -157,12 +157,13 @@ def do_reboot_vm(aws_vm_id):
 
 
 @app.task
-def update_vm_status(aws_vm_id):
-    inst_id = None
+def update_vm_status(vm_id):
+    aws_vm_id, inst_id = None, None
     def read_data():
-        nonlocal inst_id
+        nonlocal aws_vm_id, inst_id
         with transaction.atomic():
-            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
             inst_id = aws_vm.instance_id
     retry_transaction(read_data)
 
