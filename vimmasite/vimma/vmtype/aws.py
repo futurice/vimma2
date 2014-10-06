@@ -104,3 +104,55 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
             aws_vm.instance_id = reservation.instances[0].id
             aws_vm.save()
     retry_transaction(update_db)
+
+
+def connect_to_aws_vm_region(aws_vm_id):
+    """
+    Return a boto EC2Connection to the given AWS VM's region.
+    """
+    access_key_id, access_key_secret, region = None, None, None
+
+    def read_data():
+        nonlocal access_key_id, access_key_secret, region
+        with transaction.atomic():
+            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_prov = aws_vm.vm.provider.awsprovider
+
+            access_key_id = aws_prov.access_key_id
+            access_key_secret = aws_prov.access_key_secret
+            region = aws_vm.region
+    retry_transaction(read_data)
+
+    return boto.ec2.connect_to_region(region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=access_key_secret)
+
+
+@app.task
+def update_vm_status(aws_vm_id):
+    inst_id = None
+    def read_data():
+        nonlocal inst_id
+        with transaction.atomic():
+            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            inst_id = aws_vm.instance_id
+    retry_transaction(read_data)
+
+    if not inst_id:
+        log.warn('AWSVM id ‘{}’ is missing instance_id'.format(aws_vm_id))
+        return
+
+    conn = connect_to_aws_vm_region(aws_vm_id)
+    instances = conn.get_only_instances(instance_ids=[inst_id])
+    if len(instances) != 1:
+        log.warn('AWS returned {} instances, expected 1'.format(len(instances)))
+        new_status = 'Error'
+    else:
+        new_status = instances[0].state
+
+    def write_data():
+        with transaction.atomic():
+            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_vm.status = new_status
+            aws_vm.save()
+    retry_transaction(write_data)

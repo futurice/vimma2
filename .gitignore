@@ -12,4 +12,4 @@ vimmasite/vimma/migrations/0*.py
 /vimma.log*
 
 /celerybeat.pid
-/celerybeat-schedule
+/celerybeat-schedule.db

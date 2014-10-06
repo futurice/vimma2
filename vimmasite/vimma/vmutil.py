@@ -142,5 +142,7 @@ def update_vm_status(vm_id):
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.update_vm_status.delay(vm.dummyvm.id)
+    elif t == Provider.TYPE_AWS:
+        vimma.vmtype.aws.update_vm_status.delay(vm.awsvm.id)
     else:
         log.error('Unknown provider type “{}”'.format(t))
