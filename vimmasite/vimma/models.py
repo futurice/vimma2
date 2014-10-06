@@ -182,6 +182,6 @@ class AWSVM(models.Model):
     # free-form text, shown to the user
     status = models.CharField(max_length=100, blank=True)
     # AWS fields:
-    region = models.CharField(max_length=20, blank=True)
+    region = models.CharField(max_length=20)
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)

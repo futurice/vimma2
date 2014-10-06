@@ -1456,7 +1456,7 @@ class AWSVMTests(APITestCase):
 
     def test_required_fields(self):
         """
-        AWSVM requires vm.
+        AWSVM requires: vm, region.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         tz.full_clean()
@@ -1470,9 +1470,11 @@ class AWSVMTests(APITestCase):
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
 
         with self.assertRaises(ValidationError):
-            AWSVM().full_clean()
+            AWSVM(vm=vm).full_clean()
+        with self.assertRaises(ValidationError):
+            AWSVM(region='a').full_clean()
 
-        AWSVM.objects.create(vm=vm).full_clean()
+        AWSVM.objects.create(vm=vm, region='a').full_clean()
 
     def test_protected(self):
         """
@@ -1489,7 +1491,7 @@ class AWSVMTests(APITestCase):
         prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
         vm.full_clean()
-        awsVm = AWSVM.objects.create(vm=vm)
+        awsVm = AWSVM.objects.create(vm=vm, region='a')
         awsVm.full_clean()
 
         with self.assertRaises(ProtectedError):
@@ -1532,11 +1534,11 @@ class AWSVMTests(APITestCase):
         vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
         vm3.full_clean()
 
-        avm1 = AWSVM.objects.create(vm=vm1)
+        avm1 = AWSVM.objects.create(vm=vm1, region='a')
         avm1.full_clean()
-        avm2 = AWSVM.objects.create(vm=vm2)
+        avm2 = AWSVM.objects.create(vm=vm2, region='b')
         avm2.full_clean()
-        avm3 = AWSVM.objects.create(vm=vm3)
+        avm3 = AWSVM.objects.create(vm=vm3, region='a')
         avm3.full_clean()
 
         ua.profile.projects.add(p1, p2)
