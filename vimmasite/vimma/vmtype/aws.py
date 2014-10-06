@@ -6,12 +6,35 @@ import traceback
 
 from vimma.celery import app
 from vimma.models import (
+    VM,
     AWSVMConfig, AWSVM,
 )
 from vimma.util import retry_transaction
 
 
 log = logging.getLogger(__name__)
+
+
+def connect_to_aws_vm_region(aws_vm_id):
+    """
+    Return a boto EC2Connection to the given AWS VM's region.
+    """
+    access_key_id, access_key_secret, region = None, None, None
+
+    def read_data():
+        nonlocal access_key_id, access_key_secret, region
+        with transaction.atomic():
+            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_prov = aws_vm.vm.provider.awsprovider
+
+            access_key_id = aws_prov.access_key_id
+            access_key_secret = aws_prov.access_key_secret
+            region = aws_vm.region
+    retry_transaction(read_data)
+
+    return boto.ec2.connect_to_region(region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=access_key_secret)
 
 
 def create_vm(vmconfig, vm, data):
@@ -106,26 +129,31 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
     retry_transaction(update_db)
 
 
-def connect_to_aws_vm_region(aws_vm_id):
+def reboot_vm(vm_id, data):
     """
-    Return a boto EC2Connection to the given AWS VM's region.
-    """
-    access_key_id, access_key_secret, region = None, None, None
+    Reboot VM.
 
-    def read_data():
-        nonlocal access_key_id, access_key_secret, region
+    ‘data’ is not used.
+
+    This function must not be called inside a transaction.
+    """
+    aws_vm = None
+    def write_db():
+        nonlocal aws_vm
         with transaction.atomic():
-            aws_vm = AWSVM.objects.get(id=aws_vm_id)
-            aws_prov = aws_vm.vm.provider.awsprovider
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.status = 'rebooting…'
+            aws_vm.save()
+    retry_transaction(write_db)
 
-            access_key_id = aws_prov.access_key_id
-            access_key_secret = aws_prov.access_key_secret
-            region = aws_vm.region
-    retry_transaction(read_data)
+    do_reboot_vm.delay(aws_vm.id)
 
-    return boto.ec2.connect_to_region(region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key_secret)
+
+@app.task
+def do_reboot_vm(aws_vm_id):
+    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+    conn = connect_to_aws_vm_region(aws_vm_id)
+    conn.reboot_instances(instance_ids=[inst_id])
 
 
 @app.task

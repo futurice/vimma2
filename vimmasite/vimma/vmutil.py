@@ -97,6 +97,8 @@ def reboot_vm(vm, data):
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.reboot_vm(vm, data)
+    elif t == Provider.TYPE_AWS:
+        vimma.vmtype.aws.reboot_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
