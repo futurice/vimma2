@@ -129,6 +129,34 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
     retry_transaction(update_db)
 
 
+def power_off_vm(vm_id, data):
+    """
+    Power off VM.
+
+    ‘data’ is not used.
+
+    This function must not be called inside a transaction.
+    """
+    aws_vm_id = None
+    def write_db():
+        nonlocal aws_vm_id
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.status = 'powering off…'
+            aws_vm.save()
+            aws_vm_id = aws_vm.id
+    retry_transaction(write_db)
+
+    do_power_off_vm.delay(aws_vm_id)
+
+
+@app.task
+def do_power_off_vm(aws_vm_id):
+    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+    conn = connect_to_aws_vm_region(aws_vm_id)
+    conn.stop_instances(instance_ids=[inst_id])
+
+
 def reboot_vm(vm_id, data):
     """
     Reboot VM.
@@ -137,16 +165,17 @@ def reboot_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    aws_vm = None
+    aws_vm_id = None
     def write_db():
-        nonlocal aws_vm
+        nonlocal aws_vm_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.status = 'rebooting…'
             aws_vm.save()
+            aws_vm_id = aws_vm.id
     retry_transaction(write_db)
 
-    do_reboot_vm.delay(aws_vm.id)
+    do_reboot_vm.delay(aws_vm_id)
 
 
 @app.task

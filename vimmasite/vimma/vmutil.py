@@ -82,6 +82,8 @@ def power_off_vm(vm, data):
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.power_off_vm(vm.id, data)
+    elif t == Provider.TYPE_AWS:
+        vimma.vmtype.aws.power_off_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
