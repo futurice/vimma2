@@ -118,6 +118,8 @@ def destroy_vm(vm, data):
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.destroy_vm(vm.id, data)
+    elif t == Provider.TYPE_AWS:
+        vimma.vmtype.aws.destroy_vm(vm.id, data)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 

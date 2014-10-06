@@ -213,6 +213,34 @@ def do_reboot_vm(aws_vm_id):
     conn.reboot_instances(instance_ids=[inst_id])
 
 
+def destroy_vm(vm_id, data):
+    """
+    Destroy VM.
+
+    ‘data’ is not used.
+
+    This function must not be called inside a transaction.
+    """
+    aws_vm_id = None
+    def write_db():
+        nonlocal aws_vm_id
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.status = 'terminating…'
+            aws_vm.save()
+            aws_vm_id = aws_vm.id
+    retry_transaction(write_db)
+
+    do_destroy_vm.delay(aws_vm_id)
+
+
+@app.task
+def do_destroy_vm(aws_vm_id):
+    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+    conn = connect_to_aws_vm_region(aws_vm_id)
+    conn.terminate_instances(instance_ids=[inst_id])
+
+
 @app.task
 def update_vm_status(vm_id):
     aws_vm_id, inst_id = None, None
