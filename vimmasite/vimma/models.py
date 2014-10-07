@@ -167,9 +167,12 @@ class DummyVM(models.Model):
     """
     vm = models.OneToOneField(VM, on_delete=models.PROTECT)
     name = models.CharField(max_length=50)
-    # free-form text, meant to be read by the user
+
+    # Free-form text, meant to be read by the user. Simulates Vimma's local
+    # copy of the remote machine state, synced regularly by the update tasks.
     status = models.CharField(max_length=50, blank=True)
-    # these 2 fields simulate the real machine state, managed by the Provider
+
+    # these fields simulate the machine state, managed remotely by the Provider
     destroyed = models.BooleanField(default=False)
     poweredon = models.BooleanField(default=False)
 
@@ -179,9 +182,37 @@ class AWSVM(models.Model):
     Type-specific data for a VM of type Provider.TYPE_AWS.
     """
     vm = models.OneToOneField(VM, on_delete=models.PROTECT)
-    # free-form text, shown to the user
-    status = models.CharField(max_length=100, blank=True)
+    # Free-form text, shown to the user. Stores the VM state reported by AWS.
+    # Synced regularly by the update tasks.
+    state = models.CharField(max_length=100, blank=True)
     # AWS fields:
     region = models.CharField(max_length=20)
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)
+
+
+class Audit(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    # Imitating https://docs.python.org/3/library/logging.html#logging-levels
+    LVL_DEBUG = 'DEBUG'
+    LVL_INFO = 'INFO'
+    LVL_WARNING = 'WARNING'
+    LVL_ERROR = 'ERROR'
+    LEVEL_CHOICES = (
+        (LVL_DEBUG, LVL_DEBUG),
+        (LVL_INFO, LVL_INFO),
+        (LVL_WARNING, LVL_WARNING),
+        (LVL_ERROR, LVL_ERROR),
+    )
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+
+    user = models.ForeignKey(User, null=True, blank=True,
+            on_delete=models.SET_NULL)
+    vm = models.ForeignKey(VM, null=True, blank=True,
+            on_delete=models.SET_NULL)
+
+    # Constant used outside this class, e.g. to trim longer text before
+    # creating an Audit object.
+    TEXT_MAX_LENGTH=4096
+    text = models.CharField(max_length=TEXT_MAX_LENGTH)

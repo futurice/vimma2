@@ -18,6 +18,7 @@ from vimma.models import (
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
+    Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -1807,3 +1808,61 @@ class CanDoTests(TestCase):
         u1.profile.roles.add(role)
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
+
+
+class AuditTests(TestCase):
+
+    def test_required_fields(self):
+        """
+        Test required fields: level, text.
+        """
+        Audit.objects.create(level=Audit.LVL_DEBUG, text='hello').full_clean()
+        with self.assertRaises(ValidationError):
+            Audit.objects.create().full_clean()
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.LVL_DEBUG).full_clean()
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(text='hello').full_clean()
+
+    def test_on_delete_constraints(self):
+        """
+        Test on_delete constraints for user and vm fields.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+
+        a = Audit.objects.create(level=Audit.LVL_INFO, text='hi',
+                user=u, vm=vm)
+        a.full_clean()
+        a_id = a.id
+
+        u.delete()
+        self.assertEqual(Audit.objects.get(id=a_id).user, None)
+        vm.delete()
+        self.assertEqual(Audit.objects.get(id=a_id).vm, None)
+
+    def test_text_length(self):
+        """
+        Test that 0 < text length ≤ max_length.
+        """
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.LVL_DEBUG, text='').full_clean()
+
+        Audit.objects.create(level=Audit.LVL_DEBUG, text='a').full_clean()
+        Audit.objects.create(level=Audit.LVL_DEBUG,
+                text='a'*Audit.TEXT_MAX_LENGTH).full_clean()
+
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.LVL_DEBUG,
+                    text='a'*(Audit.TEXT_MAX_LENGTH+1)).full_clean()

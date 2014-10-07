@@ -24,8 +24,7 @@ def create_vm(vm, data):
     This function must be called inside a transaction. The caller must execute
     the returned callables only after committing.
     """
-    dummyVM = DummyVM.objects.create(vm=vm, name=data['name'],
-            status='creating…')
+    dummyVM = DummyVM.objects.create(vm=vm, name=data['name'])
     dummyVM.full_clean()
 
     # execute as much code as possible here (inside the transaction) not in the
@@ -47,10 +46,8 @@ def power_on_vm(vm_id, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = VM.objects.get(id=vm_id).dummyvm
-        dummy_vm.status = 'powering on…'
-        dummy_vm.save()
-    do_power_on_vm.delay(dummy_vm.id)
+        dummy_vm_id = VM.objects.get(id=vm_id).dummyvm.id
+    do_power_on_vm.delay(dummy_vm_id)
 
 
 @app.task
@@ -76,10 +73,8 @@ def power_off_vm(vm_id, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = VM.objects.get(id=vm_id).dummyvm
-        dummy_vm.status = 'powering off…'
-        dummy_vm.save()
-    do_power_off_vm.delay(dummy_vm.id)
+        dummy_vm_id = VM.objects.get(id=vm_id).dummyvm.id
+    do_power_off_vm.delay(dummy_vm_id)
 
 
 @app.task
@@ -104,10 +99,8 @@ def reboot_vm(vm_id, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = VM.objects.get(id=vm_id).dummyvm
-        dummy_vm.status = 'rebooting…'
-        dummy_vm.save()
-    do_reboot_vm.delay(dummy_vm.id)
+        dummy_vm_id = VM.objects.get(id=vm_id).dummyvm.id
+    do_reboot_vm.delay(dummy_vm_id)
 
 
 @app.task
@@ -132,10 +125,8 @@ def destroy_vm(vm_id, data):
     This function must not be called inside a transaction.
     """
     with transaction.atomic():
-        dummy_vm = VM.objects.get(id=vm_id).dummyvm
-        dummy_vm.status = 'destroying…'
-        dummy_vm.save()
-    do_destroy_vm.delay(dummy_vm.id)
+        dummy_vm_id = VM.objects.get(id=vm_id).dummyvm.id
+    do_destroy_vm.delay(dummy_vm_id)
 
 
 @app.task

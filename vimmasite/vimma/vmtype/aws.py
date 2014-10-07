@@ -47,8 +47,7 @@ def create_vm(vmconfig, vm, data):
     """
     aws_vm_config = vmconfig.awsvmconfig
 
-    aws_vm = AWSVM.objects.create(vm=vm, status='scheduled for creation…',
-            region=data['region'])
+    aws_vm = AWSVM.objects.create(vm=vm, region=data['region'])
     aws_vm.full_clean()
 
     callables = [lambda: do_create_vm.delay(aws_vm_config.id, aws_vm.id)]
@@ -71,7 +70,10 @@ def do_create_vm(aws_vm_config_id, aws_vm_id):
                 # lines = traceback.format_exception_only(*sys.exc_info()[:2])
                 # msg = ''.join(lines)
                 # aws_vm.status = msg[:status_field.max_length]
-                aws_vm.status = 'Error (check logs)'
+
+                # FIXME: Audit not status
+                #aws_vm.status = 'Error (check logs)'
+
                 aws_vm.save()
         retry_transaction(set_status_error)
 
@@ -133,13 +135,10 @@ def power_on_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    def write_db():
+    def read_db():
         with transaction.atomic():
-            aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm.status = 'powering on…'
-            aws_vm.save()
-            return aws_vm.id
-    aws_vm_id = retry_transaction(write_db)
+            return VM.objects.get(id=vm_id).awsvm.id
+    aws_vm_id = retry_transaction(read_db)
 
     do_power_on_vm.delay(aws_vm_id)
 
@@ -159,13 +158,10 @@ def power_off_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    def write_db():
+    def read_db():
         with transaction.atomic():
-            aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm.status = 'powering off…'
-            aws_vm.save()
-            return aws_vm.id
-    aws_vm_id = retry_transaction(write_db)
+            return VM.objects.get(id=vm_id).awsvm.id
+    aws_vm_id = retry_transaction(read_db)
 
     do_power_off_vm.delay(aws_vm_id)
 
@@ -185,13 +181,10 @@ def reboot_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    def write_db():
+    def read_db():
         with transaction.atomic():
-            aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm.status = 'rebooting…'
-            aws_vm.save()
-            return aws_vm.id
-    aws_vm_id = retry_transaction(write_db)
+            return VM.objects.get(id=vm_id).awsvm.id
+    aws_vm_id = retry_transaction(read_db)
 
     do_reboot_vm.delay(aws_vm_id)
 
@@ -211,13 +204,10 @@ def destroy_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    def write_db():
+    def read_db():
         with transaction.atomic():
-            aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm.status = 'terminating…'
-            aws_vm.save()
-            return aws_vm.id
-    aws_vm_id = retry_transaction(write_db)
+            return VM.objects.get(id=vm_id).awsvm.id
+    aws_vm_id = retry_transaction(read_db)
 
     do_destroy_vm.delay(aws_vm_id)
 
@@ -245,13 +235,13 @@ def update_vm_status(vm_id):
     instances = conn.get_only_instances(instance_ids=[inst_id])
     if len(instances) != 1:
         log.warn('AWS returned {} instances, expected 1'.format(len(instances)))
-        new_status = 'Error'
+        new_state = 'Error'
     else:
-        new_status = instances[0].state
+        new_state = instances[0].state
 
     def write_data():
         with transaction.atomic():
             aws_vm = AWSVM.objects.get(id=aws_vm_id)
-            aws_vm.status = new_status
+            aws_vm.state = new_state
             aws_vm.save()
     retry_transaction(write_data)
