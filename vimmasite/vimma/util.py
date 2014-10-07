@@ -115,14 +115,15 @@ def schedule_at_tstamp(schedule, tstamp):
 
 def retry_transaction(call, max_retries=5, start_delay_millis=100):
     """
-    Call ‘call’, if it fails retry up to max_retries with exponential backoff.
+    Call ‘call’ and return its return values.
 
-    Wait random(0, start_delay_millis*2**i) before retry i.
+    If it raises an OperationalError, retry up to max_retries with exponential
+    backoff.
+    Wait random(0, start_delay_millis*2**i) before retry i, 0≤i<max_retries.
     """
     while True:
         try:
-            call()
-            return
+            return call()
         except OperationalError:
             if max_retries > 0:
                 max_retries -= 1

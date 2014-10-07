@@ -19,18 +19,14 @@ def connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto EC2Connection to the given AWS VM's region.
     """
-    access_key_id, access_key_secret, region = None, None, None
-
     def read_data():
-        nonlocal access_key_id, access_key_secret, region
         with transaction.atomic():
             aws_vm = AWSVM.objects.get(id=aws_vm_id)
             aws_prov = aws_vm.vm.provider.awsprovider
 
-            access_key_id = aws_prov.access_key_id
-            access_key_secret = aws_prov.access_key_secret
-            region = aws_vm.region
-    retry_transaction(read_data)
+            return (aws_prov.access_key_id, aws_prov.access_key_secret,
+                    aws_vm.region)
+    access_key_id, access_key_secret, region = retry_transaction(read_data)
 
     return boto.ec2.connect_to_region(region,
             aws_access_key_id=access_key_id,
@@ -137,15 +133,13 @@ def power_on_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    aws_vm_id = None
     def write_db():
-        nonlocal aws_vm_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.status = 'powering on…'
             aws_vm.save()
-            aws_vm_id = aws_vm.id
-    retry_transaction(write_db)
+            return aws_vm.id
+    aws_vm_id = retry_transaction(write_db)
 
     do_power_on_vm.delay(aws_vm_id)
 
@@ -165,15 +159,13 @@ def power_off_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    aws_vm_id = None
     def write_db():
-        nonlocal aws_vm_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.status = 'powering off…'
             aws_vm.save()
-            aws_vm_id = aws_vm.id
-    retry_transaction(write_db)
+            return aws_vm.id
+    aws_vm_id = retry_transaction(write_db)
 
     do_power_off_vm.delay(aws_vm_id)
 
@@ -193,15 +185,13 @@ def reboot_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    aws_vm_id = None
     def write_db():
-        nonlocal aws_vm_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.status = 'rebooting…'
             aws_vm.save()
-            aws_vm_id = aws_vm.id
-    retry_transaction(write_db)
+            return aws_vm.id
+    aws_vm_id = retry_transaction(write_db)
 
     do_reboot_vm.delay(aws_vm_id)
 
@@ -221,15 +211,13 @@ def destroy_vm(vm_id, data):
 
     This function must not be called inside a transaction.
     """
-    aws_vm_id = None
     def write_db():
-        nonlocal aws_vm_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.status = 'terminating…'
             aws_vm.save()
-            aws_vm_id = aws_vm.id
-    retry_transaction(write_db)
+            return aws_vm.id
+    aws_vm_id = retry_transaction(write_db)
 
     do_destroy_vm.delay(aws_vm_id)
 
@@ -243,14 +231,11 @@ def do_destroy_vm(aws_vm_id):
 
 @app.task
 def update_vm_status(vm_id):
-    aws_vm_id, inst_id = None, None
     def read_data():
-        nonlocal aws_vm_id, inst_id
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm_id = aws_vm.id
-            inst_id = aws_vm.instance_id
-    retry_transaction(read_data)
+            return aws_vm.id, aws_vm.instance_id
+    aws_vm_id, inst_id = retry_transaction(read_data)
 
     if not inst_id:
         log.warn('AWSVM id ‘{}’ is missing instance_id'.format(aws_vm_id))
