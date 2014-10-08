@@ -6,6 +6,7 @@ from django.core.urlresolvers import reverse
 from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.test import TestCase
+from django.utils.timezone import utc
 import json
 import pytz
 from rest_framework import status
@@ -1866,3 +1867,14 @@ class AuditTests(TestCase):
         with self.assertRaises(ValidationError):
             Audit.objects.create(level=Audit.LVL_DEBUG,
                     text='a'*(Audit.TEXT_MAX_LENGTH+1)).full_clean()
+
+
+    def test_timestamp(self):
+        """
+        Test that timestamp is the time of creation.
+        """
+        a = Audit.objects.create(level=Audit.LVL_DEBUG, text='a')
+        a.full_clean()
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        delta = now - a.timestamp
+        self.assertTrue(delta <= datetime.timedelta(minutes=1))
