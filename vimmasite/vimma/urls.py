@@ -7,6 +7,7 @@ from vimma.views import (
     ProviderViewSet, DummyProviderViewSet, AWSProviderViewSet,
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
+    AuditViewSet,
     index, test, create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
 )
 
@@ -26,6 +27,7 @@ router.register(r'awsvmconfigs', AWSVMConfigViewSet)
 router.register(r'vms', VMViewSet)
 router.register(r'dummyvms', DummyVMViewSet)
 router.register(r'awsvm', AWSVMViewSet)
+router.register(r'audit', AuditViewSet)
 
 urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),

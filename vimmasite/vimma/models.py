@@ -207,12 +207,13 @@ class Audit(models.Model):
     )
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
 
-    user = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL)
-    vm = models.ForeignKey(VM, null=True, blank=True,
-            on_delete=models.SET_NULL)
-
     # Constant used outside this class, e.g. to trim longer text before
     # creating an Audit object.
     TEXT_MAX_LENGTH=4096
     text = models.CharField(max_length=TEXT_MAX_LENGTH)
+
+    # Objects this audit message is related to, if any
+    user = models.ForeignKey(User, null=True, blank=True,
+            on_delete=models.SET_NULL)
+    vm = models.ForeignKey(VM, null=True, blank=True,
+            on_delete=models.SET_NULL)

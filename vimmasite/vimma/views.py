@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render
 import json
@@ -16,6 +17,7 @@ from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
+    Audit,
 )
 from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
@@ -156,6 +158,22 @@ class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
         projects = user.profile.projects.all()
         prj_ids = [p.id for p in projects]
         return AWSVM.objects.filter(vm__project__id__in=prj_ids)
+
+
+class AuditViewSet(viewsets.ReadOnlyModelViewSet):
+    model = Audit
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vm', 'user')
+
+    def get_queryset(self):
+        user = self.request.user
+        if can_do(user, Actions.READ_ALL_AUDITS):
+            return Audit.objects.filter()
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
+                Q(user__id=user.id))
 
 
 @login_required_or_forbidden

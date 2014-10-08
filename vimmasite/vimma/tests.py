@@ -1847,6 +1847,7 @@ class AuditTests(TestCase):
                 user=u, vm=vm)
         a.full_clean()
         a_id = a.id
+        del a
 
         u.delete()
         self.assertEqual(Audit.objects.get(id=a_id).user, None)
@@ -1878,3 +1879,109 @@ class AuditTests(TestCase):
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         delta = now - a.timestamp
         self.assertTrue(delta <= datetime.timedelta(minutes=1))
+
+
+    def test_api_permissions(self):
+        """
+        Users can read Audit objects if they are in the ‘user’ field or a VM
+        in one of their projects is in the ‘vm’ field.
+        The API is read-only.
+        """
+        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
+        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
+        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
+        pD.full_clean()
+        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
+        pS.full_clean()
+
+        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
+        vmD.full_clean()
+        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
+        vmS.full_clean()
+
+        uF.profile.projects.add(pD)
+        uH.profile.projects.add(pD, pS)
+
+        perm = Permission.objects.create(name=Perms.READ_ALL_AUDITS)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        uB.profile.roles.add(role)
+
+        Audit.objects.create(level=Audit.LVL_INFO, vm=vmD, user=None,
+                text='vmd-').full_clean()
+        Audit.objects.create(level=Audit.LVL_INFO, vm=None, user=uF,
+                text='-fry').full_clean()
+        Audit.objects.create(level=Audit.LVL_INFO, vm=vmS, user=uF,
+                text='vms-fry').full_clean()
+        Audit.objects.create(level=Audit.LVL_INFO, vm=vmS, user=None,
+                text='vms-').full_clean()
+        Audit.objects.create(level=Audit.LVL_INFO, vm=None, user=None,
+                text='-').full_clean()
+
+        def check_user_sees(username, text_set):
+            """
+            Check that username sees all audits in text_set and nothing else.
+            """
+            self.assertTrue(self.client.login(username=username, password='-'))
+            response = self.client.get(reverse('audit-list'))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = response.data['results']
+            self.assertEqual({x['text'] for x in items}, text_set)
+
+        check_user_sees('Fry', {'vmd-', '-fry', 'vms-fry'})
+        check_user_sees('Hubert', {'vmd-', 'vms-fry', 'vms-'})
+        check_user_sees('Bender', {'vmd-', '-fry', 'vms-fry', 'vms-', '-'})
+
+        # Test Filtering
+
+        # filter by .vm field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('audit-list') + '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['text'] for x in items}, {'vms-fry'})
+
+        # filter by .user field
+        self.assertTrue(self.client.login(username='Bender', password='-'))
+        response = self.client.get(reverse('audit-list') +
+                '?user=' + str(uF.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['text'] for x in items}, {'-fry', 'vms-fry'})
+
+        # test write operations
+
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        a_id = Audit.objects.filter(vm=vmS, user=uF)[0].id
+        response = self.client.get(reverse('audit-detail', args=[a_id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('audit-detail', args=[a_id]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('audit-detail', args=[a_id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('audit-list'), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
