@@ -14,6 +14,8 @@ def parse_args():
 
 
 def reset():
+    if os.path.lexists(util.DB_FILE):
+        os.remove(util.DB_FILE)
     subprocess.check_call([os.path.join(util.UTIL_DIR, 'migrations-reset.py')])
     subprocess.check_call([util.MANAGE_PY, 'migrate'],
             env=util.os_environ_with_venv())

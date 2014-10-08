@@ -12,7 +12,7 @@ MIGRATIONS_DIR = os.path.join(util.PRJ_ROOT, 'vimmasite/vimma/migrations')
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description='''Delete DB & migrations then
+    p = argparse.ArgumentParser(description='''Delete then
         make migrations in {}'''.format(MIGRATIONS_DIR))
     return p.parse_args()
 
@@ -20,8 +20,6 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    if os.path.lexists(util.DB_FILE):
-        os.remove(util.DB_FILE)
     if os.path.lexists(MIGRATIONS_DIR):
         shutil.rmtree(MIGRATIONS_DIR)
 
