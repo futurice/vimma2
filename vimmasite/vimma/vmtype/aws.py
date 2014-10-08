@@ -1,9 +1,9 @@
 import boto.ec2
 from django.db import transaction
-import logging
 import sys
 import traceback
 
+from vimma.audit import getAuditor
 from vimma.celery import app
 from vimma.models import (
     VM,
@@ -12,7 +12,7 @@ from vimma.models import (
 from vimma.util import retry_transaction
 
 
-log = logging.getLogger(__name__)
+aud = getAuditor(__name__)
 
 
 def connect_to_aws_vm_region(aws_vm_id):
@@ -33,7 +33,7 @@ def connect_to_aws_vm_region(aws_vm_id):
             aws_secret_access_key=access_key_secret)
 
 
-def create_vm(vmconfig, vm, data):
+def create_vm(vmconfig, vm, data, user_id=None):
     """
     Create an AWS VM from vmconfig & data, linking to parent ‘vm’.
     
@@ -50,18 +50,19 @@ def create_vm(vmconfig, vm, data):
     aws_vm = AWSVM.objects.create(vm=vm, region=data['region'])
     aws_vm.full_clean()
 
-    callables = [lambda: do_create_vm.delay(aws_vm_config.id, aws_vm.id)]
+    callables = [lambda: do_create_vm.delay(aws_vm_config.id, aws_vm.id,
+        user_id)]
     return aws_vm, callables
 
 
 
 @app.task
-def do_create_vm(aws_vm_config_id, aws_vm_id):
+def do_create_vm(aws_vm_config_id, aws_vm_id, user_id):
     try:
-        do_create_vm_impl(aws_vm_config_id, aws_vm_id)
+        do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id)
     except:
         msg = traceback.format_exc()
-        log.error(msg)
+        aud.error(msg, user_id=user_id)
 
         def set_status_error():
             with transaction.atomic():
@@ -80,7 +81,7 @@ def do_create_vm(aws_vm_config_id, aws_vm_id):
         raise
 
 
-def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
+def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
     """
     The implementation for the similarly named task.
 
@@ -91,14 +92,17 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
 
     access_key_id, access_key_secret = None, None
     region, ami_id, instance_type = None, None, None
+    vm_id = None
 
     def read_vars():
         nonlocal access_key_id, access_key_secret
         nonlocal region, ami_id, instance_type
+        nonlocal vm_id
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
             aws_prov = aws_vm_config.vmconfig.provider.awsprovider
             aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            vm_id = aws_vm.vm.id
 
             access_key_id = aws_prov.access_key_id
             access_key_secret = aws_prov.access_key_secret
@@ -114,6 +118,8 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
     reservation = conn.run_instances(ami_id,
             instance_type=instance_type)
 
+    aud.info('Created AWS VM', user_id=user_id, vm_id=vm_id)
+
     # By now, the DB state (e.g. fields we don't care about) may have changed.
     # Don't overwrite the DB with our stale field values (from before the API
     # calls). Instead, read&update the DB.
@@ -127,7 +133,7 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id):
     retry_transaction(update_db)
 
 
-def power_on_vm(vm_id, data):
+def power_on_vm(vm_id, data, user_id=None):
     """
     Power on VM.
 
@@ -140,17 +146,23 @@ def power_on_vm(vm_id, data):
             return VM.objects.get(id=vm_id).awsvm.id
     aws_vm_id = retry_transaction(read_db)
 
-    do_power_on_vm.delay(aws_vm_id)
+    do_power_on_vm.delay(aws_vm_id, user_id)
 
 
 @app.task
-def do_power_on_vm(aws_vm_id):
-    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+def do_power_on_vm(aws_vm_id, user_id):
+    with transaction.atomic():
+        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        inst_id = aws_vm.instance_id
+        vm_id = aws_vm.vm.id
+        del aws_vm
+
     conn = connect_to_aws_vm_region(aws_vm_id)
     conn.start_instances(instance_ids=[inst_id])
+    aud.info('Started instance', vm_id=vm_id, user_id=user_id)
 
 
-def power_off_vm(vm_id, data):
+def power_off_vm(vm_id, data, user_id=None):
     """
     Power off VM.
 
@@ -163,17 +175,23 @@ def power_off_vm(vm_id, data):
             return VM.objects.get(id=vm_id).awsvm.id
     aws_vm_id = retry_transaction(read_db)
 
-    do_power_off_vm.delay(aws_vm_id)
+    do_power_off_vm.delay(aws_vm_id, user_id=user_id)
 
 
 @app.task
-def do_power_off_vm(aws_vm_id):
-    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+def do_power_off_vm(aws_vm_id, user_id=None):
+    with transaction.atomic():
+        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        inst_id = aws_vm.instance_id
+        vm_id = aws_vm.vm.id
+        del aws_vm
+
     conn = connect_to_aws_vm_region(aws_vm_id)
     conn.stop_instances(instance_ids=[inst_id])
+    aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
 
 
-def reboot_vm(vm_id, data):
+def reboot_vm(vm_id, data, user_id=None):
     """
     Reboot VM.
 
@@ -186,17 +204,23 @@ def reboot_vm(vm_id, data):
             return VM.objects.get(id=vm_id).awsvm.id
     aws_vm_id = retry_transaction(read_db)
 
-    do_reboot_vm.delay(aws_vm_id)
+    do_reboot_vm.delay(aws_vm_id, user_id=user_id)
 
 
 @app.task
-def do_reboot_vm(aws_vm_id):
-    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+def do_reboot_vm(aws_vm_id, user_id=None):
+    with transaction.atomic():
+        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        inst_id = aws_vm.instance_id
+        vm_id = aws_vm.vm.id
+        del aws_vm
+
     conn = connect_to_aws_vm_region(aws_vm_id)
     conn.reboot_instances(instance_ids=[inst_id])
+    aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
 
 
-def destroy_vm(vm_id, data):
+def destroy_vm(vm_id, data, user_id=None):
     """
     Destroy VM.
 
@@ -209,14 +233,20 @@ def destroy_vm(vm_id, data):
             return VM.objects.get(id=vm_id).awsvm.id
     aws_vm_id = retry_transaction(read_db)
 
-    do_destroy_vm.delay(aws_vm_id)
+    do_destroy_vm.delay(aws_vm_id, user_id=user_id)
 
 
 @app.task
-def do_destroy_vm(aws_vm_id):
-    inst_id = AWSVM.objects.get(id=aws_vm_id).instance_id
+def do_destroy_vm(aws_vm_id, user_id=None):
+    with transaction.atomic():
+        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        inst_id = aws_vm.instance_id
+        vm_id = aws_vm.vm.id
+        del aws_vm
+
     conn = connect_to_aws_vm_region(aws_vm_id)
     conn.terminate_instances(instance_ids=[inst_id])
+    aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
 
 
 @app.task
@@ -228,13 +258,14 @@ def update_vm_status(vm_id):
     aws_vm_id, inst_id = retry_transaction(read_data)
 
     if not inst_id:
-        log.warn('AWSVM id ‘{}’ is missing instance_id'.format(aws_vm_id))
+        aud.warn('missing instance_id', vm_id=vm_id)
         return
 
     conn = connect_to_aws_vm_region(aws_vm_id)
     instances = conn.get_only_instances(instance_ids=[inst_id])
     if len(instances) != 1:
-        log.warn('AWS returned {} instances, expected 1'.format(len(instances)))
+        aud.warn('AWS returned {} instances, expected 1'.format(len(instances)),
+                vm_id=vm_id)
         new_state = 'Error'
     else:
         new_state = instances[0].state

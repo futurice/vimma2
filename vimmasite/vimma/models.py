@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
+import logging
 
 
 class Permission(models.Model):
@@ -205,6 +206,13 @@ class Audit(models.Model):
         (WARNING, WARNING),
         (ERROR, ERROR),
     )
+    # corresponding logging.X level from the standard library
+    STD_LEVEL = {
+        DEBUG: logging.DEBUG,
+        INFO: logging.INFO,
+        WARNING: logging.WARNING,
+        ERROR: logging.ERROR,
+    }
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
 
     # Constant used outside this class, e.g. to trim longer text before

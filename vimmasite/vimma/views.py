@@ -4,7 +4,6 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render
 import json
-import logging
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
@@ -13,17 +12,18 @@ import sys
 import traceback
 
 from vimma import vmutil
+from vimma.actions import Actions
+from vimma.audit import getAuditor
 from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
     Audit,
 )
-from vimma.actions import Actions
 from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
 
 
-log = logging.getLogger(__name__)
+aud = getAuditor(__name__)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -233,12 +233,13 @@ def create_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.create_vm(vmconf, prj, schedule, body['data'])
+        vmutil.create_vm(vmconf, prj, schedule, body['data'],
+                user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        log.error(msg)
+        aud.error(msg, user_id=request.user.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -274,12 +275,12 @@ def power_on_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.power_on_vm(vm, body['data'])
+        vmutil.power_on_vm(vm, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        log.error(msg)
+        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -315,12 +316,12 @@ def power_off_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.power_off_vm(vm, body['data'])
+        vmutil.power_off_vm(vm, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        log.error(msg)
+        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -356,12 +357,12 @@ def reboot_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.reboot_vm(vm, body['data'])
+        vmutil.reboot_vm(vm, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        log.error(msg)
+        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -397,10 +398,10 @@ def destroy_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.destroy_vm(vm, body['data'])
+        vmutil.destroy_vm(vm, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        log.error(msg)
+        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
