@@ -195,15 +195,15 @@ class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     # Imitating https://docs.python.org/3/library/logging.html#logging-levels
-    LVL_DEBUG = 'DEBUG'
-    LVL_INFO = 'INFO'
-    LVL_WARNING = 'WARNING'
-    LVL_ERROR = 'ERROR'
+    DEBUG = 'DEBUG'
+    INFO = 'INFO'
+    WARNING = 'WARNING'
+    ERROR = 'ERROR'
     LEVEL_CHOICES = (
-        (LVL_DEBUG, LVL_DEBUG),
-        (LVL_INFO, LVL_INFO),
-        (LVL_WARNING, LVL_WARNING),
-        (LVL_ERROR, LVL_ERROR),
+        (DEBUG, DEBUG),
+        (INFO, INFO),
+        (WARNING, WARNING),
+        (ERROR, ERROR),
     )
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
 

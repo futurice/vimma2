@@ -1817,11 +1817,11 @@ class AuditTests(TestCase):
         """
         Test required fields: level, text.
         """
-        Audit.objects.create(level=Audit.LVL_DEBUG, text='hello').full_clean()
+        Audit.objects.create(level=Audit.DEBUG, text='hello').full_clean()
         with self.assertRaises(ValidationError):
             Audit.objects.create().full_clean()
         with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.LVL_DEBUG).full_clean()
+            Audit.objects.create(level=Audit.DEBUG).full_clean()
         with self.assertRaises(ValidationError):
             Audit.objects.create(text='hello').full_clean()
 
@@ -1843,7 +1843,7 @@ class AuditTests(TestCase):
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
         vm.full_clean()
 
-        a = Audit.objects.create(level=Audit.LVL_INFO, text='hi',
+        a = Audit.objects.create(level=Audit.INFO, text='hi',
                 user=u, vm=vm)
         a.full_clean()
         a_id = a.id
@@ -1859,14 +1859,14 @@ class AuditTests(TestCase):
         Test that 0 < text length ≤ max_length.
         """
         with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.LVL_DEBUG, text='').full_clean()
+            Audit.objects.create(level=Audit.DEBUG, text='').full_clean()
 
-        Audit.objects.create(level=Audit.LVL_DEBUG, text='a').full_clean()
-        Audit.objects.create(level=Audit.LVL_DEBUG,
+        Audit.objects.create(level=Audit.DEBUG, text='a').full_clean()
+        Audit.objects.create(level=Audit.DEBUG,
                 text='a'*Audit.TEXT_MAX_LENGTH).full_clean()
 
         with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.LVL_DEBUG,
+            Audit.objects.create(level=Audit.DEBUG,
                     text='a'*(Audit.TEXT_MAX_LENGTH+1)).full_clean()
 
 
@@ -1874,7 +1874,7 @@ class AuditTests(TestCase):
         """
         Test that timestamp is the time of creation.
         """
-        a = Audit.objects.create(level=Audit.LVL_DEBUG, text='a')
+        a = Audit.objects.create(level=Audit.DEBUG, text='a')
         a.full_clean()
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         delta = now - a.timestamp
@@ -1919,15 +1919,15 @@ class AuditTests(TestCase):
         role.permissions.add(perm)
         uB.profile.roles.add(role)
 
-        Audit.objects.create(level=Audit.LVL_INFO, vm=vmD, user=None,
+        Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
                 text='vmd-').full_clean()
-        Audit.objects.create(level=Audit.LVL_INFO, vm=None, user=uF,
+        Audit.objects.create(level=Audit.INFO, vm=None, user=uF,
                 text='-fry').full_clean()
-        Audit.objects.create(level=Audit.LVL_INFO, vm=vmS, user=uF,
+        Audit.objects.create(level=Audit.INFO, vm=vmS, user=uF,
                 text='vms-fry').full_clean()
-        Audit.objects.create(level=Audit.LVL_INFO, vm=vmS, user=None,
+        Audit.objects.create(level=Audit.INFO, vm=vmS, user=None,
                 text='vms-').full_clean()
-        Audit.objects.create(level=Audit.LVL_INFO, vm=None, user=None,
+        Audit.objects.create(level=Audit.INFO, vm=None, user=None,
                 text='-').full_clean()
 
         def check_user_sees(username, text_set):
