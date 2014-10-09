@@ -226,14 +226,14 @@ def update_vm_status(vm_id):
     aws_vm_id, inst_id = retry_transaction(read_data)
 
     if not inst_id:
-        aud.warn('missing instance_id', vm_id=vm_id)
+        aud.warning('missing instance_id', vm_id=vm_id)
         return
 
     conn = connect_to_aws_vm_region(aws_vm_id)
     instances = conn.get_only_instances(instance_ids=[inst_id])
     if len(instances) != 1:
-        aud.warn('AWS returned {} instances, expected 1'.format(len(instances)),
-                vm_id=vm_id)
+        aud.warning('AWS returned {} instances, expected 1'.format(
+            len(instances)), vm_id=vm_id)
         new_state = 'Error'
     else:
         new_state = instances[0].state
