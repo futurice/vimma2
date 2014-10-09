@@ -20,7 +20,7 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
     The data arg is specific to the provider type.
     This function must not be called inside a transaction.
     """
-    aud.info(('Create VM: config ‘{.name}’, project ‘{.name}’, ' +
+    aud.debug(('Request to create VM: config ‘{.name}’, project ‘{.name}’, ' +
         'schedule ‘{.name}’, data ‘{}’').format(vmconfig, project, schedule,
             data), user_id=user_id)
     # The transaction guarantees that if the vmtype.* call fails, the generic
@@ -41,8 +41,6 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
                     user_id=user_id)
         else:
             raise ValueError('Unknown provider type “{}”'.format(prov.type))
-
-    aud.info('Created a new VM', user_id=user_id, vm_id=vm.id)
 
     for c in callables:
         c()
@@ -69,7 +67,8 @@ def power_on_vm(vm, data, user_id=None):
     # Unlike create_vm(), this function doesn't make DB writes which must be
     # undone if the vmtype.* call fails. So not starting a transaction here.
     # Although both this function and the callee access related DB data.
-    aud.info('Power ON, data ‘{}’'.format(data), vm_id=vm.id, user_id=user_id)
+    aud.debug('Request to Power ON, data ‘{}’'.format(data),
+            vm_id=vm.id, user_id=user_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.power_on_vm(vm.id, data, user_id=user_id)
@@ -86,7 +85,8 @@ def power_off_vm(vm, data, user_id=None):
     The data arg is specific to the provider type.
     This function must not be called inside a transaction.
     """
-    aud.info('Power OFF, data ‘{}’'.format(data), vm_id=vm.id, user_id=user_id)
+    aud.debug('Request to Power OFF, data ‘{}’'.format(data),
+            vm_id=vm.id, user_id=user_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.power_off_vm(vm.id, data, user_id=user_id)
@@ -103,7 +103,8 @@ def reboot_vm(vm, data, user_id=None):
     The data arg is specific to the provider type.
     This function must not be called inside a transaction.
     """
-    aud.info('Reboot, data ‘{}’'.format(data), vm_id=vm.id, user_id=user_id)
+    aud.debug('Request to Reboot, data ‘{}’'.format(data),
+            vm_id=vm.id, user_id=user_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.reboot_vm(vm.id, data, user_id=user_id)
@@ -120,7 +121,8 @@ def destroy_vm(vm, data, user_id=None):
     The data arg is specific to the provider type.
     This function must not be called inside a transaction.
     """
-    aud.info('Destroy, data ‘{}’'.format(data), vm_id=vm.id, user_id=user_id)
+    aud.debug('Request to Destroy, data ‘{}’'.format(data),
+            vm_id=vm.id, user_id=user_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:
         vimma.vmtype.dummy.destroy_vm(vm.id, data, user_id=user_id)
@@ -138,6 +140,7 @@ def update_all_vms_status():
     These tasks get the VM status from the (remote) provider and update the
     VM object.
     """
+    aud.debug('Update status of all VMs')
     with transaction.atomic():
         vm_ids = map(lambda v: v.id, VM.objects.filter())
     for x in vm_ids:
@@ -152,6 +155,7 @@ def update_vm_status(vm_id):
     """
     Check & update the status of the VM.
     """
+    aud.debug('Request status update', vm_id=vm_id)
     vm = VM.objects.get(id=vm_id)
     t = vm.provider.type
     if t == Provider.TYPE_DUMMY:

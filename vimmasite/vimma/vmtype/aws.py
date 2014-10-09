@@ -63,21 +63,6 @@ def do_create_vm(aws_vm_config_id, aws_vm_id, user_id):
     except:
         msg = traceback.format_exc()
         aud.error(msg, user_id=user_id)
-
-        def set_status_error():
-            with transaction.atomic():
-                aws_vm = AWSVM.objects.get(id=aws_vm_id)
-                # ideally:
-                # lines = traceback.format_exception_only(*sys.exc_info()[:2])
-                # msg = ''.join(lines)
-                # aws_vm.status = msg[:status_field.max_length]
-
-                # FIXME: Audit not status
-                #aws_vm.status = 'Error (check logs)'
-
-                aws_vm.save()
-        retry_transaction(set_status_error)
-
         raise
 
 
@@ -118,7 +103,14 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
     reservation = conn.run_instances(ami_id,
             instance_type=instance_type)
 
-    aud.info('Created AWS VM', user_id=user_id, vm_id=vm_id)
+    aud.info('Got AWS reservation', user_id=user_id, vm_id=vm_id)
+
+    inst_id = ''
+    if len(reservation.instances) != 1:
+        aud.error('AWS reservation has {} instances, expected 1'.format(
+            len(reservation.instances)), user_id=user_id, vm_id=vm_id)
+    else:
+        inst_id = reservation.instances[0].id
 
     # By now, the DB state (e.g. fields we don't care about) may have changed.
     # Don't overwrite the DB with our stale field values (from before the API
@@ -128,7 +120,7 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
         with transaction.atomic():
             aws_vm = AWSVM.objects.get(id=aws_vm_id)
             aws_vm.reservation_id = reservation.id
-            aws_vm.instance_id = reservation.instances[0].id
+            aws_vm.instance_id = inst_id
             aws_vm.save()
     retry_transaction(update_db)
 
@@ -276,3 +268,4 @@ def update_vm_status(vm_id):
             aws_vm.state = new_state
             aws_vm.save()
     retry_transaction(write_data)
+    aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)

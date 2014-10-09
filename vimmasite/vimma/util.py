@@ -5,17 +5,17 @@ from django.db import transaction
 from django.db.utils import OperationalError
 from django.http import HttpResponse
 import json
-import logging
 import pytz
 import random
 import time
 
+from vimma.audit import Auditor
 from vimma.models import Profile
 from vimma.perms import Perms
 from vimma.actions import Actions
 
 
-log = logging.getLogger(__name__)
+aud = Auditor(__name__)
 
 
 @transaction.atomic
@@ -98,7 +98,7 @@ def can_do(user, what, data=None):
     elif what == Actions.READ_ALL_AUDITS:
         return has_perm(user, Perms.READ_ALL_AUDITS)
     else:
-        log.warn('Unknown action “{}”'.format(action))
+        aud.warning('Unknown action “{}”'.format(action))
         return False
 
 
