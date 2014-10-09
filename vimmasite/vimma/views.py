@@ -162,8 +162,9 @@ class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     model = Audit
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('vm', 'user')
+    ordering = ('-timestamp')
 
     def get_queryset(self):
         user = self.request.user

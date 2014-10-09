@@ -1,0 +1,51 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="audit-display" attributes="vmid userid"
+  on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
+  <template>
+    <button on-click="{{reload}}"disabled?="{{ajaxInProgress}}">
+      Refresh logs
+    </button>
+    <br>
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{loadingSucceeded}}">
+        <template bind ref="main"></template>
+      </template>
+    </template>
+
+    <template if="{{!ajaxInProgress && !ajaxSuccess}}">
+      <br>
+      <error-display text={{ajaxErrTxt}}></error-display>
+    </template>
+
+    <template id="main">
+      <table>
+        <template repeat="{{shownAuditItems}}">
+          <tr>
+            <td>{{timestamp}}</td>
+            <td>{{level}}</td>
+            <td>{{vm || '—'}}</td>
+            <td>{{user || '–'}}</td>
+            <td>{{text}}</td>
+          </tr>
+        </template>
+      </table>
+      <template if="{{shownAuditItems.length < allAuditItems.length}}">
+        <button type="button" on-click="{{showMore}}">Show more</button>
+      </template>
+      <br>
+      Showing {{shownAuditItems.length}} of {{allAuditItems.length}}.
+    </template>
+  </template>
+
+  <script src="audit-display.js"></script>
+</polymer-element>

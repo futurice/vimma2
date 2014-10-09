@@ -3,7 +3,8 @@ Polymer('index-elem', {
     tabIds: {
         SCHEDULES: 'schedules',
         PROJECTS: 'projects',
-        VMS: 'vms'
+        VMS: 'vms',
+        AUDIT: 'audit'
     },
     onCoreSelect: function(e, detail, sender) {
         if (detail.isSelected) {

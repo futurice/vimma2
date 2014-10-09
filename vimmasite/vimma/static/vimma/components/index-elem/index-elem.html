@@ -5,6 +5,7 @@
 <link rel="import" href="../schedule-list/schedule-list.html">
 <link rel="import" href="../projects-tab/projects-tab.html">
 <link rel="import" href="../vm-list/vm-list.html">
+<link rel="import" href="../audit-display/audit-display.html">
 
 <polymer-element name="index-elem" on-core-select="{{onCoreSelect}}">
   <template>
@@ -12,6 +13,7 @@
       <paper-tab id="{{tabIds.VMS}}">VMs</paper-tab>
       <paper-tab id="{{tabIds.PROJECTS}}">Projects</paper-tab>
       <paper-tab id="{{tabIds.SCHEDULES}}">Schedules</paper-tab>
+      <paper-tab id="{{tabIds.AUDIT}}">Audit (logs)</paper-tab>
     </paper-tabs>
 
     <template if="{{selectedId == tabIds.SCHEDULES}}">
@@ -24,6 +26,10 @@
 
     <template if="{{selectedId == tabIds.VMS}}">
       <vm-list></vm-list>
+    </template>
+
+    <template if="{{selectedId == tabIds.AUDIT}}">
+      <audit-display></audit-display>
     </template>
   </template>
 
