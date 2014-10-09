@@ -51,7 +51,12 @@ class Auditor():
 
         The message goes to both a new Audit object and Python's Standard
         Logging.
+        This method tries to suppress all exceptions raised from its
+        implementation (other than incorrect usage of this method itself).
         """
+        if args:
+            raise TypeError('{} extra positional args'.format(len(args)))
+
         try:
             text = '{}: {}'.format(self.name, msg)
             with transaction.atomic():
@@ -75,3 +80,42 @@ class Auditor():
 
     def error(self, *args, **kwargs):
         self.log(Audit.ERROR, *args, **kwargs)
+
+    def ctx_mgr(self, *args, user_id=None, vm_id=None):
+        """
+        Return a new Context Manager which audits if an exception is raised.
+
+        Usage (args are optional):
+            with aud.ctx_mgr(user_id=…, vm_id=…):
+                «code»
+
+        If the with-block doesn't raise an exception, nothing is audited.
+        If the with-block raises an exception, the context manager calls
+        aud.error(…) on this Audit object then lets the exception be re-raised
+        by the with-statement.
+        """
+        if args:
+            raise TypeError('{} extra positional args'.format(len(args)))
+
+        return _CtxMgr(self, user_id=user_id, vm_id=vm_id)
+
+
+class _CtxMgr():
+    """
+    Context Manager, meant to be used via Auditor(…).ctx_mgr(…).
+    """
+
+    def __init__(self, auditor, *args, user_id=None, vm_id=None):
+        self.auditor = auditor
+        self.user_id = user_id
+        self.vm_id = vm_id
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is None and exc_value is None and tb is None:
+            return
+        msg = ''.join(traceback.format_exception(exc_type, exc_value, tb))
+        self.auditor.error(msg, vm_id=self.vm_id, user_id=self.user_id)
+        return False

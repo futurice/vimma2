@@ -50,23 +50,22 @@ def create_vm(vmconfig, vm, data, user_id=None):
     aws_vm = AWSVM.objects.create(vm=vm, region=data['region'])
     aws_vm.full_clean()
 
-    callables = [lambda: do_create_vm.delay(aws_vm_config.id, aws_vm.id,
-        user_id)]
+    callables = [lambda: do_create_vm.delay(aws_vm_config.id, vm.id, user_id)]
     return aws_vm, callables
 
 
 
 @app.task
-def do_create_vm(aws_vm_config_id, aws_vm_id, user_id):
+def do_create_vm(aws_vm_config_id, vm_id, user_id):
     try:
-        do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id)
+        do_create_vm_impl(aws_vm_config_id, vm_id, user_id=user_id)
     except:
         msg = traceback.format_exc()
         aud.error(msg, user_id=user_id)
         raise
 
 
-def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
+def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     """
     The implementation for the similarly named task.
 
@@ -77,17 +76,14 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
 
     access_key_id, access_key_secret = None, None
     region, ami_id, instance_type = None, None, None
-    vm_id = None
 
     def read_vars():
         nonlocal access_key_id, access_key_secret
         nonlocal region, ami_id, instance_type
-        nonlocal vm_id
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
             aws_prov = aws_vm_config.vmconfig.provider.awsprovider
-            aws_vm = AWSVM.objects.get(id=aws_vm_id)
-            vm_id = aws_vm.vm.id
+            aws_vm = VM.objects.get(id=vm_id).awsvm
 
             access_key_id = aws_prov.access_key_id
             access_key_secret = aws_prov.access_key_secret
@@ -118,7 +114,7 @@ def do_create_vm_impl(aws_vm_config_id, aws_vm_id, user_id):
 
     def update_db():
         with transaction.atomic():
-            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm.reservation_id = reservation.id
             aws_vm.instance_id = inst_id
             aws_vm.save()
@@ -133,20 +129,15 @@ def power_on_vm(vm_id, data, user_id=None):
 
     This function must not be called inside a transaction.
     """
-    def read_db():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).awsvm.id
-    aws_vm_id = retry_transaction(read_db)
-
-    do_power_on_vm.delay(aws_vm_id, user_id)
+    do_power_on_vm.delay(vm_id, user_id=user_id)
 
 
 @app.task
-def do_power_on_vm(aws_vm_id, user_id):
+def do_power_on_vm(vm_id, user_id=None):
     with transaction.atomic():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        aws_vm = VM.objects.get(id=vm_id).awsvm
+        aws_vm_id = aws_vm.id
         inst_id = aws_vm.instance_id
-        vm_id = aws_vm.vm.id
         del aws_vm
 
     conn = connect_to_aws_vm_region(aws_vm_id)
@@ -162,20 +153,15 @@ def power_off_vm(vm_id, data, user_id=None):
 
     This function must not be called inside a transaction.
     """
-    def read_db():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).awsvm.id
-    aws_vm_id = retry_transaction(read_db)
-
-    do_power_off_vm.delay(aws_vm_id, user_id=user_id)
+    do_power_off_vm.delay(vm_id, user_id=user_id)
 
 
 @app.task
-def do_power_off_vm(aws_vm_id, user_id=None):
+def do_power_off_vm(vm_id, user_id=None):
     with transaction.atomic():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        aws_vm = VM.objects.get(id=vm_id).awsvm
+        aws_vm_id = aws_vm.id
         inst_id = aws_vm.instance_id
-        vm_id = aws_vm.vm.id
         del aws_vm
 
     conn = connect_to_aws_vm_region(aws_vm_id)
@@ -191,20 +177,15 @@ def reboot_vm(vm_id, data, user_id=None):
 
     This function must not be called inside a transaction.
     """
-    def read_db():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).awsvm.id
-    aws_vm_id = retry_transaction(read_db)
-
-    do_reboot_vm.delay(aws_vm_id, user_id=user_id)
+    do_reboot_vm.delay(vm_id, user_id=user_id)
 
 
 @app.task
-def do_reboot_vm(aws_vm_id, user_id=None):
+def do_reboot_vm(vm_id, user_id=None):
     with transaction.atomic():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        aws_vm = VM.objects.get(id=vm_id).awsvm
+        aws_vm_id = aws_vm.id
         inst_id = aws_vm.instance_id
-        vm_id = aws_vm.vm.id
         del aws_vm
 
     conn = connect_to_aws_vm_region(aws_vm_id)
@@ -220,20 +201,15 @@ def destroy_vm(vm_id, data, user_id=None):
 
     This function must not be called inside a transaction.
     """
-    def read_db():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).awsvm.id
-    aws_vm_id = retry_transaction(read_db)
-
-    do_destroy_vm.delay(aws_vm_id, user_id=user_id)
+    do_destroy_vm.delay(vm_id, user_id=user_id)
 
 
 @app.task
-def do_destroy_vm(aws_vm_id, user_id=None):
+def do_destroy_vm(vm_id, user_id=None):
     with transaction.atomic():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        aws_vm = VM.objects.get(id=vm_id).awsvm
+        aws_vm_id = aws_vm.id
         inst_id = aws_vm.instance_id
-        vm_id = aws_vm.vm.id
         del aws_vm
 
     conn = connect_to_aws_vm_region(aws_vm_id)
