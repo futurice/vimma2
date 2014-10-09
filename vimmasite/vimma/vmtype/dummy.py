@@ -52,17 +52,18 @@ def power_on_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_on_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        dvm = VM.objects.get(id=vm_id).dummyvm
-        # imagine this logic happens remotely, in an API call to the Provider
-        if dvm.destroyed or dvm.poweredon:
-            aud.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
-                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
-                    dvm), user_id=user_id, vm_id=vm_id)
-            return
-        dvm.poweredon = True
-        dvm.save()
-    aud.info('Power ON', user_id=user_id, vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            dvm = VM.objects.get(id=vm_id).dummyvm
+            # imagine this logic happens remotely, in an API call to Provider
+            if dvm.destroyed or dvm.poweredon:
+                aud.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
+                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                    ).format(dvm), user_id=user_id, vm_id=vm_id)
+                return
+            dvm.poweredon = True
+            dvm.save()
+        aud.info('Power ON', user_id=user_id, vm_id=vm_id)
 
 
 def power_off_vm(vm_id, data, user_id=None):
@@ -78,16 +79,17 @@ def power_off_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_off_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        dvm = VM.objects.get(id=vm_id).dummyvm
-        if dvm.destroyed or not dvm.poweredon:
-            aud.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
-                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
-                    dvm), user_id=user_id, vm_id=vm_id)
-            return
-        dvm.poweredon = False
-        dvm.save()
-    aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            dvm = VM.objects.get(id=vm_id).dummyvm
+            if dvm.destroyed or not dvm.poweredon:
+                aud.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
+                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                    ).format(dvm), user_id=user_id, vm_id=vm_id)
+                return
+            dvm.poweredon = False
+            dvm.save()
+        aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
 
 
 def reboot_vm(vm_id, data, user_id=None):
@@ -103,16 +105,17 @@ def reboot_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_reboot_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        dvm = VM.objects.get(id=vm_id).dummyvm
-        if dvm.destroyed:
-            aud.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
-                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
-                    dvm), user_id=user_id, vm_id=vm_id)
-            return
-        dvm.poweredon = True
-        dvm.save()
-    aud.info('Reboot', user_id=user_id, vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            dvm = VM.objects.get(id=vm_id).dummyvm
+            if dvm.destroyed:
+                aud.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
+                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                    ).format(dvm), user_id=user_id, vm_id=vm_id)
+                return
+            dvm.poweredon = True
+            dvm.save()
+        aud.info('Reboot', user_id=user_id, vm_id=vm_id)
 
 
 def destroy_vm(vm_id, data, user_id=None):
@@ -128,17 +131,18 @@ def destroy_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        dvm = VM.objects.get(id=vm_id).dummyvm
-        if dvm.destroyed:
-            aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
-                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’').format(
-                    dvm), user_id=user_id, vm_id=vm_id)
-            return
-        dvm.poweredon = False
-        dvm.destroyed = True
-        dvm.save()
-    aud.info('Destroy', user_id=user_id, vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            dvm = VM.objects.get(id=vm_id).dummyvm
+            if dvm.destroyed:
+                aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
+                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                    ).format(dvm), user_id=user_id, vm_id=vm_id)
+                return
+            dvm.poweredon = False
+            dvm.destroyed = True
+            dvm.save()
+        aud.info('Destroy', user_id=user_id, vm_id=vm_id)
 
 
 @app.task
@@ -154,5 +158,6 @@ def update_vm_status(vm_id):
             dvm.save()
         return new_status
 
-    new_status = retry_transaction(call)
-    aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id):
+        new_status = retry_transaction(call)
+        aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)

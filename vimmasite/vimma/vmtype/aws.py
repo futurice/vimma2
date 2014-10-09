@@ -57,13 +57,8 @@ def create_vm(vmconfig, vm, data, user_id=None):
 
 @app.task
 def do_create_vm(aws_vm_config_id, vm_id, user_id):
-    try:
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         do_create_vm_impl(aws_vm_config_id, vm_id, user_id=user_id)
-    except:
-        msg = traceback.format_exc()
-        aud.error(msg, user_id=user_id)
-        raise
-
 
 def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     """
@@ -134,15 +129,16 @@ def power_on_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_on_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        del aws_vm
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            inst_id = aws_vm.instance_id
+            del aws_vm
 
-    conn = connect_to_aws_vm_region(aws_vm_id)
-    conn.start_instances(instance_ids=[inst_id])
-    aud.info('Started instance', vm_id=vm_id, user_id=user_id)
+        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn.start_instances(instance_ids=[inst_id])
+        aud.info('Started instance', vm_id=vm_id, user_id=user_id)
 
 
 def power_off_vm(vm_id, data, user_id=None):
@@ -158,15 +154,16 @@ def power_off_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_off_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        del aws_vm
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            inst_id = aws_vm.instance_id
+            del aws_vm
 
-    conn = connect_to_aws_vm_region(aws_vm_id)
-    conn.stop_instances(instance_ids=[inst_id])
-    aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
+        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn.stop_instances(instance_ids=[inst_id])
+        aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
 
 
 def reboot_vm(vm_id, data, user_id=None):
@@ -182,15 +179,16 @@ def reboot_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_reboot_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        del aws_vm
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            inst_id = aws_vm.instance_id
+            del aws_vm
 
-    conn = connect_to_aws_vm_region(aws_vm_id)
-    conn.reboot_instances(instance_ids=[inst_id])
-    aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
+        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn.reboot_instances(instance_ids=[inst_id])
+        aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
 
 
 def destroy_vm(vm_id, data, user_id=None):
@@ -206,19 +204,27 @@ def destroy_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
-    with transaction.atomic():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        del aws_vm
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            inst_id = aws_vm.instance_id
+            del aws_vm
 
-    conn = connect_to_aws_vm_region(aws_vm_id)
-    conn.terminate_instances(instance_ids=[inst_id])
-    aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
+        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn.terminate_instances(instance_ids=[inst_id])
+        aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
 
 
 @app.task
 def update_vm_status(vm_id):
+    with aud.ctx_mgr(vm_id=vm_id):
+        _update_vm_status_impl(vm_id)
+
+def _update_vm_status_impl(vm_id):
+    """
+    The implementation for the similarly named task.
+    """
     def read_data():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
