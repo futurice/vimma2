@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from vimma.audit import getAuditor
+from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
     Provider, VM,
@@ -8,7 +8,7 @@ from vimma.models import (
 import vimma.vmtype.dummy, vimma.vmtype.aws
 
 
-aud = getAuditor(__name__)
+aud = Auditor(__name__)
 
 
 def create_vm(vmconfig, project, schedule, data, user_id=None):

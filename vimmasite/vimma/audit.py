@@ -9,26 +9,22 @@ from vimma.models import Audit, VM
 log = logging.getLogger(__name__)
 
 
-def getAuditor(name=None):
+class Auditor():
     """
-    Create and return an AuditLogger.
+    Auditor logs messages to both the DB and Python Standard Logging.
 
-    Usage:
-        from vimma.audit import getAuditor
-        aud = getAuditor(__name__)
+    Standard library logging uses the logger with the name you provide.
+    Intended usage:
+        from vimma.audit import Auditor
+        aud = Auditor(__name__)
+        …
         aud.warning(…)
-
-    The returned object writes to both the DB and Python Standard Logging (to
-    the logger with the name you provide).
-    Usage is meant to be similar to standard logging:
+    meant to be similar to standard logging usage:
         import logging
         log = logging.getLogger(__name__)
+        …
         log.warning(…)
     """
-    return Auditor(name)
-
-
-class Auditor():
 
     def __init__(self, name=None):
         self.name = name

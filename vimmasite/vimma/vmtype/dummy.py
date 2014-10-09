@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from vimma.audit import getAuditor
+from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
     VM,
@@ -9,7 +9,7 @@ from vimma.models import (
 from vimma.util import retry_transaction
 
 
-aud = getAuditor(__name__)
+aud = Auditor(__name__)
 
 
 def create_vm(vm, data, user_id=None):

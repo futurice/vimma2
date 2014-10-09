@@ -3,7 +3,7 @@ from django.db import transaction
 import sys
 import traceback
 
-from vimma.audit import getAuditor
+from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
     VM,
@@ -12,7 +12,7 @@ from vimma.models import (
 from vimma.util import retry_transaction
 
 
-aud = getAuditor(__name__)
+aud = Auditor(__name__)
 
 
 def connect_to_aws_vm_region(aws_vm_id):

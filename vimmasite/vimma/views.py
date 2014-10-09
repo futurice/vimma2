@@ -13,7 +13,7 @@ import traceback
 
 from vimma import vmutil
 from vimma.actions import Actions
-from vimma.audit import getAuditor
+from vimma.audit import Auditor
 from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
@@ -23,7 +23,7 @@ from vimma.models import (
 from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
 
 
-aud = getAuditor(__name__)
+aud = Auditor(__name__)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
