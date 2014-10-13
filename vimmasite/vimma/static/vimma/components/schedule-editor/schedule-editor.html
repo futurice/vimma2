@@ -33,17 +33,23 @@
     <br>
     {{hasUnsavedChanges ? 'You have unsaved changes' : ''}}
     <br>
-    <paper-button id="save" icon="save" label="Save" raisedButton
+    <paper-button id="save" raised
       on-click={{save}} disabled="{{ajaxInProgress}}"
       class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
+      <core-icon icon="save"></core-icon>
+      Save
     </paper-button>
-    <paper-button id="revert" icon="undo" label="Discard changes" raisedButton
+    <paper-button id="revert" raised
       on-click={{revert}} disabled="{{ajaxInProgress}}"
       class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
+      <core-icon icon="undo"></core-icon>
+      Discard changes
     </paper-button>
     <br>
-    <paper-button id="delete" icon="delete" label="Delete" raisedButton
+    <paper-button id="delete" raised
       on-click={{delete}} disabled="{{ajaxInProgress}}">
+      <core-icon icon="delete"></core-icon>
+      Delete
     </paper-button>
 
     <template if={{!ajaxInProgress}}>

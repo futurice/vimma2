@@ -84,9 +84,11 @@
         <br>
       </template>
 
-      <paper-button id="create" icon="create" label="Create VM" raisedButton
+      <paper-button id="create" raised
         class="{{ {highlight: highlightCreateBtn} | tokenList }}"
         on-click="{{createVM}}" disabled="{{ajaxInProgress}}">
+          <core-icon icon="create"></core-icon>
+          Create VM
       </paper-button>
       <template if={{!ajaxInProgress}}>
         <template if={{!ajaxSuccess}}>

@@ -55,9 +55,11 @@
         </template>
       </paper-dropdown-menu>
       <br>
-      <paper-button id="create" icon="create" label="Create" raisedButton
+      <paper-button id="create" raised
         on-click={{create}} disabled="{{ajaxInProgress}}"
         class="{{ {highlight: newScheduleName.length && newScheduleTimeZone != null} | tokenList }}">
+        <core-icon icon="create"></core-icon>
+        Create
       </paper-button>
 
       <template if={{!ajaxInProgress}}>

@@ -11,8 +11,9 @@
   <template>
     Hello VM id {{vmid}}.
     <br>
-    <paper-button icon="refresh" label="Refresh" on-click="{{reload}}"
-        raisedButton disabled?="{{ajaxInProgress}}">
+    <paper-button on-click="{{reload}}" raised disabled?="{{ajaxInProgress}}">
+      <core-icon icon="refresh"></core-icon>
+      Refresh
     </paper-button>
     <br>
 

@@ -14,8 +14,9 @@
 
     <template if="{{selectedProjectId != null}}">
       <core-item>
-        <paper-button icon="arrow-back" label="Back to list"
-          on-click="{{unselectProject}}">
+        <paper-button on-click="{{unselectProject}}">
+          <core-icon icon="arrow-back"></core-icon>
+          Back to list
         </paper-button>
       </core-item>
 
