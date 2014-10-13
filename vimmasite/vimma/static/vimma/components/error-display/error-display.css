@@ -1,13 +1,7 @@
-div#box {
-	white-space: pre-wrap;
+:host::shadow div#box {
 	background-color: Pink;
-	display: inline-block;
-	text-overflow: ellipsis;
 }
 
-div#box.trims {
-	cursor: pointer;
-}
-div#box.trims:hover {
+:host::shadow div#box.trims:hover {
 	background-color: HotPink;
 }
