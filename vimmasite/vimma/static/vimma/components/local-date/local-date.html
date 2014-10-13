@@ -1,0 +1,18 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../plain-text/plain-text.html">
+
+<!--
+  Display a Date object or a string representing a datetime.
+  The displayed value is in local (browser) time.
+-->
+<polymer-element name="local-date" attributes="date">
+  <template>
+    <template if="{{showDate}}">
+      <plain-text text="{{dateStr}}"></plain-text>
+    </template>
+    <plain-text text="{{timeStr}}"></plain-text>
+  </template>
+
+  <script src="local-date.js"></script>
+</polymer-element>

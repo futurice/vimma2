@@ -3,6 +3,7 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../local-date/local-date.html">
 
 <polymer-element name="audit-display" attributes="vmid userid"
   on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
@@ -31,11 +32,11 @@
       <table>
         <template repeat="{{shownAuditItems}}">
           <tr>
-            <td>{{timestamp}}</td>
+            <td><local-date date="{{timestamp}}"></local-date></td>
             <td>{{level}}</td>
             <td>{{vm || '—'}}</td>
             <td>{{user || '–'}}</td>
-            <td>{{text}}</td>
+            <td><plain-text text="{{text}}"></plain-text></td>
           </tr>
         </template>
       </table>
