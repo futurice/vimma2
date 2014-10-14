@@ -4,7 +4,8 @@ ul#schedules {
 }
 
 ul#schedules > li {
-	border: 1px solid gray;
+	border: 0.15em solid gray;
+	padding: 0.5em;
 }
 
 ul#schedules > li + li {

@@ -10,20 +10,22 @@
   <template>
     <link rel="stylesheet" type="text/css" href="create-vm.css">
 
-    <template if="{{loading}}">
-      Loading…
-    </template>
-
-    <template if="{{!loading}}">
-      <template if="{{!success}}">
-        <error-display text={{errorText}}></error-display>
+    <div id="container">
+      <template if="{{loading}}">
+        Loading…
       </template>
 
-      <template if="{{success}}">
-        <template bind ref="main">
+      <template if="{{!loading}}">
+        <template if="{{!success}}">
+          <error-display text={{errorText}}></error-display>
+        </template>
+
+        <template if="{{success}}">
+          <template bind ref="main">
+          </template>
         </template>
       </template>
-    </template>
+    </div>
 
     <template id="main">
       <h1>Create a VM</h1>

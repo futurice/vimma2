@@ -11,3 +11,8 @@
 #create::shadow #ripple {
 	color: blue;
 }
+
+#container {
+	border: 0.15em solid khaki;
+	padding: 0.5em;
+}
