@@ -8,6 +8,8 @@
 
 <polymer-element name="vm-list">
   <template>
+    <link rel="stylesheet" type="text/css" href="vm-list.css">
+
     <template if="{{loading}}">
       Loading…
     </template>
@@ -28,7 +30,7 @@
         <show-count n="{{vmsInOwnProjects.length}}" name="VM"></show-count> 
         in your projects
       </h1>
-      <ul>
+      <ul class="vm-list">
         <template repeat="{{vm in vmsInOwnProjects}}">
           <li>
             <vm-detail vmid="{{vm.id}}"></vm-detail>
@@ -45,7 +47,7 @@
       </button>
       <br>
       <template if="{{showOtherVMs}}">
-        <ul>
+        <ul class="vm-list">
         <template repeat="{{vm in vmsInOtherProjects}}">
           <li>
             <vm-detail vmid="{{vm.id}}"></vm-detail>
