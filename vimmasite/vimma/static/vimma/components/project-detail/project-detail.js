@@ -9,6 +9,12 @@ Polymer('project-detail', {
     users: null,    // [u1, u2, …]
     usersById: null,    // {id1: u1, id2: u2, …}
     vms: null,
+    vmsChanged: function() {
+        this.vmIds = this.vms === null ? null : this.vms.map(function(vm) {
+            return vm.id;
+        });
+    },
+    vmIds: null,
 
     ready: function() {
         this.reload();
@@ -24,6 +30,7 @@ Polymer('project-detail', {
         this.users = null;
         this.usersById = null;
         this.vms = null;
+        this.vmIds = null;
 
         this.loadProject();
     },

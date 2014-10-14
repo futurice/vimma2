@@ -4,7 +4,7 @@
 
 <link rel="import" href="../create-vm/create-vm.html">
 <link rel="import" href="../error-display/error-display.html">
-<link rel="import" href="../vm-detail/vm-detail.html">
+<link rel="import" href="../vm-list/vm-list.html">
 
 <polymer-element name="project-detail" attributes="prjid">
   <template>
@@ -57,13 +57,7 @@
     <template id="vm-list">
       Showing {{vms.length}} VMs.
 
-      <ul>
-        <template repeat="{{vm in vms}}">
-          <li>
-            <vm-detail vmid="{{vm.id}}"></vm-detail>
-          </li>
-        </template>
-      </ul>
+      <vm-list vmids="{{vmids}}"></vm-list>
     </template>
   </template>
 
