@@ -40,6 +40,7 @@ def create_vm(vmconfig, vm, data, user_id=None):
     Returns (aws_vm, callables).
     data = {
         region: string,
+        name_tag: string,
     }
 
     This function must be called inside a transaction. The caller must execute
@@ -47,18 +48,24 @@ def create_vm(vmconfig, vm, data, user_id=None):
     """
     aws_vm_config = vmconfig.awsvmconfig
 
-    aws_vm = AWSVM.objects.create(vm=vm, region=data['region'])
+    aws_vm = AWSVM.objects.create(vm=vm, name_tag=data['name_tag'],
+            region=data['region'])
     aws_vm.full_clean()
 
     callables = [lambda: do_create_vm.delay(aws_vm_config.id, vm.id, user_id)]
     return aws_vm, callables
 
 
-
 @app.task
 def do_create_vm(aws_vm_config_id, vm_id, user_id):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    try:
         do_create_vm_impl(aws_vm_config_id, vm_id, user_id=user_id)
+    except:
+        msg = ''.join(traceback.format_exc())
+        aud.error(msg, vm_id=vm_id, user_id=user_id)
+        do_destroy_vm.delay(vm_id, user_id=user_id)
+        raise
+
 
 def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     """
@@ -70,11 +77,11 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     # include idempotent code, not the AWS API calls which create more VMs.
 
     access_key_id, access_key_secret = None, None
-    region, ami_id, instance_type = None, None, None
+    name_tag, region, ami_id, instance_type = None, None, None, None
 
     def read_vars():
         nonlocal access_key_id, access_key_secret
-        nonlocal region, ami_id, instance_type
+        nonlocal name_tag, region, ami_id, instance_type
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
             aws_prov = aws_vm_config.vmconfig.provider.awsprovider
@@ -83,6 +90,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             access_key_id = aws_prov.access_key_id
             access_key_secret = aws_prov.access_key_secret
 
+            name_tag = aws_vm.name_tag
             region = aws_vm.region
             ami_id = aws_vm_config.ami_id
             instance_type = aws_vm_config.instance_type
@@ -91,17 +99,31 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     conn = boto.ec2.connect_to_region(region,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=access_key_secret)
+
+    security_group = conn.create_security_group(name_tag, 'Vimma-generated')
+    sec_grp_id = security_group.id
+
+    def write_sec_grp():
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.security_group_id = sec_grp_id
+            aws_vm.save()
+    retry_transaction(write_sec_grp)
+
     reservation = conn.run_instances(ami_id,
-            instance_type=instance_type)
+            instance_type=instance_type,
+            security_group_ids=[sec_grp_id])
 
     aud.info('Got AWS reservation', user_id=user_id, vm_id=vm_id)
 
+    inst = None
     inst_id = ''
     if len(reservation.instances) != 1:
         aud.error('AWS reservation has {} instances, expected 1'.format(
             len(reservation.instances)), user_id=user_id, vm_id=vm_id)
     else:
-        inst_id = reservation.instances[0].id
+        inst = reservation.instances[0]
+        inst_id = inst.id
 
     # By now, the DB state (e.g. fields we don't care about) may have changed.
     # Don't overwrite the DB with our stale field values (from before the API
@@ -114,6 +136,12 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             aws_vm.instance_id = inst_id
             aws_vm.save()
     retry_transaction(update_db)
+
+    if inst:
+        inst.add_tags({
+            'Name': name_tag,
+            'VimmaSpawned': str(True),
+        })
 
 
 def power_on_vm(vm_id, data, user_id=None):
@@ -205,6 +233,9 @@ def destroy_vm(vm_id, data, user_id=None):
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        # can add countdown=…, but the task would still have to retry
+        delete_security_group.delay(vm_id, user_id=user_id)
+
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
@@ -214,6 +245,23 @@ def do_destroy_vm(vm_id, user_id=None):
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.terminate_instances(instance_ids=[inst_id])
         aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
+
+
+@app.task(bind=True, max_retries=15, default_retry_delay=60)
+def delete_security_group(self, vm_id, user_id=None):
+    try:
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            sec_grp_id = aws_vm.security_group_id
+            del aws_vm
+
+        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn.delete_security_group(group_id=sec_grp_id)
+    except:
+        msg = ''.join(traceback.format_exc())
+        aud.error(msg, vm_id=vm_id, user_id=user_id)
+        self.retry()
 
 
 @app.task

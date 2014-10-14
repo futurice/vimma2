@@ -9,7 +9,7 @@ Polymer('create-vm-aws-data', {
     },
     setDefaultData: function() {
         this.data = {
-            nameTag: '',
+            name_tag: '',
             region: 'eu-west-1'
         };
     },

@@ -187,7 +187,9 @@ class AWSVM(models.Model):
     # Synced regularly by the update tasks.
     state = models.CharField(max_length=100, blank=True)
     # AWS fields:
+    name_tag = models.CharField(max_length=50)
     region = models.CharField(max_length=20)
+    security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)
 
