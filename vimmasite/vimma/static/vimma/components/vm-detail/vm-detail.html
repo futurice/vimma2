@@ -9,6 +9,8 @@
 <polymer-element name="vm-detail" attributes="vmid"
   on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
   <template>
+    <link rel="stylesheet" type="text/css" href="vm-detail.css">
+
     Hello VM id {{vmid}}.
     <br>
     <paper-button on-click="{{reload}}" raised disabled?="{{ajaxInProgress}}">
@@ -64,8 +66,15 @@
       </button>
 
       <br>
-
-      <audit-display vmid="{{vmid}}"></audit-display>
+      <button type="button" on-click="{{toggleShowLogs}}">
+        <template if="{{!showLogs}}">Show logs</template>
+        <template if="{{showLogs}}">Hide logs</template>
+      </button>
+      <template if="{{showLogs}}">
+        <div id="audit">
+          <audit-display vmid="{{vmid}}"></audit-display>
+        </div>
+      </template>
     </template>
   </template>
 

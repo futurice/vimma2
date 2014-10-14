@@ -54,6 +54,7 @@ Polymer('vm-detail', {
     vmid: null,
     vm: null,
     provider: null,
+    showLogs: false,
 
     ready: function() {
         this.reload();
@@ -66,6 +67,7 @@ Polymer('vm-detail', {
 
         this.vm = null;
         this.provider = null;
+        this.showLogs = false;
 
         this.loadVM();
     },
@@ -134,5 +136,9 @@ Polymer('vm-detail', {
     },
     destroy: function() {
         this.vmOperation(vimmaEndpointDestroyVM, null);
+    },
+
+    toggleShowLogs: function() {
+        this.showLogs = !this.showLogs;
     }
 });
