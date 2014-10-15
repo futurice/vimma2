@@ -46,6 +46,13 @@ def power_on_vm(vm_id, data, user_id=None):
     ‘data’ is not used.
 
     This function must not be called inside a transaction.
+
+    The dummy provider's functions try to form a pattern which allows real
+    (non-dummy) VM providers reasonable flexibility. This is the purpose
+    of the dummy provider.
+    This is why these dummy functions have this structure and restrictions
+    (e.g. about transactions), even though some of these functions do almost no
+    work.
     """
     do_power_on_vm.delay(vm_id=vm_id, user_id=user_id)
 
