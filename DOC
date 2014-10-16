@@ -1,6 +1,13 @@
 Create and manage VMs from a provider, such as Amazon Web Services.
 
 
+Amazon AWS Docs:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html
+Boto library (for using the Amazon AWS API) docs:
+http://docs.pythonboto.org/en/latest/ec2_tut.html
+http://docs.pythonboto.org/en/latest/ref/ec2.html
+
+
 Permissions:
 ===========
 
