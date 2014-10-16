@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.utils import OperationalError
 import logging
 import traceback
 
@@ -64,6 +65,10 @@ class Auditor():
             user = User.objects.get(id=user_id) if user_id else None
             Audit.objects.create(level=level, text=text,
                     vm=vm, user=user).full_clean()
+        except OperationalError as e:
+            # Likely the DB is locked. Don't pollute the logs with a stack
+            # trace in this case.
+            log.warning('OperationalError: ' + str(e))
         except:
             log.error(traceback.format_exc())
         finally:

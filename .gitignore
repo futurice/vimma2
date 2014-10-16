@@ -5,6 +5,7 @@ __pycache__/
 /vimmasite/local_settings.py
 
 /vimmasite/db.sqlite3
+/vimmasite/db.sqlite3-journal
 
 # Don't store migrations during initial development
 vimmasite/vimma/migrations/0*.py

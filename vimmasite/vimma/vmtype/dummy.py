@@ -51,15 +51,15 @@ def power_on_vm(vm_id, data, user_id=None):
     (non-dummy) VM providers reasonable flexibility. This is the purpose
     of the dummy provider.
     This is why these dummy functions have this structure and restrictions
-    (e.g. about transactions), even though some of these functions do almost no
-    work.
+    (e.g. about transactions), even though some of these dummy functions do
+    almost no work.
     """
     do_power_on_vm.delay(vm_id=vm_id, user_id=user_id)
 
 
 @app.task
 def do_power_on_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
             # imagine this logic happens remotely, in an API call to Provider
@@ -70,6 +70,9 @@ def do_power_on_vm(vm_id, user_id=None):
                 return
             dvm.poweredon = True
             dvm.save()
+
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        retry_transaction(call)
         aud.info('Power ON', user_id=user_id, vm_id=vm_id)
 
 
@@ -86,7 +89,7 @@ def power_off_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_off_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
             if dvm.destroyed or not dvm.poweredon:
@@ -96,6 +99,9 @@ def do_power_off_vm(vm_id, user_id=None):
                 return
             dvm.poweredon = False
             dvm.save()
+
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        retry_transaction(call)
         aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
 
 
@@ -112,7 +118,7 @@ def reboot_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_reboot_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
             if dvm.destroyed:
@@ -122,6 +128,9 @@ def do_reboot_vm(vm_id, user_id=None):
                 return
             dvm.poweredon = True
             dvm.save()
+
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        retry_transaction(call)
         aud.info('Reboot', user_id=user_id, vm_id=vm_id)
 
 
@@ -138,7 +147,7 @@ def destroy_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
             if dvm.destroyed:
@@ -149,6 +158,9 @@ def do_destroy_vm(vm_id, user_id=None):
             dvm.poweredon = False
             dvm.destroyed = True
             dvm.save()
+
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        retry_transaction(call)
         aud.info('Destroy', user_id=user_id, vm_id=vm_id)
 
 

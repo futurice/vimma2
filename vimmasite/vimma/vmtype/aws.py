@@ -95,7 +95,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             region = aws_vm.region
             ami_id = aws_vm_config.ami_id
             instance_type = aws_vm_config.instance_type
-    read_vars()
+    retry_transaction(read_vars)
 
     conn = boto.ec2.connect_to_region(region,
             aws_access_key_id=access_key_id,
@@ -159,13 +159,15 @@ def power_on_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_on_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
             inst_id = aws_vm.instance_id
-            del aws_vm
+            return aws_vm_id, inst_id
 
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        aws_vm_id, inst_id = retry_transaction(read_vars)
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.start_instances(instance_ids=[inst_id])
         aud.info('Started instance', vm_id=vm_id, user_id=user_id)
@@ -184,13 +186,15 @@ def power_off_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_power_off_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
             inst_id = aws_vm.instance_id
-            del aws_vm
+            return aws_vm_id, inst_id
 
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        aws_vm_id, inst_id = retry_transaction(read_vars)
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.stop_instances(instance_ids=[inst_id])
         aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
@@ -209,13 +213,15 @@ def reboot_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_reboot_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
             inst_id = aws_vm.instance_id
-            del aws_vm
+            return aws_vm_id, inst_id
 
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        aws_vm_id, inst_id = retry_transaction(read_vars)
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.reboot_instances(instance_ids=[inst_id])
         aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
@@ -234,16 +240,18 @@ def destroy_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        # can add countdown=…, but the task would still have to retry
-        delete_security_group.delay(vm_id, user_id=user_id)
-
+    def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
             inst_id = aws_vm.instance_id
-            del aws_vm
+            return aws_vm_id, inst_id
 
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        # can add countdown=…, but the task would still have to retry anyway
+        delete_security_group.delay(vm_id, user_id=user_id)
+
+        aws_vm_id, inst_id = retry_transaction(read_vars)
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.terminate_instances(instance_ids=[inst_id])
         aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
@@ -251,13 +259,15 @@ def do_destroy_vm(vm_id, user_id=None):
 
 @app.task(bind=True, max_retries=15, default_retry_delay=60)
 def delete_security_group(self, vm_id, user_id=None):
-    try:
+    def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
             aws_vm_id = aws_vm.id
             sec_grp_id = aws_vm.security_group_id
-            del aws_vm
+            return aws_vm_id, sec_grp_id
 
+    try:
+        aws_vm_id, sec_grp_id = retry_transaction(read_vars)
         conn = connect_to_aws_vm_region(aws_vm_id)
         conn.delete_security_group(group_id=sec_grp_id)
     except:

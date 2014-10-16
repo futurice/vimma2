@@ -5,10 +5,24 @@ from vimma.celery import app
 from vimma.models import (
     Provider, VM,
 )
+from vimma.util import retry_transaction
 import vimma.vmtype.dummy, vimma.vmtype.aws
 
 
 aud = Auditor(__name__)
+
+
+# The following pattern is used, especially for Celery tasks:
+#
+# with transaction.atomic():
+#   read & write to the db
+#   Don't leak any Model objects outside this block, only assign primitive
+#   values (e.g. int, string) to names outside this block. This way we always
+#   read & write consistent data (ACID transactions) and we don't accidentaly
+#   do DB operations outside the atomic block (e.g. by accessing model fields
+#   or related models).
+#
+# Often retrying the transaction.
 
 
 def create_vm(vmconfig, project, schedule, data, user_id=None):
@@ -156,11 +170,16 @@ def update_vm_status(vm_id):
     Check & update the status of the VM.
     """
     aud.debug('Request status update', vm_id=vm_id)
-    vm = VM.objects.get(id=vm_id)
-    t = vm.provider.type
+
+    def get_type():
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            return vm.provider.type
+    t = retry_transaction(get_type)
+
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.update_vm_status.delay(vm.id)
+        vimma.vmtype.dummy.update_vm_status.delay(vm_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.update_vm_status.delay(vm.id)
+        vimma.vmtype.aws.update_vm_status.delay(vm_id)
     else:
         aud.error('Unknown provider type “{}”'.format(t), vm_id=vm_id)
