@@ -114,6 +114,7 @@ class AWSProvider(models.Model):
     # these must not be exposed via the API
     access_key_id = models.CharField(max_length=100, blank=True)
     access_key_secret = models.CharField(max_length=100, blank=True)
+    ssh_key_name = models.CharField(max_length=50, blank=True)
 
 
 class VMConfig(models.Model):

@@ -70,7 +70,8 @@ prov3 = Provider.objects.create(name='AWS Vimma Provider',
         type=Provider.TYPE_AWS)
 AWSProvider.objects.create(provider=prov3,
         access_key_id=secrets.AWS_ACCESS_KEY_ID,
-        access_key_secret=secrets.AWS_ACCESS_KEY_SECRET)
+        access_key_secret=secrets.AWS_ACCESS_KEY_SECRET,
+        ssh_key_name=secrets.AWS_SSH_KEY_NAME)
 
 prov4 = Provider.objects.create(name='My Second AWS Provider',
         type=Provider.TYPE_AWS)
