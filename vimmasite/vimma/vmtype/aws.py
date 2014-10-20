@@ -60,7 +60,7 @@ def create_vm(vmconfig, vm, data, user_id=None):
     Returns (aws_vm, callables).
     data = {
         region: string,
-        name_tag: string,
+        name: string,
     }
 
     This function must be called inside a transaction. The caller must execute
@@ -68,7 +68,7 @@ def create_vm(vmconfig, vm, data, user_id=None):
     """
     aws_vm_config = vmconfig.awsvmconfig
 
-    aws_vm = AWSVM.objects.create(vm=vm, name_tag=data['name_tag'],
+    aws_vm = AWSVM.objects.create(vm=vm, name=data['name'],
             region=data['region'])
     aws_vm.full_clean()
 
@@ -97,12 +97,12 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     # include idempotent code, not the AWS API calls which create more VMs.
 
     ssh_key_name = None
-    aws_vm_id, name_tag = None, None
+    aws_vm_id, name = None, None
     ami_id, instance_type = None, None
 
     def read_vars():
         nonlocal ssh_key_name
-        nonlocal aws_vm_id, name_tag
+        nonlocal aws_vm_id, name
         nonlocal ami_id, instance_type
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
@@ -112,14 +112,14 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             ssh_key_name = aws_prov.ssh_key_name
 
             aws_vm_id = aws_vm.id
-            name_tag = aws_vm.name_tag
+            name = aws_vm.name
             ami_id = aws_vm_config.ami_id
             instance_type = aws_vm_config.instance_type
     retry_transaction(read_vars)
 
     ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
 
-    security_group = ec2_conn.create_security_group(name_tag, 'Vimma-generated')
+    security_group = ec2_conn.create_security_group(name, 'Vimma-generated')
     sec_grp_id = security_group.id
 
     def write_sec_grp():
@@ -159,7 +159,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
 
     if inst:
         inst.add_tags({
-            'Name': name_tag,
+            'Name': name,
             'VimmaSpawned': str(True),
         })
 
@@ -343,7 +343,7 @@ def route53_add(self, vm_id, user_id=None):
             vm = VM.objects.get(id=vm_id)
             aws_vm = vm.awsvm
             aws_vm_id = aws_vm.id
-            name = aws_vm.name_tag
+            name = aws_vm.name
             inst_id = aws_vm.instance_id
 
             aws_prov = vm.provider.awsprovider
@@ -392,7 +392,7 @@ def route53_delete(self, vm_id, user_id=None):
             vm = VM.objects.get(id=vm_id)
             aws_vm = vm.awsvm
             aws_vm_id = aws_vm.id
-            name = aws_vm.name_tag
+            name = aws_vm.name
 
             aws_prov = vm.provider.awsprovider
             route_53_zone = aws_prov.route_53_zone

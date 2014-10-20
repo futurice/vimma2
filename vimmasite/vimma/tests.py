@@ -1458,7 +1458,7 @@ class AWSVMTests(APITestCase):
 
     def test_required_fields(self):
         """
-        AWSVM requires: vm, name_tag, region.
+        AWSVM requires: vm, name, region.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         tz.full_clean()
@@ -1471,13 +1471,13 @@ class AWSVMTests(APITestCase):
         prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
 
-        for kwargs in ({'vm': vm}, {'name_tag': 'a'}, {'region': 'a'},
-                {'vm': vm, 'name_tag': 'a'}, {'vm': vm, 'region': 'a'},
-                {'name_tag': 'a', 'region': 'a'}):
+        for kwargs in ({'vm': vm}, {'name': 'a'}, {'region': 'a'},
+                {'vm': vm, 'name': 'a'}, {'vm': vm, 'region': 'a'},
+                {'name': 'a', 'region': 'a'}):
             with self.assertRaises(ValidationError):
                 AWSVM(**kwargs).full_clean()
 
-        AWSVM.objects.create(vm=vm, name_tag='a', region='a').full_clean()
+        AWSVM.objects.create(vm=vm, name='a', region='a').full_clean()
 
     def test_protected(self):
         """
@@ -1494,7 +1494,7 @@ class AWSVMTests(APITestCase):
         prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
         vm.full_clean()
-        awsVm = AWSVM.objects.create(vm=vm, name_tag='a', region='a')
+        awsVm = AWSVM.objects.create(vm=vm, name='a', region='a')
         awsVm.full_clean()
 
         with self.assertRaises(ProtectedError):
@@ -1537,11 +1537,11 @@ class AWSVMTests(APITestCase):
         vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
         vm3.full_clean()
 
-        avm1 = AWSVM.objects.create(vm=vm1, name_tag='1', region='a')
+        avm1 = AWSVM.objects.create(vm=vm1, name='1', region='a')
         avm1.full_clean()
-        avm2 = AWSVM.objects.create(vm=vm2, name_tag='2', region='b')
+        avm2 = AWSVM.objects.create(vm=vm2, name='2', region='b')
         avm2.full_clean()
-        avm3 = AWSVM.objects.create(vm=vm3, name_tag='3', region='a')
+        avm3 = AWSVM.objects.create(vm=vm3, name='3', region='a')
         avm3.full_clean()
 
         ua.profile.projects.add(p1, p2)

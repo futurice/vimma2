@@ -190,9 +190,8 @@ class AWSVM(models.Model):
     # Synced regularly by the update tasks.
     state = models.CharField(max_length=100, blank=True)
     # AWS fields:
-    # TODO: rename name_tag to ‘name’ in both back-end and front-end
     # TODO: validator: name must be a-z and dashes because it's a DNS name
-    name_tag = models.CharField(max_length=50)
+    name = models.CharField(max_length=50)
     region = models.CharField(max_length=20)
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
