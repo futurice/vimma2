@@ -1,4 +1,6 @@
 import boto.ec2
+import boto.route53
+import celery.exceptions
 from django.db import transaction
 import sys
 import traceback
@@ -15,7 +17,7 @@ from vimma.util import retry_transaction
 aud = Auditor(__name__)
 
 
-def connect_to_aws_vm_region(aws_vm_id):
+def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto EC2Connection to the given AWS VM's region.
     """
@@ -29,6 +31,24 @@ def connect_to_aws_vm_region(aws_vm_id):
     access_key_id, access_key_secret, region = retry_transaction(read_data)
 
     return boto.ec2.connect_to_region(region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=access_key_secret)
+
+
+def route53_connect_to_aws_vm_region(aws_vm_id):
+    """
+    Return a boto Route53Connection to the given AWS VM's region.
+    """
+    def read_data():
+        with transaction.atomic():
+            aws_vm = AWSVM.objects.get(id=aws_vm_id)
+            aws_prov = aws_vm.vm.provider.awsprovider
+
+            return (aws_prov.access_key_id, aws_prov.access_key_secret,
+                    aws_vm.region)
+    access_key_id, access_key_secret, region = retry_transaction(read_data)
+
+    return boto.route53.connect_to_region(region,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=access_key_secret)
 
@@ -76,32 +96,30 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     # Make the API calls only once. Retrying failed DB transactions must only
     # include idempotent code, not the AWS API calls which create more VMs.
 
-    access_key_id, access_key_secret, ssh_key_name = None, None, None
-    name_tag, region, ami_id, instance_type = None, None, None, None
+    ssh_key_name = None
+    aws_vm_id, name_tag = None, None
+    ami_id, instance_type = None, None
 
     def read_vars():
-        nonlocal access_key_id, access_key_secret, ssh_key_name
-        nonlocal name_tag, region, ami_id, instance_type
+        nonlocal ssh_key_name
+        nonlocal aws_vm_id, name_tag
+        nonlocal ami_id, instance_type
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
             aws_prov = aws_vm_config.vmconfig.provider.awsprovider
             aws_vm = VM.objects.get(id=vm_id).awsvm
 
-            access_key_id = aws_prov.access_key_id
-            access_key_secret = aws_prov.access_key_secret
             ssh_key_name = aws_prov.ssh_key_name
 
+            aws_vm_id = aws_vm.id
             name_tag = aws_vm.name_tag
-            region = aws_vm.region
             ami_id = aws_vm_config.ami_id
             instance_type = aws_vm_config.instance_type
     retry_transaction(read_vars)
 
-    conn = boto.ec2.connect_to_region(region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key_secret)
+    ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
 
-    security_group = conn.create_security_group(name_tag, 'Vimma-generated')
+    security_group = ec2_conn.create_security_group(name_tag, 'Vimma-generated')
     sec_grp_id = security_group.id
 
     def write_sec_grp():
@@ -111,7 +129,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             aws_vm.save()
     retry_transaction(write_sec_grp)
 
-    reservation = conn.run_instances(ami_id,
+    reservation = ec2_conn.run_instances(ami_id,
             instance_type=instance_type,
             security_group_ids=[sec_grp_id],
             key_name=ssh_key_name or None)
@@ -145,6 +163,8 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             'VimmaSpawned': str(True),
         })
 
+    route53_add.delay(vm_id, user_id=user_id)
+
 
 def power_on_vm(vm_id, data, user_id=None):
     """
@@ -168,9 +188,10 @@ def do_power_on_vm(vm_id, user_id=None):
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.start_instances(instance_ids=[inst_id])
         aud.info('Started instance', vm_id=vm_id, user_id=user_id)
+        route53_add.delay(vm_id, user_id=user_id)
 
 
 def power_off_vm(vm_id, data, user_id=None):
@@ -195,9 +216,10 @@ def do_power_off_vm(vm_id, user_id=None):
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.stop_instances(instance_ids=[inst_id])
         aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
+        route53_delete.delay(vm_id, user_id=user_id)
 
 
 def reboot_vm(vm_id, data, user_id=None):
@@ -222,7 +244,7 @@ def do_reboot_vm(vm_id, user_id=None):
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.reboot_instances(instance_ids=[inst_id])
         aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
 
@@ -250,9 +272,10 @@ def do_destroy_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         # can add countdown=…, but the task would still have to retry anyway
         delete_security_group.delay(vm_id, user_id=user_id)
+        route53_delete.delay(vm_id, user_id=user_id)
 
         aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.terminate_instances(instance_ids=[inst_id])
         aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
 
@@ -268,7 +291,7 @@ def delete_security_group(self, vm_id, user_id=None):
 
     try:
         aws_vm_id, sec_grp_id = retry_transaction(read_vars)
-        conn = connect_to_aws_vm_region(aws_vm_id)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.delete_security_group(group_id=sec_grp_id)
     except:
         msg = ''.join(traceback.format_exc())
@@ -295,7 +318,7 @@ def _update_vm_status_impl(vm_id):
         aud.warning('missing instance_id', vm_id=vm_id)
         return
 
-    conn = connect_to_aws_vm_region(aws_vm_id)
+    conn = ec2_connect_to_aws_vm_region(aws_vm_id)
     instances = conn.get_only_instances(instance_ids=[inst_id])
     if len(instances) != 1:
         aud.warning('AWS returned {} instances, expected 1'.format(
@@ -311,3 +334,85 @@ def _update_vm_status_impl(vm_id):
             aws_vm.save()
     retry_transaction(write_data)
     aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)
+
+
+@app.task(bind=True, max_retries=24, default_retry_delay=5)
+def route53_add(self, vm_id, user_id=None):
+    def read_vars():
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            aws_vm = vm.awsvm
+            aws_vm_id = aws_vm.id
+            name = aws_vm.name_tag
+            inst_id = aws_vm.instance_id
+
+            aws_prov = vm.provider.awsprovider
+            route_53_zone = aws_prov.route_53_zone
+            return aws_vm_id, name, inst_id, route_53_zone
+
+    aud_kw = {'vm_id': vm_id, 'user_id': user_id}
+    try:
+        aws_vm_id, name, inst_id, route_53_zone = retry_transaction(read_vars)
+
+        ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
+        instances = ec2_conn.get_only_instances(instance_ids=[inst_id])
+        if len(instances) != 1:
+            aud.warning('AWS returned {} instances, expected 1'.format(
+                len(instances)), **aud_kw)
+            self.retry()
+        pub_dns_name = instances[0].public_dns_name
+        if not pub_dns_name:
+            aud.warning('No public DNS name for instance {}'.format(inst_id),
+                    **aud_kw)
+            self.retry()
+
+        r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
+        r53_z = r53_conn.get_zone(route_53_zone)
+
+        vm_cname = name + '.' + route_53_zone
+        if r53_z.get_cname(vm_cname, all=True):
+            r53_z.delete_cname(vm_cname, all=True)
+            aud.info('Removed existing DNS cname ‘{}’'.format(vm_cname),
+                    **aud_kw)
+        r53_z.add_cname(vm_cname, pub_dns_name, comment='Vimma-generated')
+        aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+    except celery.exceptions.Retry:
+        aud.warning("requesting retry", **aud_kw)
+        raise
+    except:
+        msg = ''.join(traceback.format_exc())
+        aud.error(msg, **aud_kw)
+        self.retry()
+
+
+@app.task(bind=True, max_retries=24, default_retry_delay=5)
+def route53_delete(self, vm_id, user_id=None):
+    def read_vars():
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            aws_vm = vm.awsvm
+            aws_vm_id = aws_vm.id
+            name = aws_vm.name_tag
+
+            aws_prov = vm.provider.awsprovider
+            route_53_zone = aws_prov.route_53_zone
+            return aws_vm_id, name, route_53_zone
+
+    aud_kw = {'vm_id': vm_id, 'user_id': user_id}
+    try:
+        aws_vm_id, name, route_53_zone = retry_transaction(read_vars)
+
+        r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
+        r53_z = r53_conn.get_zone(route_53_zone)
+
+        vm_cname = name + '.' + route_53_zone
+        if r53_z.get_cname(vm_cname, all=True):
+            r53_z.delete_cname(vm_cname, all=True)
+            aud.info('Removed DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+        else:
+            aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
+                    **aud_kw)
+    except:
+        msg = ''.join(traceback.format_exc())
+        aud.error(msg, **aud_kw)
+        self.retry()
