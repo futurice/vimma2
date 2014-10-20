@@ -20,8 +20,13 @@ if __name__ == '__main__':
     env['PYTHONPATH'] = util.VIMMASITE_PYTHONPATH
 
     # add ‘-f logfile’ to send the log to a file
-    try:
-        subprocess.check_call(['celery', '-A', 'vimma.celery:app', 'worker',
-            '-l', 'info'], env=env)
-    except KeyboardInterrupt:
-        pass
+    p = subprocess.Popen(['celery', '-A', 'vimma.celery:app', 'worker',
+        '-l', 'info'], env=env)
+    # Ctrl-C gets sent to both the parent and child processes. Wait for celery
+    # to exit. Else celery processes are left after the python script exits.
+    while True:
+        try:
+            p.wait()
+            break
+        except KeyboardInterrupt:
+            pass
