@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 import json
 import logging
+import re
 
 
 class Permission(models.Model):
@@ -181,6 +182,12 @@ class DummyVM(models.Model):
     poweredon = models.BooleanField(default=False)
 
 
+def aws_vm_name_validator(val):
+    if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
+        raise ValidationError(('Invalid AWS VM name ‘{}’, ' +
+                'must be alphanumeric and dashes (-).').format(val))
+
+
 class AWSVM(models.Model):
     """
     Type-specific data for a VM of type Provider.TYPE_AWS.
@@ -191,7 +198,7 @@ class AWSVM(models.Model):
     state = models.CharField(max_length=100, blank=True)
     # AWS fields:
     # TODO: validator: name must be a-z and dashes because it's a DNS name
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, validators=[aws_vm_name_validator])
     region = models.CharField(max_length=20)
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)

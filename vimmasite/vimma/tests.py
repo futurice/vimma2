@@ -1479,6 +1479,30 @@ class AWSVMTests(APITestCase):
 
         AWSVM.objects.create(vm=vm, name='a', region='a').full_clean()
 
+    def test_name_validator(self):
+        """
+        AWSVM name must conform to a certain format (used in DNS name).
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        for name in ('', ' ', '-', '-a', 'a-', '.', 'dev.vm'):
+            with self.assertRaises(ValidationError):
+                AWSVM(vm=vm, region='a', name=name).full_clean()
+        vm.delete()
+
+        for name in ('a', '5', 'a-b', 'build-server', 'x-0-dev'):
+            vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+            AWSVM.objects.create(vm=vm, region='a', name=name).full_clean()
+
     def test_protected(self):
         """
         Test PROTECTED constraint.
