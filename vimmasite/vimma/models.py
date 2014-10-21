@@ -246,3 +246,15 @@ class Audit(models.Model):
             on_delete=models.SET_NULL)
     vm = models.ForeignKey(VM, null=True, blank=True,
             on_delete=models.SET_NULL)
+
+
+class PowerLog(models.Model):
+    """
+    The power state (ON or OFF) of a VM at a point in time.
+
+    If you're not sure what the vm's state is (e.g. you encountered an error
+    while checking it) don't create a PowerLog object.
+    """
+    vm = models.ForeignKey(VM, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    powered_on = models.BooleanField(default=None)

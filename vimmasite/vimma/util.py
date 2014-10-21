@@ -4,13 +4,14 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.utils import OperationalError
 from django.http import HttpResponse
+from django.utils.timezone import utc
 import json
 import pytz
 import random
 import time
 
 from vimma.audit import Auditor
-from vimma.models import Profile
+from vimma.models import Profile, VM
 from vimma.perms import Perms
 from vimma.actions import Actions
 
@@ -116,6 +117,45 @@ def schedule_at_tstamp(schedule, tstamp):
     row = aware.weekday()
     col = aware.hour * 2 + aware.minute // 30
     return json.loads(schedule.matrix)[row][col]
+
+
+def discard_expired_schedule_override(vm_id):
+    """
+    Remove schedule override, if it has expired, from vm_id.
+
+    This function must not be called inside a transaction.
+    """
+    def call():
+        now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            if vm.sched_override_state == None:
+                return
+            if vm.sched_override_tstamp >= now:
+                return
+
+            vm.sched_override_state = None
+            vm.sched_override_tstamp = None
+            vm.save()
+            vm.full_clean()
+
+    retry_transaction(call)
+
+
+def vm_at_now(vm_id):
+    """
+    Return True/False if vm should be powered ON/OFF now according to schedule
+    and a possible override.
+    """
+    def call():
+        now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            if (vm.sched_override_state != None and
+                    vm.sched_override_tstamp >= now):
+                return vm.sched_override_state
+            return schedule_at_tstamp(vm.schedule, now)
+    return retry_transaction(call)
 
 
 def retry_transaction(call, max_retries=5, start_delay_millis=100):

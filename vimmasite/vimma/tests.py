@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -19,7 +20,7 @@ from vimma.models import (
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit,
+    Audit, PowerLog,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -2094,3 +2095,53 @@ class AuditTests(TestCase):
         response = self.client.post(reverse('audit-list'), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class PowerLogTests(TestCase):
+
+    def test_required_fields(self):
+        """
+        Test required fields: vm, powered_on.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+
+        for kw in ({}, {'vm': vm}, {'powered_on': True}):
+            with transaction.atomic():
+                with self.assertRaises(IntegrityError):
+                    PowerLog.objects.create(**kw).full_clean()
+        PowerLog.objects.create(vm=vm, powered_on=True)
+
+    def test_on_delete_constraints(self):
+        """
+        Test on_delete constraints for vm field.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+
+        pl = PowerLog.objects.create(vm=vm, powered_on=False)
+        pl.full_clean()
+        pl_id = pl.id
+        del pl
+        vm.delete()
+
+        with self.assertRaises(PowerLog.DoesNotExist):
+            PowerLog.objects.get(id=pl_id)
