@@ -1,4 +1,14 @@
 Polymer('schedule-editor', {
+    created: function() {
+        this.matrixRowLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+            'Friday', 'Saturday', 'Sunday'];
+        this.matrixColLabels = [];
+        var i;
+        for (i = 0; i < 24; i++) {
+            this.matrixColLabels.push(i + ':00 → ' + i + ':30');
+            this.matrixColLabels.push(i + ':30 → ' + ((i+1) % 24) + ':00');
+        }
+    },
     ready: function() {
         // The external interface is ‘schedule’. Internally we have a last
         // saved model and the currently editing model.

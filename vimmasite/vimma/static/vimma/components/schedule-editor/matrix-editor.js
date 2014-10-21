@@ -18,6 +18,15 @@ Polymer('matrix-editor', {
     lastDragRow: null,
     lastDragCol: null,
 
+    // Help display: the current row and column under the mouse, or null.
+    helpRow: null,
+    helpCol: null,
+
+    created: function() {
+        this.rowLabels = [];
+        this.colLabels = [];
+    },
+
     startEdit: function(row, col) {
         if (this.editing) {
             throw 'Already editing';
@@ -78,11 +87,18 @@ Polymer('matrix-editor', {
         }
     },
     mouseOver: function(ev, detail, sender) {
+        var row = parseInt(sender.getAttribute('row'), 10),
+            col = parseInt(sender.getAttribute('col'), 10);
+        this.helpRow = row;
+        this.helpCol = col;
         if (this.editing) {
-            var row = parseInt(sender.getAttribute('row'), 10),
-                col = parseInt(sender.getAttribute('col'), 10);
             this.dragTo(row, col);
         }
+    },
+
+    resetHelpRowCol: function() {
+        this.helpRow = null;
+        this.helpCol = null;
     },
 
     cellIsHighlighted: function(row, col) {

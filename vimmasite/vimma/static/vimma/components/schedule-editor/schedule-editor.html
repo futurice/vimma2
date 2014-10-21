@@ -14,7 +14,8 @@
       value="{{editModel.name}}" disabled="{{ajaxInProgress}}">
     </paper-input>
 
-    <matrix-editor matrix="{{editModel.matrix}}" disabled="{{ajaxInProgress}}">
+    <matrix-editor matrix="{{editModel.matrix}}" disabled="{{ajaxInProgress}}"
+      rowLabels="{{matrixRowLabels}}" colLabels="{{matrixColLabels}}">
     </matrix-editor>
 
     TimeZone:
