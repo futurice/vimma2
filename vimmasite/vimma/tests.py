@@ -1814,6 +1814,90 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
+class OverrideScheduleTests(TestCase):
+    """
+    Test the overrideSchedule endpoint.
+    """
+
+    def test_login_required(self):
+        """
+        The user must be logged in.
+        """
+        response = self.client.get(reverse('overrideSchedule'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unsupported_methods(self):
+        """
+        Only POST is supported (e.g. GET, PUT, DELETE are not).
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        url = reverse('overrideSchedule')
+        for meth in self.client.get, self.client.put, self.client.delete:
+            response = meth(url)
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_perms_and_not_found(self):
+        """
+        Test user permissions and ‘not found’.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY, max_override_seconds=3600)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm.full_clean()
+
+        url = reverse('overrideSchedule')
+
+        # non-existent VM ID
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'vmid': 100, 'state': None}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can override schedules in own project
+        u.profile.projects.add(prj)
+        for data in ({'state': None}, {'state': True, 'seconds': 3600},
+                {'state': False, 'seconds': 600}):
+            data.update({'vmid': vm.id})
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps(data))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # but not exceeding max seconds
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'vmid': vm.id, 'state': True, 'seconds': 3601}))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # forbidden outside own projects
+        u.profile.projects.remove(prj)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'state': None}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # ok if omnipotent
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='all powerful')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'state': None}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
 class CanDoTests(TestCase):
 
     def test_create_vm_in_project(self):

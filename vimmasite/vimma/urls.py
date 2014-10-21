@@ -9,6 +9,7 @@ from vimma.views import (
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
     AuditViewSet,
     index, test, create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
+    override_schedule,
 )
 
 
@@ -31,11 +32,15 @@ router.register(r'audit', AuditViewSet)
 
 urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
+
     url(r'^$', index, name='index'),
     url(r'^test$', test, name='test'),
+
     url(r'^createvm$', create_vm, name='createVM'),
     url(r'^poweronvm$', power_on_vm, name='powerOnVM'),
     url(r'^poweroffvm$', power_off_vm, name='powerOffVM'),
     url(r'^rebootvm$', reboot_vm, name='rebootVM'),
     url(r'^destroyvm$', destroy_vm, name='destroyVM'),
+
+    url(r'^override-schedule$', override_schedule, name='overrideSchedule'),
 )

@@ -97,6 +97,9 @@ def can_do(user, what, data=None):
         return has_perm(user, Perms.USE_SPECIAL_SCHEDULE)
     elif what == Actions.READ_ALL_AUDITS:
         return has_perm(user, Perms.READ_ALL_AUDITS)
+    elif what == Actions.OVERRIDE_VM_SCHEDULE:
+        vm = data
+        return user.profile.projects.filter(id=vm.project.id).count() > 0
     else:
         aud.warning('Unknown action “{}”'.format(action))
         return False

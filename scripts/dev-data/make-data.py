@@ -59,15 +59,15 @@ u4.profile.projects.add(prj1)
 
 
 prov1 = Provider.objects.create(name='My First Dummy Provider',
-        type=Provider.TYPE_DUMMY)
+        type=Provider.TYPE_DUMMY, max_override_seconds=60*60)
 DummyProvider.objects.create(provider=prov1)
 
 prov2 = Provider.objects.create(name='My Second Dummy Provider',
-        type=Provider.TYPE_DUMMY)
+        type=Provider.TYPE_DUMMY, max_override_seconds=60*60)
 DummyProvider.objects.create(provider=prov2)
 
 prov3 = Provider.objects.create(name='AWS Vimma Provider',
-        type=Provider.TYPE_AWS)
+        type=Provider.TYPE_AWS, max_override_seconds=60*60)
 AWSProvider.objects.create(provider=prov3,
         access_key_id=secrets.AWS_ACCESS_KEY_ID,
         access_key_secret=secrets.AWS_ACCESS_KEY_SECRET,
@@ -75,7 +75,7 @@ AWSProvider.objects.create(provider=prov3,
         route_53_zone=secrets.AWS_ROUTE_53_NAME)
 
 prov4 = Provider.objects.create(name='My Second AWS Provider',
-        type=Provider.TYPE_AWS)
+        type=Provider.TYPE_AWS, max_override_seconds=60*60)
 AWSProvider.objects.create(provider=prov4)
 
 

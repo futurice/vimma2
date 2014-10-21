@@ -75,7 +75,7 @@ class Schedule(models.Model):
     name = models.CharField(max_length=50, unique=True)
     timezone = models.ForeignKey(TimeZone, on_delete=models.PROTECT)
     matrix = models.TextField(validators=[schedule_matrix_validator])
-    # ‘special’ schedules can't be used by anyone. E.g. 24h turned on.
+    # ‘special’ schedules can't be used by everyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
     is_special = models.BooleanField(default=False)
 
@@ -98,6 +98,8 @@ class Provider(models.Model):
     )
     name = models.CharField(max_length=50, unique=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    # the maximum length of a schedule override which users may place on a VM
+    max_override_seconds = models.BigIntegerField(default=0)
 
 
 class DummyProvider(models.Model):
@@ -164,6 +166,12 @@ class VM(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+
+    # A ‘schedule override’: keep ON or OFF until a timestamp
+    # True → Powered ON, False → Powered OFF, None → no override
+    sched_override_state = models.NullBooleanField(default=None)
+    # end of schedule override, in seconds since epoch
+    sched_override_tstamp = models.BigIntegerField(blank=True, null=True)
 
 
 class DummyVM(models.Model):

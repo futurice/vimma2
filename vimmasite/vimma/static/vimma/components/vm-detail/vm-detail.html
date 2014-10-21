@@ -66,6 +66,8 @@
       </button>
 
       <br>
+      <template bind ref="override"></template>
+      <br>
       <button type="button" on-click="{{toggleShowLogs}}">
         <template if="{{!showLogs}}">Show logs</template>
         <template if="{{showLogs}}">Hide logs</template>
@@ -75,6 +77,33 @@
           <audit-display vmid="{{vmid}}"></audit-display>
         </div>
       </template>
+    </template>
+
+    <template id="override">
+      On schedule ‘{{schedule.name}}’,
+      <template if="{{vm.sched_override_state == null}}">
+        no override in effect.
+      </template>
+      <template if="{{vm.sched_override_state != null}}">
+        overridden to Powered {{vm.sched_override_state == true ? 'ON' : 'OFF'}}
+        until {{tstampToString(vm.sched_override_tstamp)}}.
+      </template>
+      <br>
+      <button on-click="{{overrideClear}}">Clear override</button>
+      <br>
+      Keep
+      <paper-dropdown-menu selected="{{overrideSchedState}}" valueattr="key"
+        disabled?="{{ajaxInProgress}}"
+        on-core-select="{{overrideSchedStateSelected}}">
+        <paper-item label="Powered ON" key="on"></paper-item>
+        <paper-item label="Powered OFF" key="off"></paper-item>
+      </paper-dropdown-menu>
+      for
+      <input type="number" value="{{overrideSchedMins}}"
+        disabled?="{{ajaxInProgress}}"> min
+      <button on-click="{{overrideSet}}" disabled?="{{ajaxInProgress}}">
+        Set override
+      </button>
     </template>
   </template>
 

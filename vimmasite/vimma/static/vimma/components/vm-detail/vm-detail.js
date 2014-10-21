@@ -54,6 +54,10 @@ Polymer('vm-detail', {
     vmid: null,
     vm: null,
     provider: null,
+    schedule: null,
+    // what the schedule-override will be, if the user sets one
+    overrideSchedState: 'on',
+    overrideSchedMins: 10,
     showLogs: false,
 
     ready: function() {
@@ -67,6 +71,7 @@ Polymer('vm-detail', {
 
         this.vm = null;
         this.provider = null;
+        this.schedule = null;
         this.showLogs = false;
 
         this.loadVM();
@@ -87,17 +92,19 @@ Polymer('vm-detail', {
     loadVM: function() {
         var ok = (function(resultArr) {
             this.vm = resultArr[0];
-            this.loadProvider();
+            this.loadProviderAndSchedule();
         }).bind(this);
         apiGet([vimmaApiVMDetailRoot + this.vmid + '/'],
                 ok, this.loadFail.bind(this));
     },
-    loadProvider: function() {
+    loadProviderAndSchedule: function() {
         var ok = (function(resultArr) {
             this.provider = resultArr[0];
+            this.schedule = resultArr[1];
             this.loadSuccess();
         }).bind(this);
-        apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/'],
+        apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/',
+                vimmaApiScheduleDetailRoot + this.vm.schedule + '/'],
                 ok, this.loadFail.bind(this));
     },
 
@@ -136,6 +143,46 @@ Polymer('vm-detail', {
     },
     destroy: function() {
         this.vmOperation(vimmaEndpointDestroyVM, null);
+    },
+
+    overrideSchedStateSelected: function(e, detail, sender) {
+        e.stopPropagation();
+        if (detail.isSelected) {
+            this.overrideSchedState = detail.item.getAttribute('key');
+        }
+    },
+    tstampToString: function(ts) {
+        return new Date(ts * 1000).toString();
+    },
+    ajaxOverrideSchedule: function(jsonBody) {
+        this.fire('ajax-start');
+        $.ajax({
+            url: vimmaEndpointOverrideSchedule,
+            type: 'POST',
+            contentType: 'application/json; charset=UTF-8',
+            headers: {
+                'X-CSRFToken': $.cookie('csrftoken')
+            },
+            data: JSON.stringify(jsonBody),
+            success: (function(data) {
+                this.fire('ajax-end', {success: true});
+                this.reload();
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.fire('ajax-end', {success: false, errorText: errorText});
+            }).bind(this)
+        });
+    },
+    overrideSet: function() {
+        this.ajaxOverrideSchedule({
+            vmid: this.vm.id,
+            state: this.overrideSchedState == 'on',
+            seconds: this.overrideSchedMins * 60
+        });
+    },
+    overrideClear: function() {
+        this.ajaxOverrideSchedule({vmid: this.vm.id, state: null});
     },
 
     toggleShowLogs: function() {

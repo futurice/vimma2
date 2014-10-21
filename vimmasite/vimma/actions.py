@@ -8,3 +8,4 @@ class Actions:
     POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT = 'power-onoff-reboot-destroy-vm-in-prj'
     USE_SCHEDULE = 'use-schedule'
     READ_ALL_AUDITS = 'read-all-audits'
+    OVERRIDE_VM_SCHEDULE = 'override-vm-schedule'

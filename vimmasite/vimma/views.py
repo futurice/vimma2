@@ -1,8 +1,11 @@
+import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils.timezone import utc
 import json
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
@@ -20,7 +23,10 @@ from vimma.models import (
     VM, DummyVM, AWSVM,
     Audit,
 )
-from vimma.util import can_do, login_required_or_forbidden, get_http_json_err
+from vimma.util import (
+        can_do, login_required_or_forbidden, get_http_json_err,
+        retry_transaction,
+)
 
 
 aud = Auditor(__name__)
@@ -400,6 +406,71 @@ def destroy_vm(request):
 
     try:
         vmutil.destroy_vm(vm, body['data'], user_id=request.user.id)
+        return HttpResponse()
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def override_schedule(request):
+    """
+    Add or remove a ‘schedule override’ for a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        state: true | false | null, // for Power ON | Power OFF | no override
+        seconds: int,   // duration, starting now; ignored if state is null
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    body = json.loads(request.read().decode('utf-8'))
+    try:
+        vm = VM.objects.get(id=body['vmid'])
+    except ObjectDoesNotExist as e:
+        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
+
+    if not can_do(request.user, Actions.OVERRIDE_VM_SCHEDULE, vm):
+        return get_http_json_err('You may not override this vm\'s schedule',
+                status.HTTP_403_FORBIDDEN)
+
+    try:
+        state = body['state']
+        if state is not None:
+            seconds = body['seconds']
+            max_secs = vm.provider.max_override_seconds
+            if seconds > max_secs:
+                return get_http_json_err(('{}s is too long, ' +
+                    'must be ≤ {}s').format(
+                    seconds, max_secs), status.HTTP_400_BAD_REQUEST)
+
+        def call():
+            with transaction.atomic():
+                vm = VM.objects.get(id=body['vmid'])
+                vm.sched_override_state = state
+                if state == None:
+                    vm.sched_override_tstamp = None
+                else:
+                    now = datetime.datetime.utcnow().replace(tzinfo=utc)
+                    vm.sched_override_tstamp = now.timestamp() + seconds
+                vm.save()
+                vm.full_clean()
+        retry_transaction(call)
+
+        if state is None:
+            msg = 'Cleared scheduling override'
+        else:
+            msg = 'Override schedule, keep {} for {} seconds'.format(
+                    'ON' if state else 'OFF', seconds)
+        aud.info(msg, user_id=request.user.id, vm_id=vm.id)
+
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
