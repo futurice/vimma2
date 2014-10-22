@@ -471,6 +471,13 @@ def override_schedule(request):
                     'ON' if state else 'OFF', seconds)
         aud.info(msg, user_id=request.user.id, vm_id=vm.id)
 
+        if request.META['SERVER_NAME'] == "testserver":
+            # Don't perform other actions when running tests
+            return HttpResponse()
+
+        # the update task triggers a power on/off if needed
+        vmutil.update_vm_status.delay(vm.id)
+
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
