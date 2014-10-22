@@ -1817,7 +1817,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
 
 class OverrideScheduleTests(TestCase):
     """
-    Test the overrideSchedule endpoint.
+    Test the overrideSchedule endpoint and util.* helper.
     """
 
     def test_login_required(self):
@@ -1897,6 +1897,59 @@ class OverrideScheduleTests(TestCase):
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'state': None}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_vm_at_now(self):
+        """
+        Test the util.vm_at_now helper.
+        """
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY, max_override_seconds=3600)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Pacific/Easter')
+        tz.full_clean()
+        s_off = Schedule.objects.create(name='Always OFF', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s_off.full_clean()
+        s_on = Schedule.objects.create(name='Always On', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s_on.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s_off)
+        vm.full_clean()
+
+        def check_overrides():
+            old_state = vm.sched_override_state
+            old_tstamp = vm.sched_override_tstamp
+
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            end = now + datetime.timedelta(minutes=1)
+            vm.sched_override_tstamp = end.timestamp()
+            vm.save()
+            vm.full_clean()
+
+            for new_state in (True, False):
+                vm.sched_override_state = new_state
+                vm.save()
+                vm.full_clean()
+                self.assertIs(util.vm_at_now(vm.id), new_state)
+
+            vm.sched_override_state = old_state
+            vm.sched_override_tstamp = old_tstamp
+
+        self.assertFalse(util.vm_at_now(vm.id))
+        check_overrides()
+
+        vm.schedule = s_on
+        vm.save()
+        vm.full_clean()
+        self.assertTrue(util.vm_at_now(vm.id))
+        check_overrides()
 
 
 class CanDoTests(TestCase):

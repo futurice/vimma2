@@ -12,6 +12,7 @@ from vimma.models import (
     AWSVMConfig, AWSVM,
 )
 from vimma.util import retry_transaction
+import vimma.vmutil
 
 
 aud = Auditor(__name__)
@@ -335,6 +336,18 @@ def _update_vm_status_impl(vm_id):
     retry_transaction(write_data)
     aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)
 
+    on_states = {'pending', 'running', 'stopping', 'shutting-down'}
+    off_states = {'stopped', 'terminated'}
+    powered_on = (True if new_state in on_states
+            else False if new_state in off_states
+            else None)
+    if type(powered_on) is not bool:
+        aud.info('Unknown vm state ‘{}’'.format(new_state), vm_id=vm_id)
+        return
+    vimma.vmutil.power_log(vm_id, powered_on)
+    if new_state != 'terminated':
+        vimma.vmutil.switch_on_off(vm_id, powered_on)
+
 
 @app.task(bind=True, max_retries=24, default_retry_delay=5)
 def route53_add(self, vm_id, user_id=None):
@@ -369,7 +382,7 @@ def route53_add(self, vm_id, user_id=None):
         r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
         r53_z = r53_conn.get_zone(route_53_zone)
 
-        vm_cname = name + '.' + route_53_zone
+        vm_cname = (name + '.' + route_53_zone).lower()
         if r53_z.get_cname(vm_cname, all=True):
             r53_z.delete_cname(vm_cname, all=True)
             aud.info('Removed existing DNS cname ‘{}’'.format(vm_cname),
@@ -405,7 +418,7 @@ def route53_delete(self, vm_id, user_id=None):
         r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
         r53_z = r53_conn.get_zone(route_53_zone)
 
-        vm_cname = name + '.' + route_53_zone
+        vm_cname = (name + '.' + route_53_zone).lower()
         if r53_z.get_cname(vm_cname, all=True):
             r53_z.delete_cname(vm_cname, all=True)
             aud.info('Removed DNS cname ‘{}’'.format(vm_cname), **aud_kw)

@@ -7,6 +7,7 @@ from vimma.models import (
     DummyVM,
 )
 from vimma.util import retry_transaction
+import vimma.vmutil
 
 
 aud = Auditor(__name__)
@@ -167,6 +168,9 @@ def do_destroy_vm(vm_id, user_id=None):
 @app.task
 def update_vm_status(vm_id):
     def call():
+        """
+        Returns the fields destroyed, poweredon from the model.
+        """
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
             if dvm.destroyed:
@@ -175,8 +179,14 @@ def update_vm_status(vm_id):
                 new_status = 'powered ' + ('on' if dvm.poweredon else 'off')
             dvm.status = new_status
             dvm.save()
-        return new_status
+            aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
+            return dvm.destroyed, dvm.poweredon
 
     with aud.ctx_mgr(vm_id=vm_id):
-        new_status = retry_transaction(call)
-        aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
+        destroyed, poweredon = retry_transaction(call)
+        if destroyed:
+            poweredon = False
+
+        vimma.vmutil.power_log(vm_id, poweredon)
+        if not destroyed:
+            vimma.vmutil.switch_on_off(vm_id, poweredon)

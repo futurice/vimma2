@@ -257,4 +257,5 @@ class PowerLog(models.Model):
     """
     vm = models.ForeignKey(VM, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
+    # True → ON, False → OFF. Can't be None, so the value must be explicit.
     powered_on = models.BooleanField(default=None)

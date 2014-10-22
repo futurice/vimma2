@@ -4,8 +4,12 @@ from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
     Provider, VM,
+    PowerLog,
 )
-from vimma.util import retry_transaction
+from vimma.util import (
+    retry_transaction,
+    vm_at_now, discard_expired_schedule_override,
+)
 import vimma.vmtype.dummy, vimma.vmtype.aws
 
 
@@ -183,3 +187,47 @@ def update_vm_status(vm_id):
         vimma.vmtype.aws.update_vm_status.delay(vm_id)
     else:
         aud.error('Unknown provider type “{}”'.format(t), vm_id=vm_id)
+
+
+def power_log(vm_id, powered_on):
+    """
+    PowerLog the current vm state (ON/OFF).
+    """
+    def do_log():
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            PowerLog.objects.create(vm=vm, powered_on=powered_on)
+
+    with aud.ctx_mgr(vm_id=vm_id):
+        if type(powered_on) is not bool:
+            raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
+                powered_on, type(powered_on), bool))
+
+        retry_transaction(do_log)
+
+
+def switch_on_off(vm_id, powered_on):
+    """
+    Power on/off the vm if needed.
+
+    powered_on must be a boolean showing the current vm state.
+    If the vm's power state should be different, a power_on or power_off task
+    is submitted.
+    """
+    with aud.ctx_mgr(vm_id=vm_id):
+        if type(powered_on) is not bool:
+            raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
+                powered_on, type(powered_on), bool))
+
+        # clean-up, but not required
+        discard_expired_schedule_override(vm_id)
+
+        new_power_state = vm_at_now(vm_id)
+        if powered_on is new_power_state:
+            return
+
+        vm = VM.objects.get(id=vm_id)
+        if new_power_state:
+            power_on_vm(vm, None)
+        else:
+            power_off_vm(vm, None)

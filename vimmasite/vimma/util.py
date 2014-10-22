@@ -126,26 +126,32 @@ def discard_expired_schedule_override(vm_id):
     This function must not be called inside a transaction.
     """
     def call():
+        """
+        Returns True if an expired override was discarded, else False.
+        """
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
         with transaction.atomic():
             vm = VM.objects.get(id=vm_id)
             if vm.sched_override_state == None:
-                return
+                return False
             if vm.sched_override_tstamp >= now:
-                return
+                return False
 
             vm.sched_override_state = None
             vm.sched_override_tstamp = None
             vm.save()
             vm.full_clean()
+            return True
 
-    retry_transaction(call)
+    if retry_transaction(call):
+        aud.debug('Discarded expired schedule override', vm_id=vm_id)
 
 
 def vm_at_now(vm_id):
     """
-    Return True/False if vm should be powered ON/OFF now according to schedule
-    and a possible override.
+    Return True/False if vm should be powered ON/OFF now.
+
+    Computed from the vm's schedule and a possible override.
     """
     def call():
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
