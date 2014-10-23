@@ -65,7 +65,7 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
     return vm
 
 
-def power_on_vm(vm, data, user_id=None):
+def power_on_vm(vm_id, data, user_id=None):
     """
     Power ON VM.
 
@@ -86,17 +86,22 @@ def power_on_vm(vm, data, user_id=None):
     # undone if the vmtype.* call fails. So not starting a transaction here.
     # Although both this function and the callee access related DB data.
     aud.debug('Request to Power ON, data ‘{}’'.format(data),
-            vm_id=vm.id, user_id=user_id)
-    t = vm.provider.type
+            vm_id=vm_id, user_id=user_id)
+
+    def get_prov_type():
+        with transaction.atomic():
+            return VM.objects.get(id=vm_id).provider.type
+    t = retry_transaction(get_prov_type)
+
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_on_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.dummy.power_on_vm(vm_id, data, user_id=user_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.power_on_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.aws.power_on_vm(vm_id, data, user_id=user_id)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
 
-def power_off_vm(vm, data, user_id=None):
+def power_off_vm(vm_id, data, user_id=None):
     """
     Power OFF VM.
 
@@ -104,17 +109,22 @@ def power_off_vm(vm, data, user_id=None):
     This function must not be called inside a transaction.
     """
     aud.debug('Request to Power OFF, data ‘{}’'.format(data),
-            vm_id=vm.id, user_id=user_id)
-    t = vm.provider.type
+            vm_id=vm_id, user_id=user_id)
+
+    def get_prov_type():
+        with transaction.atomic():
+            return VM.objects.get(id=vm_id).provider.type
+    t = retry_transaction(get_prov_type)
+
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_off_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.dummy.power_off_vm(vm_id, data, user_id=user_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.power_off_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.aws.power_off_vm(vm_id, data, user_id=user_id)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
 
-def reboot_vm(vm, data, user_id=None):
+def reboot_vm(vm_id, data, user_id=None):
     """
     Reboot VM.
 
@@ -122,17 +132,22 @@ def reboot_vm(vm, data, user_id=None):
     This function must not be called inside a transaction.
     """
     aud.debug('Request to Reboot, data ‘{}’'.format(data),
-            vm_id=vm.id, user_id=user_id)
-    t = vm.provider.type
+            vm_id=vm_id, user_id=user_id)
+
+    def get_prov_type():
+        with transaction.atomic():
+            return VM.objects.get(id=vm_id).provider.type
+    t = retry_transaction(get_prov_type)
+
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.reboot_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.dummy.reboot_vm(vm_id, data, user_id=user_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.reboot_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.aws.reboot_vm(vm_id, data, user_id=user_id)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
 
-def destroy_vm(vm, data, user_id=None):
+def destroy_vm(vm_id, data, user_id=None):
     """
     Destroy VM.
 
@@ -140,12 +155,17 @@ def destroy_vm(vm, data, user_id=None):
     This function must not be called inside a transaction.
     """
     aud.debug('Request to Destroy, data ‘{}’'.format(data),
-            vm_id=vm.id, user_id=user_id)
-    t = vm.provider.type
+            vm_id=vm_id, user_id=user_id)
+
+    def get_prov_type():
+        with transaction.atomic():
+            return VM.objects.get(id=vm_id).provider.type
+    t = retry_transaction(get_prov_type)
+
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.destroy_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.dummy.destroy_vm(vm_id, data, user_id=user_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.destroy_vm(vm.id, data, user_id=user_id)
+        vimma.vmtype.aws.destroy_vm(vm_id, data, user_id=user_id)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
@@ -226,8 +246,7 @@ def switch_on_off(vm_id, powered_on):
         if powered_on is new_power_state:
             return
 
-        vm = VM.objects.get(id=vm_id)
         if new_power_state:
-            power_on_vm(vm, None)
+            power_on_vm(vm_id, None)
         else:
-            power_off_vm(vm, None)
+            power_off_vm(vm_id, None)

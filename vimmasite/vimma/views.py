@@ -267,8 +267,9 @@ def power_on_vm(request):
             status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
+    vm_id = body['vmid']
     try:
-        vm = VM.objects.get(id=body['vmid'])
+        vm = VM.objects.get(id=vm_id)
     except ObjectDoesNotExist as e:
         return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
@@ -276,18 +277,19 @@ def power_on_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not power on VMs in this project',
                 status.HTTP_403_FORBIDDEN)
+    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
 
     try:
-        vmutil.power_on_vm(vm, body['data'], user_id=request.user.id)
+        vmutil.power_on_vm(vm_id, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
+        aud.error(msg, user_id=request.user.id, vm_id=vm_id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -308,8 +310,9 @@ def power_off_vm(request):
             status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
+    vm_id = body['vmid']
     try:
-        vm = VM.objects.get(id=body['vmid'])
+        vm = VM.objects.get(id=vm_id)
     except ObjectDoesNotExist as e:
         return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
@@ -317,18 +320,19 @@ def power_off_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not power off VMs in this project',
                 status.HTTP_403_FORBIDDEN)
+    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
 
     try:
-        vmutil.power_off_vm(vm, body['data'], user_id=request.user.id)
+        vmutil.power_off_vm(vm_id, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
+        aud.error(msg, user_id=request.user.id, vm_id=vm_id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -349,8 +353,9 @@ def reboot_vm(request):
             status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
+    vm_id = body['vmid']
     try:
-        vm = VM.objects.get(id=body['vmid'])
+        vm = VM.objects.get(id=vm_id)
     except ObjectDoesNotExist as e:
         return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
@@ -358,18 +363,19 @@ def reboot_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not reboot VMs in this project',
                 status.HTTP_403_FORBIDDEN)
+    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
 
     try:
-        vmutil.reboot_vm(vm, body['data'], user_id=request.user.id)
+        vmutil.reboot_vm(vm_id, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
+        aud.error(msg, user_id=request.user.id, vm_id=vm_id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -390,8 +396,9 @@ def destroy_vm(request):
             status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
+    vm_id = body['vmid']
     try:
-        vm = VM.objects.get(id=body['vmid'])
+        vm = VM.objects.get(id=vm_id)
     except ObjectDoesNotExist as e:
         return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
@@ -399,18 +406,19 @@ def destroy_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not destroy VMs in this project',
                 status.HTTP_403_FORBIDDEN)
+    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
         return HttpResponse()
 
     try:
-        vmutil.destroy_vm(vm, body['data'], user_id=request.user.id)
+        vmutil.destroy_vm(vm_id, body['data'], user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
-        aud.error(msg, user_id=request.user.id, vm_id=vm.id)
+        aud.error(msg, user_id=request.user.id, vm_id=vm_id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
