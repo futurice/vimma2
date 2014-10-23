@@ -8,6 +8,8 @@
 <polymer-element name="audit-display" attributes="vmid userid"
   on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
   <template>
+    <link rel="stylesheet" type="text/css" href="audit-display.css">
+
     <button on-click="{{reload}}"disabled?="{{ajaxInProgress}}">
       Refresh logs
     </button>
@@ -29,8 +31,34 @@
     </template>
 
     <template id="main">
+      <div id="box">
+        <template bind ref="navigation"></template>
+        <template bind ref="table"></template>
+      </div>
+    </template>
+
+    <template id="navigation">
+      <div id="navigation">
+        <button type="button" on-click="{{loadPrevious}}"
+          disabled?="{{ajaxInProgress || !apiResult.previous}}">
+          ← prev
+        </button>
+        <span id="item-range">
+          Showing items {{firstItemNr}}–<!--
+            show 0–0 for no items
+          -->{{firstItemNr + (apiResult.results.length-1 || 0)}}
+          of {{apiResult.count}}
+        </span>
+        <button type="button" on-click="{{loadNext}}"
+          disabled?="{{ajaxInProgress || !apiResult.next}}">
+          next →
+        </button>
+      </div>
+    </template>
+
+    <template id="table">
       <table>
-        <template repeat="{{shownAuditItems}}">
+        <template repeat="{{apiResult.results}}">
           <tr>
             <td><local-date date="{{timestamp}}"></local-date></td>
             <td>{{level}}</td>
@@ -40,12 +68,11 @@
           </tr>
         </template>
       </table>
-      <template if="{{shownAuditItems.length < allAuditItems.length}}">
-        <button type="button" on-click="{{showMore}}">Show more</button>
-      </template>
-      <br>
-      Showing {{shownAuditItems.length}} of {{allAuditItems.length}}
-      audit items.
+
+      <button id="show-more" type="button" on-click="{{showMore}}"
+        disabled?="{{ajaxInProgress || pageSize >= maxPageSize}}">
+          Show more
+      </button>
     </template>
   </template>
 

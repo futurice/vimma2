@@ -1,0 +1,17 @@
+#box {
+	display: flex;
+	flex-direction: column;
+	display: table;
+}
+
+#navigation {
+	display: flex;
+}
+#navigation #item-range {
+	flex-grow: 1;
+	text-align: center;
+}
+
+#show-more {
+	width: 100%;
+}

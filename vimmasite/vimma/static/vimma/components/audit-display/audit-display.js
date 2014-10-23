@@ -30,13 +30,12 @@ Polymer('audit-display', {
     vmid: -1,
     userid: -1,
 
-    // How many items to show at first
-    initialCount: 5,
-
-    created: function() {
-        this.allAuditItems = [];
-        this.shownAuditItems = [];
-    },
+    pageSize: 5,
+    // can't refer to ‘restMaxPaginateBy’ in the template disabled?= binding
+    maxPageSize: restMaxPaginateBy,
+    // API endpoint response {count:, next:, previous:, results:}
+    apiResult: null,
+    firstItemNr: 1,
 
     ready: function() {
         this.reload();
@@ -47,9 +46,10 @@ Polymer('audit-display', {
 
         this.loading = true;
 
-        this.allAuditItems = [];
-
-        this.loadAudits();
+        // don't reset the page size
+        this.apiResult = null;
+        this.firstItemNr = 1;
+        this.loadFirstPage();
     },
     loadFail: function(errorText) {
         this.fire('ajax-end', {success: false, errorText: errorText});
@@ -64,12 +64,7 @@ Polymer('audit-display', {
         this.loadingSucceeded = true;
     },
 
-    loadAudits: function() {
-        var ok = (function(resultArr) {
-            this.allAuditItems = resultArr[0];
-            this.loadSuccess();
-        }).bind(this);
-
+    loadFirstPage: function() {
         var url = vimmaApiAuditList;
         var params = [];
         if (this.vmid != -1) {
@@ -78,19 +73,54 @@ Polymer('audit-display', {
         if (this.userid != -1) {
             params.push('user=' + this.userid);
         }
+        params.push(restPaginateByParam + '=' + this.pageSize);
         if (params.length) {
             url += '?' + params.join('&');
         }
 
-        apiGetAll([url], ok, this.loadFail.bind(this));
+        $.ajax({
+            url: url,
+            success: (function(data) {
+                this.apiResult = data;
+                this.firstItemNr = this.apiResult.count ? 1 : 0;
+                this.loadSuccess();
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.loadFail(errorText);
+            }).bind(this)
+        });
     },
 
-    allAuditItemsChanged: function() {
-        this.shownAuditItems = this.allAuditItems.slice(0, this.initialCount);
+    loadUrl: function(url, go_right) {
+        this.fire('ajax-start');
+        var first_right = this.firstItemNr + this.apiResult.results.length;
+
+        $.ajax({
+            url: url,
+            success: (function(data) {
+                this.apiResult = data;
+
+                var first_left = this.firstItemNr - this.apiResult.results.length;
+                this.firstItemNr = go_right ? first_right : first_left;
+
+                this.fire('ajax-end', {success: true});
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.fire('ajax-end', {success: false, errorText: errorText});
+            }).bind(this)
+        });
+    },
+    loadPrevious: function() {
+        this.loadUrl(this.apiResult.previous, false);
+    },
+    loadNext: function() {
+        this.loadUrl(this.apiResult.next, true);
     },
 
     showMore: function() {
-        this.shownAuditItems = this.allAuditItems.slice(0,
-                this.shownAuditItems.length * 2);
+        this.pageSize *= 2;
+        this.reload();
     }
 });
