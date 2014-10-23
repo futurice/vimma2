@@ -1,4 +1,5 @@
 import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -188,7 +189,7 @@ def index(request):
     """
     Homepage.
     """
-    return render(request, 'vimma/index.html')
+    return render(request, 'vimma/index.html', {'settings': settings})
 
 
 @login_required_or_forbidden
@@ -196,7 +197,7 @@ def test(request):
     """
     JavaScript Unit Tests.
     """
-    return render(request, 'vimma/test.html')
+    return render(request, 'vimma/test.html', {'settings': settings})
 
 
 @login_required_or_forbidden

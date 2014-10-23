@@ -81,10 +81,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # TODO: find an appropiate global page size, maybe override it for some
-    # views, or even allow the client to choose with ?queryParam=value&
     # http://www.django-rest-framework.org/api-guide/pagination#pagination-in-the-generic-views
     'PAGINATE_BY': 10,
+    'PAGINATE_BY_PARAM': 'page_size',
+    'MAX_PAGINATE_BY': 100,
 }
 
 

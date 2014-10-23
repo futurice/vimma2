@@ -40,6 +40,9 @@
 
           vimmaUserId = {{ user.id }},
 
+          restPaginateByParam = '{{settings.REST_FRAMEWORK.PAGINATE_BY_PARAM|escapejs}}',
+          restMaxPaginateBy = {{settings.REST_FRAMEWORK.MAX_PAGINATE_BY}},
+
           _dummy_end;
     </script>
 
