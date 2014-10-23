@@ -214,7 +214,7 @@ class AWSVM(models.Model):
 
 
 class Audit(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # Imitating https://docs.python.org/3/library/logging.html#logging-levels
     DEBUG = 'DEBUG'
