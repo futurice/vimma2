@@ -58,12 +58,16 @@
 
     <template id="table">
       <table>
-        <template repeat="{{apiResult.results}}">
+        <!--
+          Using a named template so its content can access getUserText(…).
+          This wouldn't be possible using an unnamed template.
+        -->
+        <template repeat="{{apiResult.results as r}}">
           <tr>
-            <td><local-date date="{{timestamp}}"></local-date></td>
-            <td>{{level}}</td>
-            <td>{{vm || '—'}}</td>
-            <td>{{user || '–'}}</td>
+            <td><local-date date="{{r.timestamp}}"></local-date></td>
+            <td>{{r.level}}</td>
+            <td>{{r.vm || '—'}}</td>
+            <td>{{getUserText(r.user)}}</td>
             <td><plain-text text="{{text}}"></plain-text></td>
           </tr>
         </template>
