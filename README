@@ -17,7 +17,6 @@ Use Python3, e.g. in a virtual environment:
 
 Set up local_settings.py:
 ― Type a random string for the SECRET_KEY
-― Choose the DB (the file has instructions for DBs that need additional setup)
 cd vimmasite
 cp local_settings.py.example local_settings.py
 cd -
@@ -28,21 +27,23 @@ cp secrets.py.template secrets.py
 cd -
 
 During initial development don't use migrations. Instead, delete & create them
-every time (the helper scripts call scripts/migrations-reset.py).
-
-./scripts/polymerjs-reset.py	# install PolymerJS
-
+every time:
+rm -rf vimmasite/vimma/migrations/0*.py
+./vimmasite/manage.py makemigrations
 
 ./scripts/test.py	# run tests
 
+Run everything in a VM (accept the dummy https certificate in your browser):
+vagrant up
+https://localhost:8081/vimma/
+https://localhost:8081/vimma/test
 
-To run the project:
 
+Actions to perform, when not using the VM:
+./scripts/polymerjs-reset.py	# install PolymerJS
+./vimmasite/manage.py collectstatic
 ./scripts/db-reset.py	# reset DB and migrations, create dummy data
 rabbitmq-server		# start rabbitmq
 ./scripts/worker.py	# start celery worker
 ./scripts/beat.py	# start celery beat (periodic task scheduler)
-./scripts/webserver.py	# start the webserver
-
-http://localhost:8000/vimma/
-http://localhost:8000/vimma/test
+./scripts/webserver.py	# start the webserver, at http://localhost:8000/vimma/

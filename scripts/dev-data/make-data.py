@@ -3,6 +3,8 @@ import django
 django.setup()
 
 
+from django.contrib.auth.models import User
+
 from vimma.util import create_vimma_user
 from vimma.models import (
     TimeZone, Schedule, Role, Permission, Project,
@@ -14,6 +16,13 @@ from vimma.perms import Perms
 import json
 
 import secrets
+
+
+prj1 = Project.objects.create(name='A Project', email='prj1@example.com')
+prj2 = Project.objects.create(name='Second Project', email='prj2@example.com')
+# Add all existing users to prj2:
+for u in User.objects.all():
+    u.profile.projects.add(prj2)
 
 
 u1 = create_vimma_user('u1', 'u1@example.com', 'pass', 'Andrew', 'Adams')
@@ -48,10 +57,8 @@ pOmni = Permission.objects.create(name=Perms.OMNIPOTENT)
 rOmni.permissions.add(pOmni)
 u3.profile.roles.add(rOmni)
 
-prj1 = Project.objects.create(name='A Project', email='prj1@example.com')
 u1.profile.projects.add(prj1)
 
-prj2 = Project.objects.create(name='Second Project', email='prj2@example.com')
 u2.profile.projects.add(prj2)
 
 u4 = create_vimma_user('u4', 'u4@example.com', 'pass', 'Dilbert', 'Drape')
