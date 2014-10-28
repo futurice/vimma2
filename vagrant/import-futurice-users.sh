@@ -11,4 +11,4 @@ set -u
 
 DJANGO_SETTINGS_MODULE=vimmasite.settings \
 	PYTHONPATH=/vagrant/vimmasite \
-	/vagrant/scripts/import-futurice-users-impl.py
+	/vagrant/scripts/import-futurice-users.py

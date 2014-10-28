@@ -1,49 +1,51 @@
-Provision and manage virtual machines from cloud providers
+Provision and manage virtual machines from cloud providers (AWS)
 
 Vimma is distributed under the BSD 3-clause license, see the file COPYING.
 
 The DOC file has some explanations about the structure & features.
 
-The scripts/ directory has scripts for common commands (e.g. creating a python
-virtual environment, starting the task queue). They are only a convenience: you
-may instead alter & run the commands yourself, e.g. with different arguments,
-with a different (or no) virtual environment.
+
+Setup:
+
+cp vimmasite/local_settings.py.example vimmasite/local_settings.py
+# set the SECRET_KEY to a random string
+# choose a DB (SQLite3 or PostgreSQL)
+
+cp scripts/secrets.py.template scripts/secrets.py
+# set up AWS credentials for dev testing
+# set the FUM_API_TOKEN used to retrieve Futurice users
 
 
-Installation:
-
-Use Python3, e.g. in a virtual environment:
-./scripts/venv-reset.py
-
-Set up local_settings.py:
-― Type a random string for the SECRET_KEY
-cd vimmasite
-cp local_settings.py.example local_settings.py
-cd -
-
-Set up AWS credentials for dev testing:
-cd scripts/dev-data
-cp secrets.py.template secrets.py
-cd -
+Create a Python3 virtual enviroment and use it for most commands.
+virtualenv -p python3 env
+. env/bin/activate
+pip install -r req.txt
 
 During initial development don't use migrations. Instead, delete & create them
 every time:
 rm -rf vimmasite/vimma/migrations/0*.py
 ./vimmasite/manage.py makemigrations
 
-./scripts/test.py	# run tests
 
-Run everything in a VM (accept the dummy https certificate in your browser):
+Running in a Vagrant VM (accept the dummy https certificate in your browser):
+
 vagrant up
-https://localhost:8081/vimma/
-https://localhost:8081/vimma/test
+# Add ‘127.0.0.1	dev.futurice.com’ to /etc/resolv.conf
+https://dev.futurice.com:8081/vimma/
+https://dev.futurice.com:8081/vimma/test
 
 
-Actions to perform, when not using the VM:
+Running on your machine:
+
+./vimmasite/manage.py test vimma --settings=test_settings	# run tests
 ./scripts/polymerjs-reset.py	# install PolymerJS
-./vimmasite/manage.py collectstatic
+./vimmasite/manage.py collectstatic --noinput --clear --link
 ./scripts/db-reset.py	# reset DB and migrations, create dummy data
+
 rabbitmq-server		# start rabbitmq
 ./scripts/worker.py	# start celery worker
 ./scripts/beat.py	# start celery beat (periodic task scheduler)
-./scripts/webserver.py	# start the webserver, at http://localhost:8000/vimma/
+REMOTE_USER=u2 ./vimmasite/manage.py runserver	# start the webserver
+
+http://localhost:8000/vimma/
+http://localhost:8000/vimma/test

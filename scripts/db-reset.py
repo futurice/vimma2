@@ -7,30 +7,27 @@ import subprocess
 import util
 
 
+env = dict(os.environ)
+env.update({
+    'DJANGO_SETTINGS_MODULE': util.DJANGO_SETTINGS_MODULE,
+    'PYTHONPATH': util.VIMMASITE_PYTHONPATH,
+})
+
+
 def parse_args():
-    p = argparse.ArgumentParser(description='''Reset DB and migrations, create
-        dummy data''')
+    p = argparse.ArgumentParser(description='''Reset DB, create dummy data''')
     return p.parse_args()
 
 
-def reset():
-    if os.path.lexists(util.DB_FILE):
-        os.remove(util.DB_FILE)
-    subprocess.check_call([os.path.join(util.UTIL_DIR, 'migrations-reset.py')])
-    subprocess.check_call([util.MANAGE_PY, 'migrate'],
-            env=util.os_environ_with_venv())
-
-
 def populate():
-    env=util.os_environ_with_venv()
-    env['DJANGO_SETTINGS_MODULE'] = util.DJANGO_SETTINGS_MODULE
-    env['PYTHONPATH'] = util.VIMMASITE_PYTHONPATH
+    subprocess.check_call([
+        os.path.join(util.UTIL_DIR, 'import-futurice-users.py')])
     subprocess.check_call(['python',
-        os.path.join(util.UTIL_DIR, 'dev-data', 'make-data.py')],
-        env=env)
+        os.path.join(util.UTIL_DIR, 'make-dev-data.py')], env=env)
 
 
 if __name__ == '__main__':
     parse_args()
-    reset()
+    subprocess.check_call([os.path.join(util.UTIL_DIR, 'delete-db.py')])
+    subprocess.check_call([util.MANAGE_PY, 'migrate'])
     populate()

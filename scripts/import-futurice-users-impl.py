@@ -29,7 +29,7 @@ def get_fum_users():
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode('utf-8'))
         users.extend(data['results'])
-        print('got {} users so far'.format(len(users)))
+        print('got {} users so far'.format(len(users)), flush=True)
         url = data['next']
     return users
 

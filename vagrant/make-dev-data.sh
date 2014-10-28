@@ -11,4 +11,4 @@ set -u
 
 DJANGO_SETTINGS_MODULE=vimmasite.settings \
 	PYTHONPATH=/vagrant/vimmasite \
-	python3 /vagrant/scripts/dev-data/make-data.py
+	python3 /vagrant/scripts/make-dev-data.py

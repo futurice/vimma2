@@ -8,7 +8,13 @@ trap "echo $0 failed because a command in the script failed" ERR
 ROOT_DIR=/vagrant/vagrant
 
 "$ROOT_DIR"/virtualenv.sh
-"$ROOT_DIR"/../scripts/polymerjs-reset.py
+
+# this is time-consuming, only get Polymer if it's not already present
+if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; then
+	"$ROOT_DIR"/../scripts/polymerjs-reset.py
+fi
+
+createdb vimma
 "$ROOT_DIR"/migrate.sh
 "$ROOT_DIR"/import-futurice-users.sh
 "$ROOT_DIR"/make-dev-data.sh

@@ -11,9 +11,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", path: "vagrant/provision-root.sh"
   config.vm.provision "shell", privileged: false,
     path: "vagrant/provision-user.sh"
+  config.vm.provision "shell", path: "vagrant/start-supervisor.sh"
   config.vm.provision "shell", run: "always", privileged: false,
     path: "vagrant/run.sh"
-  config.vm.provision "shell", path: "vagrant/start-supervisor.sh"
 
   config.vm.network "forwarded_port", guest: 443, host: 8081
 end

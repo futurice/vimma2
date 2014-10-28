@@ -14,9 +14,11 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    env = util.os_environ_with_venv()
+
+    env = dict(os.environ)
     env['DJANGO_SETTINGS_MODULE'] = util.DJANGO_SETTINGS_MODULE
     env['PYTHONPATH'] = util.VIMMASITE_PYTHONPATH
-    subprocess.check_call([
+
+    subprocess.check_call(['python3',
         os.path.join(util.UTIL_DIR, 'import-futurice-users-impl.py')],
         env=env)

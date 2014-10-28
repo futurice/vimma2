@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError, DataError
 from django.test import TestCase
 from django.utils.timezone import utc
 import json
@@ -1420,7 +1420,7 @@ class DummyVMTests(APITestCase):
                 '?vm=' + str(dvm1.vm.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
-        self.assertEqual({dvm1.vm.id}, {x['id'] for x in items})
+        self.assertEqual({dvm1.id}, {x['id'] for x in items})
 
         # user B can see all DummyVMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))
@@ -2028,7 +2028,8 @@ class AuditTests(TestCase):
         Audit.objects.create(level=Audit.DEBUG,
                 text='a'*Audit.TEXT_MAX_LENGTH).full_clean()
 
-        with self.assertRaises(ValidationError):
+        # SQLite3 raises ValidationError, PostgreSQL raises DataError
+        with self.assertRaises((ValidationError, DataError)):
             Audit.objects.create(level=Audit.DEBUG,
                     text='a'*(Audit.TEXT_MAX_LENGTH+1)).full_clean()
 
