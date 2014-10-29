@@ -22,7 +22,7 @@ def parse_args():
     return p.parse_args()
 
 
-def get_api_all(url):
+def get_api_all(url, log_label='results'):
     """
     Get url and all subsequent API pages.
     """
@@ -33,7 +33,7 @@ def get_api_all(url):
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode('utf-8'))
         results.extend(data['results'])
-        print('got {}/{} API results'.format(len(results), data['count']),
+        print('got {}/{} {}'.format(len(results), data['count'], log_label),
                 flush=True)
         url = data['next']
     return results
@@ -45,7 +45,7 @@ def sync_users():
                 ('username', 'email', 'first_name', 'last_name'))
 
     for u in filter(valid_user,
-            get_api_all('https://api.fum.futurice.com/users/')):
+            get_api_all('https://api.fum.futurice.com/users/', 'users')):
         try:
             vimma_user = User.objects.get(username=u['username'])
             vimma_user.email = u['email']
@@ -60,7 +60,7 @@ def sync_users():
 
 def sync_projects():
     for p in filter(lambda p: p['email'],
-            get_api_all('https://api.fum.futurice.com/projects/')):
+            get_api_all('https://api.fum.futurice.com/projects/', 'projects')):
         try:
             vimma_prj = Project.objects.get(email=p['email'])
             vimma_prj.name = p['name']
@@ -90,7 +90,7 @@ def sync_admin_users():
     """
     fum_admins = set()
     for g in filter(lambda g: g['name'] in {'it'},
-            get_api_all('https://api.fum.futurice.com/groups/')):
+            get_api_all('https://api.fum.futurice.com/groups/', 'groups')):
         fum_admins.update(g['users'])
 
     vimma_maybe_admins = {u.username for u in

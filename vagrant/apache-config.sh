@@ -58,4 +58,6 @@ cat >>/etc/apache2/sites-enabled/000-default.conf <<<'
 '
 
 a2enmod ssl
-service apache2 restart
+service apache2 stop
+
+update-rc.d apache2 disable

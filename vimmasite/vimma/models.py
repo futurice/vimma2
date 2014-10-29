@@ -101,12 +101,18 @@ class Provider(models.Model):
     # the maximum length of a schedule override which users may place on a VM
     max_override_seconds = models.BigIntegerField(default=0)
 
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.get_type_display())
+
 
 class DummyProvider(models.Model):
     """
     Type-specific info for a Provider of type Provider.TYPE_DUMMY.
     """
     provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return (self.provider.name)
 
 
 class AWSProvider(models.Model):
@@ -120,6 +126,10 @@ class AWSProvider(models.Model):
     ssh_key_name = models.CharField(max_length=50, blank=True)
     # 'example.com.'
     route_53_zone = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return '{} (‘{}’, ssh key ‘{}’)'.format(self.provider.name,
+                self.route_53_zone, self.ssh_key_name)
 
 
 class VMConfig(models.Model):
