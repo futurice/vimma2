@@ -41,9 +41,8 @@
           ← prev
         </button>
         <span id="item-range">
-          Showing items {{firstItemNr}}–<!--
-            show 0–0 for no items
-          -->{{firstItemNr + (apiResult.results.length-1 || 0)}}
+          <!-- show 0–0 for no items -->
+          Showing items {{firstItemNr}}–{{getLastItemNr()}}
           of {{apiResult.count}}
         </span>
         <button type="button" on-click="{{loadNext}}"

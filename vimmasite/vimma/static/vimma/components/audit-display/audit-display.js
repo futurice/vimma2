@@ -151,7 +151,6 @@
                 }, this);
                 this.loadSuccess();
             }).bind(this);
-            console.log(urls);
             apiGet(urls, ok, this.loadFail.bind(this));
         },
 
@@ -179,6 +178,11 @@
                 return userId + '?';
             }
             return this.usersById[userId].username;
+        },
+
+        getLastItemNr: function() {
+            return this.firstItemNr +
+                Math.max(0, this.apiResult.results.length-1);
         }
     });
 })();
