@@ -15,14 +15,11 @@
     </button>
     <br>
 
-    <template if="{{loading}}">
+    <template if="{{!apiResult}}">
       Loading…
     </template>
-
-    <template if="{{!loading}}">
-      <template if="{{loadingSucceeded}}">
-        <template bind ref="main"></template>
-      </template>
+    <template if="{{apiResult}}">
+      <template bind ref="main"></template>
     </template>
 
     <template if="{{!ajaxInProgress && !ajaxSuccess}}">

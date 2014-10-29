@@ -39,6 +39,10 @@ function getAjaxErr(xhr, txtStatus, errThrown) {
  * resultsArray[i] is the item from urlArray[i].
  */
 function apiGet(urlArray, successCallback, errCallback) {
+    if (!urlArray.length) {
+        successCallback([]);
+    }
+
     var resultsArray = [],
         // a call has failed
         failed = false,

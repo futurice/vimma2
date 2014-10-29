@@ -1,144 +1,184 @@
-Polymer('audit-display', {
-    ajaxInProgress: false,
-    ajaxSuccess: true,
-    ajaxErrTxt: '',
+(function() {
+    // Direction followed when loading a new Audit page.
+    var DIRECTION = {
+        START: 'start',
+        LEFT: 'left',
+        RIGHT: 'right'
+    };
 
-    onAjaxStart: function(ev) {
-        ev.stopPropagation();
-        if (this.ajaxInProgress) {
-            throw 'ajax-start fired while ajaxInProgress';
-        }
-        this.ajaxInProgress = true;
-    },
+    Polymer('audit-display', {
+        ajaxInProgress: false,
+        ajaxSuccess: true,
+        ajaxErrTxt: '',
 
-    onAjaxEnd: function(ev, detail, sender) {
-        ev.stopPropagation();
-        if (!this.ajaxInProgress) {
-            throw 'ajax-end fired while not ajaxInProgress';
-        }
-        this.ajaxInProgress = false;
-        this.ajaxSuccess = detail.success;
-        this.ajaxErrTxt = this.ajaxSuccess ? '' : detail.errorText;
-    },
+        onAjaxStart: function(ev) {
+            ev.stopPropagation();
+            if (this.ajaxInProgress) {
+                throw 'ajax-start fired while ajaxInProgress';
+            }
+            this.ajaxInProgress = true;
+        },
 
-    // currently loading data
-    loading: true,
-    // the result of the most recent attempt at loading the component's data
-    loadingSucceeded: false,
+        onAjaxEnd: function(ev, detail, sender) {
+            ev.stopPropagation();
+            if (!this.ajaxInProgress) {
+                throw 'ajax-end fired while not ajaxInProgress';
+            }
+            this.ajaxInProgress = false;
+            this.ajaxSuccess = detail.success;
+            this.ajaxErrTxt = this.ajaxSuccess ? '' : detail.errorText;
+        },
 
-    /* Data model */
-    vmid: -1,
-    userid: -1,
+        /* Data model */
+        vmid: -1,
+        userid: -1,
 
-    pageSize: 5,
-    // can't refer to ‘restMaxPaginateBy’ in the template disabled?= binding
-    maxPageSize: restMaxPaginateBy,
-    // {userId: userObject, …}
-    usersById: null,
-    // API endpoint response {count:, next:, previous:, results:}
-    apiResult: null,
-    firstItemNr: 1,
+        // API endpoint response {count:, next:, previous:, results:}
+        apiResult: null,
+        firstItemNr: 1,
+        // {userId: userObject, …}
+        usersById: null,
 
-    ready: function() {
-        this.reload();
-    },
+        // While loading data: future: {apiResult:…, firstItemNr:…, usersById:…}.
+        // When done, assign the new data to the top level fields.
+        future: null,
 
-    reload: function() {
-        this.fire('ajax-start');
+        pageSize: 5,
+        // can't refer to ‘restMaxPaginateBy’ in the template disabled?= binding
+        maxPageSize: restMaxPaginateBy,
 
-        this.loading = true;
+        ready: function() {
+            this.reload();
+        },
 
-        // don't reset the page size
-        this.usersById = null;
-        this.apiResult = null;
-        this.firstItemNr = 1;
-        this.loadUsers();
-    },
-    loadFail: function(errorText) {
-        this.fire('ajax-end', {success: false, errorText: errorText});
+        reload: function() {
+            this.fire('ajax-start');
 
-        this.loading = false;
-        this.loadingSucceeded = false;
-    },
-    loadSuccess: function() {
-        this.fire('ajax-end', {success: true});
+            this.apiResult = null;
+            this.firstItemNr = 1;
+            this.usersById = null;
+            // don't reset the page size
 
-        this.loading = false;
-        this.loadingSucceeded = true;
-    },
-
-    loadUsers: function() {
-        var ok = (function(arr) {
-            var byId = {};
-            arr[0].forEach(function(u) {
-                byId[u.id] = u;
-            });
-            this.usersById = byId;
-
-            this.loadFirstPage();
-        }).bind(this);
-        apiGetAll([vimmaApiUserList], ok, this.loadFail.bind(this));
-    },
-
-    loadFirstPage: function() {
-        var url = vimmaApiAuditList;
-        var params = [];
-        if (this.vmid != -1) {
-            params.push('vm=' + this.vmid);
-        }
-        if (this.userid != -1) {
-            params.push('user=' + this.userid);
-        }
-        params.push(restPaginateByParam + '=' + this.pageSize);
-        if (params.length) {
-            url += '?' + params.join('&');
-        }
-
-        var ok = (function(arr) {
-            this.apiResult = arr[0];
-            this.firstItemNr = this.apiResult.count ? 1 : 0;
-            this.loadSuccess();
-        }).bind(this);
-        apiGet([url], ok, this.loadFail.bind(this));
-    },
-
-    loadUrl: function(url, go_right) {
-        this.fire('ajax-start');
-        var first_right = this.firstItemNr + this.apiResult.results.length;
-
-        var ok = (function(arr) {
-            this.apiResult = arr[0];
-
-            var first_left = this.firstItemNr - this.apiResult.results.length;
-            this.firstItemNr = go_right ? first_right : first_left;
-
-            this.fire('ajax-end', {success: true});
-        }).bind(this);
-        var fail = (function(errorText) {
+            this.future = {};
+            this.loadAudits(this.getStartAuditsUrl(), DIRECTION.START);
+        },
+        loadFail: function(errorText) {
             this.fire('ajax-end', {success: false, errorText: errorText});
-        }).bind(this);
+        },
+        loadSuccess: function() {
+            this.fire('ajax-end', {success: true});
+        },
 
-        apiGet([url], ok, fail);
-    },
-    loadPrevious: function() {
-        this.loadUrl(this.apiResult.previous, false);
-    },
-    loadNext: function() {
-        this.loadUrl(this.apiResult.next, true);
-    },
+        getStartAuditsUrl: function() {
+            var url = vimmaApiAuditList;
+            var params = [];
+            if (this.vmid != -1) {
+                params.push('vm=' + this.vmid);
+            }
+            if (this.userid != -1) {
+                params.push('user=' + this.userid);
+            }
+            params.push(restPaginateByParam + '=' + this.pageSize);
+            if (params.length) {
+                url += '?' + params.join('&');
+            }
+            return url;
+        },
 
-    showMore: function() {
-        this.pageSize *= 2;
-        this.reload();
-    },
+        loadAudits: function(url, direction) {
+            var first_right;
+            if (direction == DIRECTION.RIGHT) {
+                first_right = this.firstItemNr + this.apiResult.results.length;
+            }
 
-    getUserText: function(userId) {
-        if (userId == null) {
-            return '—';
+            var ok = (function(arr) {
+                this.future.apiResult = arr[0];
+
+                var first_start = this.future.apiResult.count ? 1 : 0,
+                    first_left = this.firstItemNr - this.future.apiResult.results.length;
+
+                switch (direction) {
+                case DIRECTION.START:
+                    this.future.firstItemNr = first_start;
+                    break;
+                case DIRECTION.LEFT:
+                    this.future.firstItemNr = first_left;
+                    break;
+                case DIRECTION.RIGHT:
+                    this.future.firstItemNr = first_right;
+                    break;
+                default:
+                    this.loadFail('Unknown direction ' + direction);
+                    return;
+                }
+
+                this.loadMissingUsers();
+            }).bind(this);
+            apiGet([url], ok, this.loadFail.bind(this));
+        },
+
+        loadMissingUsers: function() {
+            var allUserIds = {};
+            this.future.apiResult.results.forEach(function(r) {
+                if (!r.user) {
+                    return;
+                }
+                allUserIds[r.user] = null;
+            });
+
+            this.future.usersById = {};
+            var missingUserIds = {};
+            Object.keys(allUserIds).forEach(function(x) {
+                if (!this.usersById || !(x in this.usersById)) {
+                    missingUserIds[x] = null;
+                } else {
+                    this.future.usersById[x] = this.usersById[x];
+                }
+            }, this);
+
+            var urls = [];
+            Object.keys(missingUserIds).forEach(function(x) {
+                urls.push(vimmaApiUserDetailRoot + x + '/');
+            });
+
+            var ok = (function(arr) {
+                arr.forEach(function(x) {
+                    this.future.usersById[x.id] = x;
+                }, this);
+
+                ['apiResult', 'firstItemNr', 'usersById'].forEach(function(field) {
+                    this[field] = this.future[field];
+                }, this);
+                this.loadSuccess();
+            }).bind(this);
+            console.log(urls);
+            apiGet(urls, ok, this.loadFail.bind(this));
+        },
+
+        loadPrevious: function() {
+            this.fire('ajax-start');
+            this.future = {};
+            this.loadAudits(this.apiResult.previous, DIRECTION.LEFT);
+        },
+        loadNext: function() {
+            this.fire('ajax-start');
+            this.future = {};
+            this.loadAudits(this.apiResult.next, DIRECTION.RIGHT);
+        },
+
+        showMore: function() {
+            this.pageSize *= 2;
+            this.reload();
+        },
+
+        getUserText: function(userId) {
+            if (userId == null) {
+                return '—';
+            }
+            if (!(userId in this.usersById)) {
+                return userId + '?';
+            }
+            return this.usersById[userId].username;
         }
-        if (!(userId in this.usersById)) {
-            return userId + '?';
-        }
-        return this.usersById[userId].username;
-    }
-});
+    });
+})();

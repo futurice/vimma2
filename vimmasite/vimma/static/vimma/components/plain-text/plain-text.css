@@ -1,4 +1,5 @@
 div#box {
+	font-family: monospace;
 	white-space: pre-wrap;
 	background-color: #eee;
 	display: inline-block;
