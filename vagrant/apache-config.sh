@@ -52,7 +52,7 @@ cat >>/etc/apache2/sites-enabled/000-default.conf <<<'
 	</Directory>
 
 	WSGIScriptAlias	/	/vagrant/vimmasite/vimmasite/wsgi.py
-	WSGIDaemonProcess	vimmasite user=vagrant group=vagrant python-path=/vagrant/vimmasite:/vagrant/env/lib/python3.4/site-packages
+	WSGIDaemonProcess	vimmasite user=vagrant group=vagrant python-path=/vagrant/vimmasite:/home/vagrant/env/lib/python3.4/site-packages
 	WSGIProcessGroup	vimmasite
 </VirtualHost>
 '

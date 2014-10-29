@@ -6,7 +6,7 @@ trap "echo $0 failed because a command in the script failed" ERR
 
 
 set +u
-. /home/vagrant/venv/bin/activate
+. /home/vagrant/env/bin/activate
 set -u
 
 DJANGO_SETTINGS_MODULE=vimmasite.settings \

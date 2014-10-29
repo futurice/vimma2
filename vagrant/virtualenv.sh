@@ -6,7 +6,7 @@ trap "echo $0 failed because a command in the script failed" ERR
 
 
 # Create (or reuse the existing) python virtual environment, then pip install
-VENV=/home/vagrant/venv
+VENV=/home/vagrant/env
 if [ ! -e "$VENV" ]; then
 	virtualenv -p python3 "$VENV"
 fi
