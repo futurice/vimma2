@@ -10,7 +10,9 @@ ROOT_DIR=/vagrant/vagrant
 sudo stop supervisor
 
 "$ROOT_DIR"/virtualenv.sh
+"$ROOT_DIR"/test.sh
 "$ROOT_DIR"/collectstatic.sh
 "$ROOT_DIR"/migrate.sh
 
 sudo start supervisor
+sudo service apache2 start

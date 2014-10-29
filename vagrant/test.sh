@@ -5,6 +5,7 @@ set -e  # exit if some command in this script fails
 trap "echo $0 failed because a command in the script failed" ERR
 
 
-ROOT_DIR=/vagrant/vagrant
-
-"$ROOT_DIR"/set-nameservers.sh
+set +u
+. /home/vagrant/venv/bin/activate
+set -u
+/vagrant/vimmasite//manage.py test vimma --settings=test_settings
