@@ -7,8 +7,6 @@ trap "echo $0 failed because a command in the script failed" ERR
 
 ROOT_DIR=/vagrant/vagrant
 
-sudo stop supervisor
-
 "$ROOT_DIR"/virtualenv.sh
 "$ROOT_DIR"/test.sh
 "$ROOT_DIR"/collectstatic.sh
