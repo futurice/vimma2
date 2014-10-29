@@ -6,6 +6,7 @@ django.setup()
 
 import argparse
 from django.contrib.auth.models import User
+from django.db.models import Q
 import json
 import urllib.request
 
@@ -72,11 +73,8 @@ def sync_projects():
                 vimma_prj.profile_set.filter()}
 
         for u in vimma_members.difference(fum_members):
-            try:
-                prof = User.objects.get(username=u).profile
-                vimma_prj.profile_set.remove(prof)
-            except User.DoesNotExist:
-                pass
+            prof = User.objects.get(username=u).profile
+            vimma_prj.profile_set.remove(prof)
 
         for u in fum_members.difference(vimma_members):
             try:
@@ -86,8 +84,38 @@ def sync_projects():
                 pass
 
 
+def sync_admin_users():
+    """
+    Allow users in certain groups full access to the Django admin site.
+    """
+    fum_admins = set()
+    for g in filter(lambda g: g['name'] in {'it'},
+            get_api_all('https://api.fum.futurice.com/groups/')):
+        fum_admins.update(g['users'])
+
+    vimma_maybe_admins = {u.username for u in
+            User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))}
+    for u in vimma_maybe_admins.difference(fum_admins):
+        user = User.objects.get(username=u)
+        user.is_staff = False
+        user.is_superuser = False
+        user.save()
+
+    vimma_full_admins = {u.username for u in
+            User.objects.filter(is_staff=True, is_superuser=True)}
+    for u in fum_admins.difference(vimma_full_admins):
+        try:
+            user = User.objects.get(username=u)
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+        except User.DoesNotExist:
+            pass
+
+
 if __name__ == '__main__':
     args = parse_args()
 
     sync_users()
     sync_projects()
+    sync_admin_users()
