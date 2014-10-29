@@ -11,7 +11,7 @@ sed -e 's/archive.ubuntu.com/de.archive.ubuntu.com/g' -i /etc/apt/sources.list
 
 apt-get update
 apt-get install -y \
-	vim build-essential \
+	build-essential vim htop \
 	apache2 libapache2-mod-auth-pubtkt libapache2-mod-wsgi-py3 \
 	rabbitmq-server python3 python3-pip python-virtualenv \
 	supervisor postgresql libpq-dev python-dev \
