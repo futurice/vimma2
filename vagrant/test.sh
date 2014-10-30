@@ -8,4 +8,4 @@ trap "echo $0 failed because a command in the script failed" ERR
 set +u
 . /home/vagrant/env/bin/activate
 set -u
-/vagrant/vimmasite//manage.py test vimma --settings=test_settings
+PYTHONPATH=/vagrant/config  /vagrant/vimmasite/manage.py test vimma --settings=test_settings

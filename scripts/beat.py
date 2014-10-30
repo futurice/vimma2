@@ -19,6 +19,9 @@ if __name__ == '__main__':
     env = dict(os.environ)
     env['DJANGO_SETTINGS_MODULE'] = util.DJANGO_SETTINGS_MODULE
     env['PYTHONPATH'] = util.VIMMASITE_PYTHONPATH
+    if 'PYTHONPATH' in os.environ:
+        env['PYTHONPATH'] = os.pathsep.join((env['PYTHONPATH'],
+                os.environ['PYTHONPATH']))
 
     # add ‘-f logfile’ to send the log to a file
     try:

@@ -1,6 +1,7 @@
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# Build paths inside the project like this: os.path.join(_BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(__file__)
+# underscore prefix prevents import via: “from local_settings import *”
+_BASE_DIR = os.path.dirname(__file__)
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -12,7 +13,7 @@ SECRET_KEY = ''
 
 SQLITE3_DB = {
     'ENGINE': 'django.db.backends.sqlite3',
-    'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    'NAME': os.path.join(_BASE_DIR, 'db.sqlite3'),
 }
 
 # Initial setup for your PostgreSQL server, so Django can use the DB:

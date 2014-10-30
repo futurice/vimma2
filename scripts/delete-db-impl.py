@@ -22,8 +22,9 @@ def parse_args():
 def delete_db():
     n = settings.DATABASES['default']['ENGINE']
     if n == 'django.db.backends.sqlite3':
-        if os.path.lexists(util.DB_FILE):
-            os.remove(util.DB_FILE)
+        db_file = settings.DATABASES['default']['NAME']
+        if os.path.lexists(db_file):
+            os.remove(db_file)
     elif n == 'django.db.backends.postgresql_psycopg2':
         dbname = settings.DATABASES['default']['NAME']
         subprocess.call(['dropdb', dbname])

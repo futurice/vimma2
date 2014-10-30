@@ -18,6 +18,9 @@ if __name__ == '__main__':
     env = dict(os.environ)
     env['DJANGO_SETTINGS_MODULE'] = util.DJANGO_SETTINGS_MODULE
     env['PYTHONPATH'] = util.VIMMASITE_PYTHONPATH
+    if 'PYTHONPATH' in os.environ:
+        env['PYTHONPATH'] = os.pathsep.join((env['PYTHONPATH'],
+                os.environ['PYTHONPATH']))
 
     subprocess.check_call(['python3',
         os.path.join(util.UTIL_DIR, 'import-futurice-users-impl.py')],

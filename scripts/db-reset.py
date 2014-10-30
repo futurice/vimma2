@@ -12,6 +12,9 @@ env.update({
     'DJANGO_SETTINGS_MODULE': util.DJANGO_SETTINGS_MODULE,
     'PYTHONPATH': util.VIMMASITE_PYTHONPATH,
 })
+if 'PYTHONPATH' in os.environ:
+    env['PYTHONPATH'] = os.pathsep.join((env['PYTHONPATH'],
+            os.environ['PYTHONPATH']))
 
 
 def parse_args():

@@ -5,13 +5,13 @@ Vimma is distributed under the BSD 3-clause license, see the file COPYING.
 The DOC file has some explanations about the structure & features.
 
 
-Setup:
+Dev Setup:
 
-cp vimmasite/local_settings.py.example vimmasite/local_settings.py
+cp config/local_settings.py.example config/local_settings.py
 # set the SECRET_KEY to a random string
 # choose a DB (SQLite3 or PostgreSQL)
 
-cp scripts/secrets.py.template scripts/secrets.py
+cp config/secrets.py.template config/secrets.py
 # set up AWS credentials for dev testing
 # set the FUM_API_TOKEN used to retrieve Futurice users
 
@@ -24,7 +24,7 @@ pip install -r req.txt
 During initial development don't use migrations. Instead, delete & create them
 every time:
 rm -rf vimmasite/vimma/migrations/0*.py
-./vimmasite/manage.py makemigrations
+PYTHONPATH=config ./vimmasite/manage.py makemigrations
 
 
 Running in a Vagrant VM (accept the dummy https certificate in your browser):
@@ -37,15 +37,18 @@ https://dev.futurice.com:8081/vimma/test
 
 Running on your machine:
 
-./vimmasite/manage.py test vimma --settings=test_settings	# run tests
+PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings
 ./scripts/polymerjs-reset.py	# install PolymerJS
-./vimmasite/manage.py collectstatic --noinput --clear --link
-./scripts/db-reset.py	# reset DB and migrations, create dummy data
 
-rabbitmq-server		# start rabbitmq
-./scripts/worker.py	# start celery worker
-./scripts/beat.py	# start celery beat (periodic task scheduler)
-REMOTE_USER=u2 ./vimmasite/manage.py runserver	# start the webserver
+mkdir -p vimmasite/static
+PYTHONPATH=config ./vimmasite/manage.py collectstatic --noinput --clear --link
+
+PYTHONPATH=config ./scripts/db-reset.py	# reset DB and migrations, create dummy data
+
+rabbitmq-server
+PYTHONPATH=config ./scripts/worker.py	# start celery worker
+PYTHONPATH=config ./scripts/beat.py	# start celery beat (periodic task scheduler)
+REMOTE_USER=u2 PYTHONPATH=config ./vimmasite/manage.py runserver
 
 http://localhost:8000/vimma/
 http://localhost:8000/vimma/test

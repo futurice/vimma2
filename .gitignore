@@ -2,10 +2,10 @@
 __pycache__/
 /vimmasite/vimma/static/vimma/components/bower_components/
 
-/vimmasite/local_settings.py
-
-/vimmasite/db.sqlite3
-/vimmasite/db.sqlite3-journal
+/config/local_settings.py
+/config/secrets.py
+/config/db.sqlite3
+/config/db.sqlite3-journal
 
 # Don't store migrations during initial development
 vimmasite/vimma/migrations/0*.py

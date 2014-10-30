@@ -21,5 +21,8 @@ if __name__ == '__main__':
         'DJANGO_SETTINGS_MODULE': util.DJANGO_SETTINGS_MODULE,
         'PYTHONPATH': util.VIMMASITE_PYTHONPATH,
     })
+    if 'PYTHONPATH' in os.environ:
+        env['PYTHONPATH'] = os.pathsep.join((env['PYTHONPATH'],
+                os.environ['PYTHONPATH']))
     subprocess.check_call(['python3',
         os.path.join(util.UTIL_DIR, 'delete-db-impl.py')], env=env)
