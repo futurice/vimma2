@@ -23,6 +23,7 @@ def parse_args():
 
 
 def populate():
+    subprocess.check_call([util.MANAGE_PY, 'create_vimma_permissions'])
     subprocess.check_call([
         os.path.join(util.UTIL_DIR, 'import-futurice-users.py')])
     subprocess.check_call(['python',

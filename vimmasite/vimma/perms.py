@@ -21,4 +21,4 @@ class Perms:
     READ_ALL_AUDITS = 'read-all-audits'
 
 # Collect all permissions so we can pre-populate the DB with them
-ALL_PERMS = {x:getattr(Perms, x) for x in dir(Perms) if not x.startswith('_')}
+ALL_PERMS = {getattr(Perms, x) for x in dir(Perms) if not x.startswith('_')}

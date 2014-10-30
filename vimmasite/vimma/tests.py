@@ -52,7 +52,7 @@ class PermissionTests(TestCase):
         """
         Populate the database with all permissions.
         """
-        for v in ALL_PERMS.values():
+        for v in ALL_PERMS:
             Permission.objects.create(name=v)
 
 

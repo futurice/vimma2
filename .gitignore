@@ -4,6 +4,7 @@ __pycache__/
 
 /config/local_settings.py
 /config/secrets.py
+/config/dev_secrets.py
 /config/db.sqlite3
 /config/db.sqlite3-journal
 

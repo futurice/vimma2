@@ -9,4 +9,4 @@ set +u
 . /home/vagrant/env/bin/activate
 set -u
 
-PYTHONPATH=/vagrant/config /vagrant/scripts/db-reset.py
+PYTHONPATH=/vagrant/config /vagrant/scripts/dev-db-reset.py

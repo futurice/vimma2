@@ -14,4 +14,4 @@ if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; t
 	"$ROOT_DIR"/../scripts/polymerjs-reset.py
 fi
 
-"$ROOT_DIR"/db-reset.sh
+"$ROOT_DIR"/dev-db-reset.sh
