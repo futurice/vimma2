@@ -12,5 +12,5 @@ ROOT_DIR=/vagrant/vagrant
 "$ROOT_DIR"/collectstatic.sh
 "$ROOT_DIR"/migrate.sh
 
-sudo start supervisor
+sudo service supervisor start
 sudo service apache2 start

@@ -14,4 +14,4 @@ fi
 set +u
 . "$VENV"/bin/activate
 set -u
-pip install -r /vagrant/req.txt
+pip install -U -r /vagrant/req.txt

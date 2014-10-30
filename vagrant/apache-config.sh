@@ -7,6 +7,9 @@ trap "echo $0 failed because a command in the script failed" ERR
 
 # Configure Apache
 
+service apache2 stop
+update-rc.d apache2 disable
+
 # create a dummy SSL certificate
 # http://blog.justin.kelly.org.au/how-to-create-a-self-sign-ssl-cert-with-no-pa/
 cd /home/vagrant
@@ -58,6 +61,3 @@ cat >>/etc/apache2/sites-enabled/000-default.conf <<<'
 '
 
 a2enmod ssl
-service apache2 stop
-
-update-rc.d apache2 disable

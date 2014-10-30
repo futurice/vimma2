@@ -9,6 +9,4 @@ set +u
 . /home/vagrant/env/bin/activate
 set -u
 
-DJANGO_SETTINGS_MODULE=vimmasite.settings \
-	PYTHONPATH=/vagrant/vimmasite \
-	/vagrant/scripts/import-futurice-users.py
+/vagrant/scripts/db-reset.py
