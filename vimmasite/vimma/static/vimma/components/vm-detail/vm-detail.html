@@ -35,6 +35,8 @@
     </template>
 
     <template id="vm">
+      Project: {{project.name}}
+      <br>
       <template if="{{provider.type == 'dummy'}}">
         <dummy-vm-detail vmid="{{vmid}}" ajaxInProgress="{{ajaxInProgress}}">
         </dummy-vm-detail>
