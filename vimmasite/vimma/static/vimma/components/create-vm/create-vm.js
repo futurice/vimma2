@@ -42,6 +42,13 @@ Polymer('create-vm', {
             return vmc.provider == this.provid;
         }).bind(this));
     },
+    vmconfigsForProviderChanged: function() {
+        // reset dropdown size when its input changes (seems a Polymer bug)
+        // http://stackoverflow.com/q/26283638
+        var el = this.querySelector('::shadow #vmconfig::shadow core-dropdown::shadow core-dropdown-overlay');
+        el.target.style.width = null;
+        el.target.style.height = null;
+    },
     vmconfigid: null,   // chosen vmconfig
     vmconfigidChanged: function() {
         // request a reset of the type-specific ‘data’ for the new VM
