@@ -63,7 +63,7 @@
             <td><local-date date="{{r.timestamp}}"></local-date></td>
             <td>{{r.level}}</td>
             <td>{{r.vm || '—'}}</td>
-            <td>{{getUserText(r.user)}}</td>
+            <td title="{{getUserTooltip(r.user)}}">{{getUserText(r.user)}}</td>
             <td><plain-text text="{{r.text}}"></plain-text></td>
           </tr>
         </template>

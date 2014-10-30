@@ -179,6 +179,16 @@
             }
             return this.usersById[userId].username;
         },
+        getUserTooltip: function(userId) {
+            if (userId == null) {
+                return '';
+            }
+            if (!(userId in this.usersById)) {
+                return userId + '?';
+            }
+            var u = this.usersById[userId];
+            return u.first_name + ' ' + u.last_name;
+        },
 
         getLastItemNr: function() {
             return this.firstItemNr +
