@@ -31,7 +31,7 @@ aud = Auditor(__name__)
 
 def create_vm(vmconfig, project, schedule, data, user_id=None):
     """
-    Create and return a new VM or throw an exception.
+    Create a new VM, return its ID if successful otherwise throw an exception.
 
     The user is only needed to record in an audit message. Permission checking
     has already been done elsewhere.
@@ -49,6 +49,7 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
         vm = VM.objects.create(provider=prov, project=project,
                 schedule=schedule)
         vm.full_clean()
+        vm_id = vm.id
 
         t = prov.type
         if t == Provider.TYPE_DUMMY:
@@ -62,7 +63,7 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
 
     for c in callables:
         c()
-    return vm
+    return vm_id
 
 
 def power_on_vm(vm_id, data, user_id=None):
