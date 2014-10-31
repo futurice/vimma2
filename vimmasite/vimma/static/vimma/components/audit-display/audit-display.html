@@ -15,7 +15,7 @@
     </button>
     <br>
 
-    <template if="{{!apiResult}}">
+    <template if="{{!apiResult && ajaxInProgress}}">
       Loading…
     </template>
     <template if="{{apiResult}}">
