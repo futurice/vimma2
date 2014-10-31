@@ -294,14 +294,11 @@ def delete_security_group(self, vm_id, user_id=None):
             sec_grp_id = aws_vm.security_group_id
             return aws_vm_id, sec_grp_id
 
-    try:
+    with aud.celery_retry_ctx_mgr(self, 'delete security group',
+            vm_id=vm_id, user_id=user_id):
         aws_vm_id, sec_grp_id = retry_transaction(read_vars)
         conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.delete_security_group(group_id=sec_grp_id)
-    except:
-        msg = ''.join(traceback.format_exc())
-        aud.error(msg, vm_id=vm_id, user_id=user_id)
-        self.retry()
 
 
 @app.task
@@ -368,7 +365,7 @@ def route53_add(self, vm_id, user_id=None):
             return aws_vm_id, name, inst_id, route_53_zone
 
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
-    try:
+    with aud.celery_retry_ctx_mgr(self, 'add route53 cname', **aud_kw):
         aws_vm_id, name, inst_id, route_53_zone = retry_transaction(read_vars)
 
         ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
@@ -393,13 +390,6 @@ def route53_add(self, vm_id, user_id=None):
                     **aud_kw)
         r53_z.add_cname(vm_cname, pub_dns_name, comment='Vimma-generated')
         aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
-    except celery.exceptions.Retry:
-        aud.warning("requesting retry", **aud_kw)
-        raise
-    except:
-        msg = ''.join(traceback.format_exc())
-        aud.error(msg, **aud_kw)
-        self.retry()
 
 
 @app.task(bind=True, max_retries=24, default_retry_delay=5)
@@ -416,7 +406,7 @@ def route53_delete(self, vm_id, user_id=None):
             return aws_vm_id, name, route_53_zone
 
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
-    try:
+    with aud.celery_retry_ctx_mgr(self, 'delete route53 cname', **aud_kw):
         aws_vm_id, name, route_53_zone = retry_transaction(read_vars)
 
         r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
@@ -429,7 +419,3 @@ def route53_delete(self, vm_id, user_id=None):
         else:
             aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
                     **aud_kw)
-    except:
-        msg = ''.join(traceback.format_exc())
-        aud.error(msg, **aud_kw)
-        self.retry()

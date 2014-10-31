@@ -1,3 +1,4 @@
+import celery.exceptions
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.utils import OperationalError
@@ -104,6 +105,30 @@ class Auditor():
 
         return _CtxMgr(self, user_id=user_id, vm_id=vm_id)
 
+    def celery_retry_ctx_mgr(self, task_obj, task_description,
+            *args, user_id=None, vm_id=None):
+        """
+        Return a new Context Manager which retries a celery task on exception.
+
+        If the protected block doesn't raise an exception, nothing is audited.
+
+        If the type of the exception thrown is a subclass of
+        celery.exceptions.Retry or celery.exceptions.MaxRetriesExceededError,
+        the context manager audits the exception then lets it be re-raised by
+        the with-statement.
+
+        If the protected block throws any other exception (E*), the context
+        manager audits it, then calls .retry() on the celery task object.
+        Any exception raised by this call is audited and allowed to propagate.
+        If .retry() doesn't raise an exception, the context manager lets (E*)
+        be re-raised by the with-statement.
+        """
+        if args:
+            raise TypeError('{} extra positional args'.format(len(args)))
+
+        return _CeleryRetryCtxMgr(self, task_obj, task_description,
+                user_id=user_id, vm_id=vm_id)
+
 
 class _CtxMgr():
     """
@@ -124,3 +149,53 @@ class _CtxMgr():
         msg = ''.join(traceback.format_exception(exc_type, exc_value, tb))
         self.auditor.error(msg, vm_id=self.vm_id, user_id=self.user_id)
         return False
+
+
+class _CeleryRetryCtxMgr():
+    """
+    Context manager, meant to be used via Auditor(…).celery_retry_ctx_mgr(…).
+    """
+
+    def __init__(self, auditor, task_obj, task_description,
+            *args, user_id=None, vm_id=None):
+        self.auditor = auditor
+        self.task_obj = task_obj
+        self.task_description = task_description
+        self.user_id = user_id
+        self.vm_id = vm_id
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is None and exc_value is None and tb is None:
+            return
+
+        msg = ''.join(traceback.format_exception(exc_type, exc_value, tb))
+        kw_args = {'user_id': self.user_id, 'vm_id': self.vm_id}
+
+        if issubclass(exc_type, celery.exceptions.Retry):
+            self.auditor.warning('{}: retry\n{}'.format(self.task_description,
+                msg), **kw_args)
+            return False
+        if issubclass(exc_type, celery.exceptions.MaxRetriesExceededError):
+            self.auditor.error('{}: max. retries exceeded\n{}'.format(
+                self.task_description, msg), **kw_args)
+            return False
+
+        self.auditor.error('{}:\n{}'.format(self.task_description, msg),
+                **kw_args)
+
+        try:
+            self.task_obj.retry()
+            return False
+        except celery.exceptions.Retry:
+            msg = ''.join(traceback.format_exc())
+            self.auditor.warning('{}: retry\n{}'.format(self.task_description,
+                msg), **kw_args)
+            raise
+        except celery.exceptions.MaxRetriesExceededError:
+            msg = ''.join(traceback.format_exc())
+            self.auditor.error('{}: max. retries exceeded\n{}'.format(
+                self.task_description, msg), **kw_args)
+            raise
