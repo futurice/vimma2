@@ -8,9 +8,6 @@ __pycache__/
 /config/db.sqlite3
 /config/db.sqlite3-journal
 
-# Don't store migrations during initial development
-vimmasite/vimma/migrations/0*.py
-
 /vimma.log*
 
 /celerybeat.pid

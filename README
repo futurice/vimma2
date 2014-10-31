@@ -2,6 +2,7 @@ Provision and manage virtual machines from cloud providers (AWS)
 
 Vimma is distributed under the BSD 3-clause license, see the file COPYING.
 
+The deploy/DEPLOY file describes deploying to a production server.
 The DOC file has some explanations about the structure & features.
 
 
@@ -11,22 +12,11 @@ cp config/local_settings.py.example config/local_settings.py
 # set the SECRET_KEY to a random string
 # choose a DB (SQLite3 or PostgreSQL)
 
-cp config/secrets.py.template config/secrets.py
+cp config/secrets.py.example config/secrets.py
 # set the FUM_API_TOKEN used to retrieve Futurice users
 
-cp config/dev_secrets.py.template config/dev_secrets.py
+cp config/dev_secrets.py.example config/dev_secrets.py
 # set up AWS credentials for dev testing
-
-
-Create a Python3 virtual enviroment and use it for most commands.
-virtualenv -p python3 env
-. env/bin/activate
-pip install -r req.txt
-
-During initial development don't use migrations. Instead, delete & create them
-every time:
-rm -rf vimmasite/vimma/migrations/0*.py
-PYTHONPATH=config ./vimmasite/manage.py makemigrations
 
 
 Running in a Vagrant VM (accept the dummy https certificate in your browser):
@@ -38,6 +28,11 @@ https://dev.futurice.com:8081/vimma/test
 
 
 Running on your machine:
+
+Create a Python3 virtual enviroment and use it for most commands.
+virtualenv -p python3 env
+. env/bin/activate
+pip install -r req.txt
 
 PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings --noinput
 ./scripts/polymerjs-reset.py	# install PolymerJS
