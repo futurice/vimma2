@@ -97,12 +97,12 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     # Make the API calls only once. Retrying failed DB transactions must only
     # include idempotent code, not the AWS API calls which create more VMs.
 
-    ssh_key_name = None
+    ssh_key_name, default_security_group_id = None, None
     aws_vm_id, name = None, None
     ami_id, instance_type = None, None
 
     def read_vars():
-        nonlocal ssh_key_name
+        nonlocal ssh_key_name, default_security_group_id
         nonlocal aws_vm_id, name
         nonlocal ami_id, instance_type
         with transaction.atomic():
@@ -111,6 +111,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             aws_vm = VM.objects.get(id=vm_id).awsvm
 
             ssh_key_name = aws_prov.ssh_key_name
+            default_security_group_id = aws_prov.default_security_group_id
 
             aws_vm_id = aws_vm.id
             name = aws_vm.name
@@ -130,9 +131,12 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             aws_vm.save()
     retry_transaction(write_sec_grp)
 
+    security_group_ids = [sec_grp_id]
+    if default_security_group_id:
+        security_group_ids.append(default_security_group_id)
     reservation = ec2_conn.run_instances(ami_id,
             instance_type=instance_type,
-            security_group_ids=[sec_grp_id],
+            security_group_ids=security_group_ids,
             key_name=ssh_key_name or None)
 
     aud.info('Got AWS reservation', user_id=user_id, vm_id=vm_id)

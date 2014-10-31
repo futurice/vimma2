@@ -126,6 +126,9 @@ class AWSProvider(models.Model):
     ssh_key_name = models.CharField(max_length=50, blank=True)
     # 'example.com.'
     route_53_zone = models.CharField(max_length=100, blank=True)
+    # Optional security group added to every vm, in addition to the vm's
+    # individual security group.
+    default_security_group_id = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
         return '{} (‘{}’, ssh key ‘{}’)'.format(self.provider.name,

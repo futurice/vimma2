@@ -74,7 +74,8 @@ AWSProvider.objects.create(provider=prov3,
         access_key_id=dev_secrets.AWS_ACCESS_KEY_ID,
         access_key_secret=dev_secrets.AWS_ACCESS_KEY_SECRET,
         ssh_key_name=dev_secrets.AWS_SSH_KEY_NAME,
-        route_53_zone=dev_secrets.AWS_ROUTE_53_NAME)
+        route_53_zone=dev_secrets.AWS_ROUTE_53_NAME,
+        default_security_group_id=dev_secrets.AWS_DEFAULT_SECURITY_GROUP_ID)
 
 
 vmc1A = VMConfig.objects.create(provider=prov1, name='Config A',

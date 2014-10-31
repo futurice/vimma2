@@ -39,7 +39,7 @@ https://dev.futurice.com:8081/vimma/test
 
 Running on your machine:
 
-PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings
+PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings --noinput
 ./scripts/polymerjs-reset.py	# install PolymerJS
 
 mkdir -p vimmasite/static

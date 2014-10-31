@@ -13,5 +13,5 @@ class Command(BaseCommand):
             try:
                 Permission.objects.get(name=name)
             except Permission.DoesNotExist:
-                self.stdout.write('creating {}'.format(name))
+                self.stdout.write('creating permission {}'.format(name))
                 Permission.objects.create(name=name)

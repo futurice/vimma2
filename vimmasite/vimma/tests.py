@@ -852,9 +852,7 @@ class AWSProviderTests(APITestCase):
             """
             Check visible and invisible fields returned by the API.
             """
-            self.assertTrue('id' in apiDict)
-            self.assertFalse('access_key_id' in apiDict)
-            self.assertFalse('access_key_secret' in apiDict)
+            self.assertEqual(set(apiDict.keys()), {'id'})
 
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
