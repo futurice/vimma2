@@ -267,22 +267,12 @@ def destroy_vm(vm_id, data, user_id=None):
 
 @app.task
 def do_destroy_vm(vm_id, user_id=None):
-    def read_vars():
-        with transaction.atomic():
-            aws_vm = VM.objects.get(id=vm_id).awsvm
-            aws_vm_id = aws_vm.id
-            inst_id = aws_vm.instance_id
-            return aws_vm_id, inst_id
-
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        # can add countdown=…, but the task would still have to retry anyway
+        terminate_instance.delay(vm_id, user_id=user_id)
+        # can add countdown=…, but this task would still have to retry anyway
         delete_security_group.delay(vm_id, user_id=user_id)
         route53_delete.delay(vm_id, user_id=user_id)
-
-        aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.terminate_instances(instance_ids=[inst_id])
-        aud.info('Destroyed instance', vm_id=vm_id, user_id=user_id)
+    aud.info('Scheduled destruction tasks', vm_id=vm_id, user_id=user_id)
 
 
 @app.task(bind=True, max_retries=15, default_retry_delay=60)
@@ -294,11 +284,29 @@ def delete_security_group(self, vm_id, user_id=None):
             sec_grp_id = aws_vm.security_group_id
             return aws_vm_id, sec_grp_id
 
-    with aud.celery_retry_ctx_mgr(self, 'delete security group',
-            vm_id=vm_id, user_id=user_id):
+    aud_kw = {'vm_id': vm_id, 'user_id': user_id}
+    with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
         aws_vm_id, sec_grp_id = retry_transaction(read_vars)
         conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.delete_security_group(group_id=sec_grp_id)
+    aud.info('Deleted security group {}'.format(sec_grp_id), **aud_kw)
+
+
+@app.task(bind=True, max_retries=30, default_retry_delay=10)
+def terminate_instance(self, vm_id, user_id=None):
+    def read_vars():
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm_id = aws_vm.id
+            inst_id = aws_vm.instance_id
+            return aws_vm_id, inst_id
+
+    aud_kw = {'vm_id': vm_id, 'user_id': user_id}
+    with aud.celery_retry_ctx_mgr(self, 'terminate instance', **aud_kw):
+        aws_vm_id, inst_id = retry_transaction(read_vars)
+        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
+        conn.terminate_instances(instance_ids=[inst_id])
+    aud.info('Terminated instance {}'.format(inst_id), **aud_kw)
 
 
 @app.task
