@@ -2148,6 +2148,32 @@ class AuditTests(TestCase):
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def test_min_level(self):
+        """
+        Check the min_level API filter.
+        """
+        u = util.create_vimma_user('user', 'user@example.com', '-')
+
+        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d').full_clean()
+        Audit.objects.create(level=Audit.WARNING, user=u,
+                text='-w').full_clean()
+        Audit.objects.create(level=Audit.ERROR, user=u, text='-e').full_clean()
+
+        def check_results(min_level, text_set):
+            """
+            Check that username sees all audits in text_set and nothing else.
+            """
+            self.assertTrue(self.client.login(username=u.username,
+                password='-'))
+            response = self.client.get(reverse('audit-list'),
+                    {'min_level': min_level})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = response.data['results']
+            self.assertEqual({x['text'] for x in items}, text_set)
+        check_results(Audit.DEBUG, {'-d', '-w', '-e'})
+        check_results(Audit.WARNING, {'-w', '-e'})
+        check_results(Audit.ERROR, {'-e'})
+
 
 class PowerLogTests(TestCase):
 

@@ -42,8 +42,16 @@
         </button>
         <span id="item-range">
           <!-- show 0–0 for no items -->
-          Showing items {{firstItemNr}}–{{getLastItemNr()}}
+          Logs {{firstItemNr}}–{{getLastItemNr()}}
           of {{apiResult.count}}
+          with level ≥
+          <select on-change="{{minLevelChanged}}">
+            <template repeat="{{al, i in auditLevels}}">
+              <option value="{{al.id}}" selected?="{{i == minLevelIdx}}">
+                {{al.name}}
+              </option>
+            </template>
+          </select>
         </span>
         <button type="button" on-click="{{loadNext}}"
           disabled?="{{ajaxInProgress || !apiResult.next}}">

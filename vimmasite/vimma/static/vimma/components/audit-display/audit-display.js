@@ -32,6 +32,8 @@
         /* Data model */
         vmid: -1,
         userid: -1,
+        auditLevels: auditLevels,
+        minLevelIdx: 1,
 
         // API endpoint response {count:, next:, previous:, results:}
         apiResult: null,
@@ -72,6 +74,8 @@
         getStartAuditsUrl: function() {
             var url = vimmaApiAuditList;
             var params = [];
+            params.push('min_level=' +
+                    encodeURIComponent(this.auditLevels[this.minLevelIdx].id));
             if (this.vmid != -1) {
                 params.push('vm=' + this.vmid);
             }
@@ -193,6 +197,11 @@
         getLastItemNr: function() {
             return this.firstItemNr +
                 Math.max(0, this.apiResult.results.length-1);
+        },
+
+        minLevelChanged: function(ev, detail, sender) {
+            this.minLevelIdx = sender.selectedIndex;
+            this.reload();
         }
     });
 })();

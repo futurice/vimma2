@@ -44,6 +44,9 @@
           restPaginateByParam = '{{settings.REST_FRAMEWORK.PAGINATE_BY_PARAM|escapejs}}',
           restMaxPaginateBy = {{settings.REST_FRAMEWORK.MAX_PAGINATE_BY}},
 
+          // [{id: …, name: …}, …]
+          auditLevels = JSON.parse('{{audit_level_choices_json|escapejs}}'),
+
           _dummy_end;
     </script>
 

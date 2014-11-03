@@ -230,15 +230,16 @@ class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # Imitating https://docs.python.org/3/library/logging.html#logging-levels
-    DEBUG = 'DEBUG'
-    INFO = 'INFO'
-    WARNING = 'WARNING'
-    ERROR = 'ERROR'
+    # Sorting level names lexicographically to query by min_level in the API.
+    DEBUG = '1-DEBUG'
+    INFO = '2-INFO'
+    WARNING = '3-WARNING'
+    ERROR = '4-ERROR'
     LEVEL_CHOICES = (
-        (DEBUG, DEBUG),
-        (INFO, INFO),
-        (WARNING, WARNING),
-        (ERROR, ERROR),
+        (DEBUG, 'DEBUG'),
+        (INFO, 'INFO'),
+        (WARNING, 'WARNING'),
+        (ERROR, 'ERROR'),
     )
     # corresponding logging.X level from the standard library
     STD_LEVEL = {

@@ -180,8 +180,17 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
 
         projects = user.profile.projects.all()
         prj_ids = [p.id for p in projects]
-        return Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
+        queryset = Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
                 Q(user__id=user.id))
+
+        min_lvl = self.request.QUERY_PARAMS.get('min_level', None)
+        if min_lvl is not None:
+            queryset = queryset.filter(level__gte=min_lvl)
+        return queryset
+
+
+audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
+    for c in Audit.LEVEL_CHOICES])
 
 
 @login_required_or_forbidden
@@ -189,7 +198,10 @@ def index(request):
     """
     Homepage.
     """
-    return render(request, 'vimma/index.html', {'settings': settings})
+    return render(request, 'vimma/index.html', {
+        'settings': settings,
+        'audit_level_choices_json': audit_levels_json,
+    })
 
 
 @login_required_or_forbidden
@@ -197,7 +209,10 @@ def test(request):
     """
     JavaScript Unit Tests.
     """
-    return render(request, 'vimma/test.html', {'settings': settings})
+    return render(request, 'vimma/test.html', {
+        'settings': settings,
+        'audit_level_choices_json': audit_levels_json,
+    })
 
 
 @login_required_or_forbidden
