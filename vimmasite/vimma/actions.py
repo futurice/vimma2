@@ -9,3 +9,4 @@ class Actions:
     USE_SCHEDULE = 'use-schedule'
     READ_ALL_AUDITS = 'read-all-audits'
     OVERRIDE_VM_SCHEDULE = 'override-vm-schedule'
+    CHANGE_VM_SCHEDULE = 'change-vm-schedule'

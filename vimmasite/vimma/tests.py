@@ -1950,6 +1950,107 @@ class OverrideScheduleTests(TestCase):
         check_overrides()
 
 
+class ChangeVMScheduleTests(TestCase):
+    """
+    Test the changeVMSchedule endpoint.
+    """
+
+    def test_login_required(self):
+        """
+        The user must be logged in.
+        """
+        response = self.client.get(reverse('changeVMSchedule'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unsupported_methods(self):
+        """
+        Only POST is supported (e.g. GET, PUT, DELETE are not).
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        url = reverse('changeVMSchedule')
+        for meth in self.client.get, self.client.put, self.client.delete:
+            response = meth(url)
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_perms_and_not_found(self):
+        """
+        Test user permissions and ‘not found’.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s1 = Schedule.objects.create(name='s1', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s1.full_clean()
+        s2 = Schedule.objects.create(name='s2', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s2.full_clean()
+        s3 = Schedule.objects.create(name='s3', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]), is_special=True)
+        s3.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s1)
+        vm.full_clean()
+
+        url = reverse('changeVMSchedule')
+
+        def checkScheduleId(vm_id, schedule_id):
+            """
+            Check that vm_id has schedule_id.
+            """
+            self.assertEqual(VM.objects.get(id=vm_id).schedule.id, schedule_id)
+
+        # non-existent VM ID or Schedule ID
+        for data in (
+                {'vmid': -100, 'scheduleid': s2.id},
+                {'vmid': vm.id, 'scheduleid': -100},
+                ):
+            response = self.client.post(url, content_type='application/json',
+                    data=json.dumps(data))
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        checkScheduleId(vm.id, s1.id)
+
+        # can't change schedules outside own projects
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'vmid': vm.id, 'scheduleid': s2.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkScheduleId(vm.id, s1.id)
+        # ok in own projects
+        u.profile.projects.add(prj)
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'vmid': vm.id, 'scheduleid': s2.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkScheduleId(vm.id, s2.id)
+
+        # can't change to ‘special’ schedule
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'vmid': vm.id, 'scheduleid': s3.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkScheduleId(vm.id, s2.id)
+
+        # ok if user has the required permission
+        perm = Permission.objects.create(name=Perms.USE_SPECIAL_SCHEDULE)
+        role = Role.objects.create(name='users of special schedules')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'scheduleid': s3.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkScheduleId(vm.id, s3.id)
+
+
 class CanDoTests(TestCase):
 
     def test_create_vm_in_project(self):

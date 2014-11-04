@@ -88,16 +88,11 @@
         </error-display>
       </template>
 
-      <template bind ref="schedule"></template>
-      <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
+      <div>
+        <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
+      </div>
       <template bind ref="schedule-override"></template>
       <template bind ref="audit"></template>
-    </template>
-
-    <template id="schedule">
-      <div id="schedule">
-        On schedule ‘{{schedule.name}}’.
-      </div>
     </template>
 
     <template id="schedule-override">

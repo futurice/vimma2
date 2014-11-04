@@ -16,7 +16,6 @@ Polymer('vm-detail', {
     vm: null,
     provider: null,
     project: null,
-    schedule: null,
     // what the schedule-override will be, if the user sets one
     overrideSchedState: 'on',
     overrideSchedMins: 10,
@@ -35,7 +34,6 @@ Polymer('vm-detail', {
         this.vm = null;
         this.provider = null;
         this.project = null;
-        this.schedule = null;
         this.showLogs = false;
         // keep this.expanded
         this.loadVM();
@@ -56,21 +54,19 @@ Polymer('vm-detail', {
     loadVM: function() {
         var ok = (function(resultArr) {
             this.vm = resultArr[0];
-            this.loadProvPrjSchedule();
+            this.loadProvPrj();
         }).bind(this);
         apiGet([vimmaApiVMDetailRoot + this.vmid + '/'],
                 ok, this.loadFail.bind(this));
     },
-    loadProvPrjSchedule: function() {
+    loadProvPrj: function() {
         var ok = (function(resultArr) {
             this.provider = resultArr[0];
             this.project = resultArr[1];
-            this.schedule = resultArr[2];
             this.loadSuccess();
         }).bind(this);
         apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/',
-                vimmaApiProjectDetailRoot + this.vm.project + '/',
-                vimmaApiScheduleDetailRoot + this.vm.schedule + '/'],
+                vimmaApiProjectDetailRoot + this.vm.project + '/'],
                 ok, this.loadFail.bind(this));
     },
 

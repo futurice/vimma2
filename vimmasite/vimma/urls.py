@@ -9,7 +9,7 @@ from vimma.views import (
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
     AuditViewSet,
     index, test, create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
-    override_schedule,
+    override_schedule, change_vm_schedule,
 )
 
 
@@ -43,4 +43,5 @@ urlpatterns = patterns('',
     url(r'^destroyvm$', destroy_vm, name='destroyVM'),
 
     url(r'^override-schedule$', override_schedule, name='overrideSchedule'),
+    url(r'^change-vm-schedule$', change_vm_schedule, name='changeVMSchedule'),
 )

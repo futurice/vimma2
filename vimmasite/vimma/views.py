@@ -508,3 +508,77 @@ def override_schedule(request):
         msg = ''.join(lines)
         aud.error(msg, user_id=request.user.id, vm_id=vm.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def change_vm_schedule(request):
+    """
+    Change the schedule of a VM.
+
+    JSON request body:
+    {
+        vmid: int,
+        scheduleid: int,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    # extract the vm_id to use in logging below
+    try:
+        body = json.loads(request.read().decode('utf-8'))
+        vm_id = body['vmid']
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def call():
+        """
+        Do the work, return response and an optional callable.
+
+        This function is safe to retry via retry_transaction(…).
+        """
+        with transaction.atomic():
+            try:
+                vm = VM.objects.get(id=vm_id)
+                schedule_id = body['scheduleid']
+                schedule = Schedule.objects.get(id=schedule_id)
+            except ObjectDoesNotExist as e:
+                return get_http_json_err('{}'.format(e),
+                        status.HTTP_404_NOT_FOUND), None
+
+            if not can_do(request.user, Actions.CHANGE_VM_SCHEDULE,
+                    {'vm': vm, 'schedule': schedule}):
+                return get_http_json_err('You may not set this VM ' +
+                        'to this schedule', status.HTTP_403_FORBIDDEN), None
+
+            vm.schedule = schedule
+            vm.save()
+            vm.full_clean()
+
+        aud.info('Changed schedule to {}'.format(schedule_id),
+                user_id=request.user.id, vm_id=vm_id)
+        # Just in case this lambda could cause the retry_transaction(…) helper
+        # to re-execute this function, don't run the lambda here but return it
+        # to our caller.
+        return HttpResponse(), lambda: vmutil.update_vm_status.delay(vm_id)
+
+    try:
+        response, callback = retry_transaction(call)
+
+        if request.META['SERVER_NAME'] == "testserver":
+            # Don't perform other actions when running tests
+            return response
+
+        if callback:
+            callback()
+        return response
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id, vm_id=vm_id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -101,6 +101,11 @@ def can_do(user, what, data=None):
     elif what == Actions.OVERRIDE_VM_SCHEDULE:
         vm = data
         return user.profile.projects.filter(id=vm.project.id).count() > 0
+    elif what == Actions.CHANGE_VM_SCHEDULE:
+        vm, schedule = data['vm'], data['schedule']
+        if user.profile.projects.filter(id=vm.project.id).count() == 0:
+            return False
+        return can_do(user, Actions.USE_SCHEDULE, schedule)
     else:
         aud.warning('Unknown action “{}”'.format(action))
         return False

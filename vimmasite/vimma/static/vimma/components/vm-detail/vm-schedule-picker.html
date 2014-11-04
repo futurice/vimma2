@@ -3,10 +3,40 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../ajax-state/ajax-state.html">
 
 <polymer-element name="vm-schedule-picker" attributes="vmid">
   <template>
-    TODO: change schedule for vm id={{vmid}}.
+    <link rel="stylesheet" type="text/css" href="vm-schedule-picker.css">
+
+    <ajax-state id="ajax"></ajax-state>
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+    <template if="{{!loading && loadingSucceeded}}">
+      <template bind ref="main"></template>
+    </template>
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <error-display text={{$.ajax.errorText}}></error-display>
+    </template>
+
+    <template id="main">
+      Schedule
+      <paper-dropdown-menu selected="{{newSchedId}}" valueattr="key"
+          disabled?="{{$.ajax.inProgress}}" on-core-select="{{schedSelected}}">
+        <template repeat="{{s in schedules}}">
+          <paper-item label="{{s.name}}" key="{{s.id}}"></paper-item>
+        </template>
+      </paper-dropdown-menu>
+
+      <paper-button id="save" raised on-click={{save}}
+          disabled?="{{$.ajax.inProgress}}"
+          class="{{ {highlight: newSchedId != vm.schedule} | tokenList }}">
+        <core-icon icon="save"></core-icon>
+        Save
+      </paper-button>
+    </template>
   </template>
 
   <script src="vm-schedule-picker.js"></script>
