@@ -2,6 +2,7 @@
 <link rel="import" href="../bower_components/core-elements/core-elements.html">
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
+<link rel="import" href="../ajax-state/ajax-state.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../schedule-editor/schedule-editor.html">
 
@@ -9,22 +10,23 @@
   <template>
     <link rel="stylesheet" type="text/css" href="schedule-list.css">
 
+    <ajax-state id="ajax"></ajax-state>
+
     <template if="{{loading}}">
       Loading…
     </template>
 
-    <template if="{{!loading}}">
-      <template if="{{!success}}">
-        <error-display text={{errorText}}></error-display>
-      </template>
+    <template if="{{!loading && loadingSucceeded}}">
+      Showing {{schedules.length}}
+      {{schedules.length == 1 ? 'schedule' : 'schedules'}}
 
-      <template if="{{success}}">
-        Showing {{schedules.length}}
-        {{schedules.length == 1 ? 'schedule' : 'schedules'}}
+      <template bind ref="schedule-list"></template>
+      <template bind ref="create-schedule"></template>
+    </template>
 
-        <template bind ref="schedule-list"></template>
-        <template bind ref="create-schedule"></template>
-      </template>
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <br>
+      <error-display text="{{$.ajax.errorText}}"></error-display>
     </template>
 
 
@@ -43,7 +45,7 @@
     <template id="create-schedule">
       <paper-input label="New schedule name" floatingLabel="true"
         required error="The name may not be empty"
-        value="{{newScheduleName}}" disabled="{{ajaxInProgress}}"
+        value="{{newScheduleName}}" disabled?="{{$.ajax.inProgress}}"
         on-input="{{nameEdited}}">
       </paper-input>
       <br>
@@ -56,18 +58,11 @@
       </paper-dropdown-menu>
       <br>
       <paper-button id="create" raised
-        on-click={{create}} disabled="{{ajaxInProgress}}"
+        on-click={{create}} disabled?="{{$.ajax.inProgress}}"
         class="{{ {highlight: newScheduleName.length && newScheduleTimeZone != null} | tokenList }}">
         <core-icon icon="create"></core-icon>
         Create
       </paper-button>
-
-      <template if={{!ajaxInProgress}}>
-        <template if={{!ajaxSuccess}}>
-          <br>
-          <error-display text={{ajaxErrTxt}}></error-display>
-        </template>
-      </template>
     </template>
   </template>
 

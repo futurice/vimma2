@@ -44,28 +44,21 @@ Polymer('schedule-editor', {
         }
     },
 
-    ajaxInProgress: false,
-    ajaxSuccess: true,
-    ajaxErrTxt: '',
-
     delete: function() {
-        this.ajaxInProgress = true;
+        this.$.ajax.fire('start');
         $.ajax({
             url: vimmaApiScheduleDetailRoot + this.editModel.id + '/',
             type: 'DELETE',
             headers: {
                 'X-CSRFToken': $.cookie('csrftoken')
             },
-            complete: (function(data) {
-                this.ajaxInProgress = false;
-            }).bind(this),
             success: (function(data) {
-                this.ajaxSuccess = true;
+                this.$.ajax.fire('end', {success: true});
                 this.fire('schedule-deleted');
             }).bind(this),
             error: (function() {
-                this.ajaxSuccess = false;
-                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
     },
@@ -75,7 +68,7 @@ Polymer('schedule-editor', {
     },
 
     save: function() {
-        this.ajaxInProgress = true;
+        this.$.ajax.fire('start');
         $.ajax({
             url: vimmaApiScheduleDetailRoot + this.editModel.id + '/',
             type: 'PUT',
@@ -88,16 +81,13 @@ Polymer('schedule-editor', {
                 dbModel.matrix = JSON.stringify(dbModel.matrix);
                 return JSON.stringify(dbModel);
             }).bind(this)(),
-            complete: (function(data) {
-                this.ajaxInProgress = false;
-            }).bind(this),
             success: (function(data) {
-                this.ajaxSuccess = true;
+                this.$.ajax.fire('end', {success: true});
                 this.savedModel = clone(this.editModel);
             }).bind(this),
             error: (function() {
-                this.ajaxSuccess = false;
-                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
     }

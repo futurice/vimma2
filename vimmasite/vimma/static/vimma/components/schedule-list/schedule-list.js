@@ -1,33 +1,14 @@
 Polymer('schedule-list', {
     loading: true,
-    success: null,
-    errorText: null,
+    loadingSucceeded: false,
+
     schedules: null,
     timezones: null,
 
     newScheduleName: '',
     newScheduleTimeZone: null,
 
-    ajaxInProgress: false,
-    ajaxSuccess: true,
-    ajaxErrTxt: '',
-
     created: function() {
-        var success = (function(resultsArr) {
-            this.loading = false;
-            this.success = true;
-            this.schedules = resultsArr[0];
-            this.timezones = resultsArr[1];
-        }).bind(this);
-
-        var fail = (function(errorText) {
-            this.loading = false;
-            this.success = false;
-            this.errorText = errorText;
-        }).bind(this);
-
-        apiGetAll([vimmaApiScheduleList, vimmaApiTimeZoneList], success, fail);
-
         this.defaultMatrix = [];
         var i, j, row;
         for (i = 0; i < 7; i++) {
@@ -37,6 +18,42 @@ Polymer('schedule-list', {
             }
             this.defaultMatrix.push(row);
         }
+    },
+
+    ready: function() {
+        this.reload();
+    },
+
+    reload: function() {
+        this.$.ajax.fire('start');
+        this.loading = true;
+
+        this.vm = null;
+        this.awsvm = null;
+
+        this.loadSchedTz();
+    },
+    loadFail: function(errorText) {
+        this.$.ajax.fire('end', {success: false, errorText: errorText});
+
+        this.loading = false;
+        this.loadingSucceeded = false;
+    },
+    loadSuccess: function() {
+        this.$.ajax.fire('end', {success: true});
+
+        this.loading = false;
+        this.loadingSucceeded = true;
+    },
+
+    loadSchedTz: function() {
+        var ok = (function(resultsArr) {
+            this.schedules = resultsArr[0];
+            this.timezones = resultsArr[1];
+            this.loadSuccess();
+        }).bind(this);
+        apiGetAll([vimmaApiScheduleList, vimmaApiTimeZoneList],
+            ok, this.loadFail.bind(this));
     },
 
     scheduleDeleted: function(e, detail, sender) {
@@ -56,7 +73,7 @@ Polymer('schedule-list', {
     },
 
     create: function() {
-        this.ajaxInProgress = true;
+        this.$.ajax.fire('start');
 
         $.ajax({
             url: vimmaApiScheduleList,
@@ -70,17 +87,14 @@ Polymer('schedule-list', {
                 timezone: this.newScheduleTimeZone,
                 matrix: JSON.stringify(this.defaultMatrix)
             }),
-            complete: (function() {
-                this.ajaxInProgress = false;
-            }).bind(this),
             success: (function(data) {
-                this.ajaxSuccess = true;
+                this.$.ajax.fire('end', {success: true});
                 this.schedules.push(data);
                 this.newScheduleName = '';
             }).bind(this),
             error: (function(xhr, txtStatus, saveErr) {
-                this.ajaxSuccess = false;
-                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
     }

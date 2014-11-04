@@ -3,18 +3,22 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../ajax-state/ajax-state.html">
 <link rel="import" href="matrix-editor.html">
 
 <polymer-element name="schedule-editor" attributes="schedule timezones">
   <template>
     <link rel="stylesheet" type="text/css" href="schedule-editor.css">
 
+    <ajax-state id="ajax"></ajax-state>
+
     <paper-input label="Schedule Name" floatingLabel="true"
       required error="The name may not be empty" on-input="{{nameEdited}}"
-      value="{{editModel.name}}" disabled="{{ajaxInProgress}}">
+      value="{{editModel.name}}" disabled?="{{$.ajax.inProgress}}">
     </paper-input>
 
-    <matrix-editor matrix="{{editModel.matrix}}" disabled="{{ajaxInProgress}}"
+    <matrix-editor matrix="{{editModel.matrix}}"
+      disabled?="{{$.ajax.inProgress}}"
       rowLabels="{{matrixRowLabels}}" colLabels="{{matrixColLabels}}">
     </matrix-editor>
 
@@ -26,7 +30,8 @@
       </template>
     </paper-dropdown-menu>
     <br>
-    <input id="is_special" type="checkbox" checked="{{editModel.is_special}}">
+    <input id="is_special" type="checkbox" checked="{{editModel.is_special}}"
+      disabled?="{{$.ajax.inProgress}}">
     <label for="is_special">
       Using this schedule requires special permissions
     </label>
@@ -35,29 +40,27 @@
     {{hasUnsavedChanges ? 'You have unsaved changes' : ''}}
     <br>
     <paper-button id="save" raised
-      on-click={{save}} disabled="{{ajaxInProgress}}"
+      on-click={{save}} disabled?="{{$.ajax.inProgress}}"
       class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
       <core-icon icon="save"></core-icon>
       Save
     </paper-button>
     <paper-button id="revert" raised
-      on-click={{revert}} disabled="{{ajaxInProgress}}"
+      on-click={{revert}} disabled?="{{$.ajax.inProgress}}"
       class="{{ {unsaved: hasUnsavedChanges} | tokenList }}">
       <core-icon icon="undo"></core-icon>
       Discard changes
     </paper-button>
     <br>
     <paper-button id="delete" raised
-      on-click={{delete}} disabled="{{ajaxInProgress}}">
+      on-click={{delete}} disabled?="{{$.ajax.inProgress}}">
       <core-icon icon="delete"></core-icon>
       Delete
     </paper-button>
 
-    <template if={{!ajaxInProgress}}>
-      <template if={{!ajaxSuccess}}>
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
         <br>
-        <error-display text={{ajaxErrTxt}}></error-display>
-      </template>
+        <error-display text="{{$.ajax.errorText}}"></error-display>
     </template>
   </template>
 
