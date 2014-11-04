@@ -4,27 +4,29 @@
 
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../local-date/local-date.html">
+<link rel="import" href="../ajax-state/ajax-state.html">
 
-<polymer-element name="audit-display" attributes="vmid userid"
-  on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
+<polymer-element name="audit-display" attributes="vmid userid">
   <template>
     <link rel="stylesheet" type="text/css" href="audit-display.css">
 
-    <button on-click="{{reload}}"disabled?="{{ajaxInProgress}}">
+    <ajax-state id="ajax"></ajax-state>
+
+    <button on-click="{{reload}}" disabled?="{{$.ajax.inProgress}}">
       Refresh logs
     </button>
     <br>
 
-    <template if="{{!apiResult && ajaxInProgress}}">
+    <template if="{{!apiResult && $.ajax.inProgress}}">
       Loading…
     </template>
     <template if="{{apiResult}}">
       <template bind ref="main"></template>
     </template>
 
-    <template if="{{!ajaxInProgress && !ajaxSuccess}}">
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
       <br>
-      <error-display text={{ajaxErrTxt}}></error-display>
+      <error-display text={{$.ajax.errorText}}></error-display>
     </template>
 
     <template id="main">
@@ -37,7 +39,7 @@
     <template id="navigation">
       <div id="navigation">
         <button type="button" on-click="{{loadPrevious}}"
-          disabled?="{{ajaxInProgress || !apiResult.previous}}">
+          disabled?="{{$.ajax.inProgress || !apiResult.previous}}">
           ← prev
         </button>
         <span id="item-range">
@@ -45,7 +47,8 @@
           Logs {{firstItemNr}}–{{getLastItemNr()}}
           of {{apiResult.count}}
           with level ≥
-          <select on-change="{{minLevelChanged}}">
+          <select on-change="{{minLevelChanged}}"
+            disabled?="{{$.ajax.inProgress}}">
             <template repeat="{{al, i in auditLevels}}">
               <option value="{{al.id}}" selected?="{{i == minLevelIdx}}">
                 {{al.name}}
@@ -54,7 +57,7 @@
           </select>
         </span>
         <button type="button" on-click="{{loadNext}}"
-          disabled?="{{ajaxInProgress || !apiResult.next}}">
+          disabled?="{{$.ajax.inProgress || !apiResult.next}}">
           next →
         </button>
       </div>
@@ -78,7 +81,7 @@
       </table>
 
       <button id="show-more" type="button" on-click="{{showMore}}"
-        disabled?="{{ajaxInProgress || pageSize >= maxPageSize}}">
+        disabled?="{{$.ajax.inProgress || pageSize >= maxPageSize}}">
           Show more
       </button>
     </template>

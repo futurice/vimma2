@@ -7,28 +7,6 @@
     };
 
     Polymer('audit-display', {
-        ajaxInProgress: false,
-        ajaxSuccess: true,
-        ajaxErrTxt: '',
-
-        onAjaxStart: function(ev) {
-            ev.stopPropagation();
-            if (this.ajaxInProgress) {
-                throw 'ajax-start fired while ajaxInProgress';
-            }
-            this.ajaxInProgress = true;
-        },
-
-        onAjaxEnd: function(ev, detail, sender) {
-            ev.stopPropagation();
-            if (!this.ajaxInProgress) {
-                throw 'ajax-end fired while not ajaxInProgress';
-            }
-            this.ajaxInProgress = false;
-            this.ajaxSuccess = detail.success;
-            this.ajaxErrTxt = this.ajaxSuccess ? '' : detail.errorText;
-        },
-
         /* Data model */
         vmid: -1,
         userid: -1,
@@ -54,7 +32,7 @@
         },
 
         reload: function() {
-            this.fire('ajax-start');
+            this.$.ajax.fire('start');
 
             this.apiResult = null;
             this.firstItemNr = 1;
@@ -65,10 +43,10 @@
             this.loadAudits(this.getStartAuditsUrl(), DIRECTION.START);
         },
         loadFail: function(errorText) {
-            this.fire('ajax-end', {success: false, errorText: errorText});
+            this.$.ajax.fire('end', {success: false, errorText: errorText});
         },
         loadSuccess: function() {
-            this.fire('ajax-end', {success: true});
+            this.$.ajax.fire('end', {success: true});
         },
 
         getStartAuditsUrl: function() {
@@ -159,12 +137,12 @@
         },
 
         loadPrevious: function() {
-            this.fire('ajax-start');
+            this.$.ajax.fire('start');
             this.future = {};
             this.loadAudits(this.apiResult.previous, DIRECTION.LEFT);
         },
         loadNext: function() {
-            this.fire('ajax-start');
+            this.$.ajax.fire('start');
             this.future = {};
             this.loadAudits(this.apiResult.next, DIRECTION.RIGHT);
         },
