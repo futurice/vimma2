@@ -24,11 +24,22 @@ Polymer('local-date', {
             return s;
         }
 
+        function fmtMillis(i) {
+            var s = i + '';
+            if (s.length > 3) {
+                throw 'Invalid millisecond count: ' + s;
+            }
+            while (s.length < 3) {
+                s = '0' + s;
+            }
+            return s;
+        }
+
         this.dateStr = [this.dateObj.getFullYear(), this.dateObj.getMonth(),
             this.dateObj.getDate()].map(fmtInt).join('-');
         this.timeStr = [this.dateObj.getHours(), this.dateObj.getMinutes(),
             this.dateObj.getSeconds()].map(fmtInt).join(':') + '.' +
-                this.dateObj.getMilliseconds();
+                fmtMillis(this.dateObj.getMilliseconds());
 
         this.isoStr = this.dateObj.toISOString();
     }

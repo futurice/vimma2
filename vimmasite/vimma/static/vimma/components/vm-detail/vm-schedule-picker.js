@@ -1,0 +1,2 @@
+Polymer('vm-schedule-picker', {
+});

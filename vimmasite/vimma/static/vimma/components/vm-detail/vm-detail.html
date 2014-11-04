@@ -4,20 +4,13 @@
 
 <link rel="import" href="dummy-vm-detail.html">
 <link rel="import" href="aws-vm-detail.html">
+<link rel="import" href="vm-schedule-picker.html">
 <link rel="import" href="../error-display/error-display.html">
 
 <polymer-element name="vm-detail" attributes="vmid"
   on-ajax-start="{{onAjaxStart}}" on-ajax-end="{{onAjaxEnd}}">
   <template>
     <link rel="stylesheet" type="text/css" href="vm-detail.css">
-
-    Hello VM id {{vmid}}.
-    <br>
-    <paper-button on-click="{{reload}}" raised disabled?="{{ajaxInProgress}}">
-      <core-icon icon="refresh"></core-icon>
-      Refresh
-    </paper-button>
-    <br>
 
     <template if="{{loading}}">
       Loading…
@@ -30,13 +23,54 @@
     </template>
 
     <template if="{{!ajaxInProgress && !ajaxSuccess}}">
-      <br>
-      <error-display text={{ajaxErrTxt}}></error-display>
+      <div>
+        <error-display text={{ajaxErrTxt}}></error-display>
+      </div>
     </template>
 
     <template id="vm">
-      Project: {{project.name}}
-      <br>
+      <template bind ref="vm-summary"></template>
+      <template if="{{expanded}}">
+        <template bind ref="vm-expanded"></template>
+      </template>
+    </template>
+
+    <template id="vm-summary">
+      <div id="summary">
+        <paper-button id="expand" on-click="{{toggleExpanded}}" raised
+          title="{{expanded ? 'Collapse' : 'Expand'}}">
+          <core-icon icon="{{expanded ? 'expand-less' : 'expand-more'}}">
+          </core-icon>
+        </paper-button>
+
+        <paper-button id="reload" on-click="{{reload}}" raised
+          title="Refresh" disabled?="{{ajaxInProgress}}">
+          <core-icon icon="refresh"></core-icon>
+        </paper-button>
+
+        <div id="prov-summ">
+          <template bind ref="provider-specific-summary"></template>
+        </div>
+
+        <span id="project-name">{{project.name}}</span>
+
+        <paper-button id="reboot" on-click="{{reboot}}" raised
+          title="Reboot" disabled?="{{ajaxInProgress}}">
+          <core-icon icon="rotate-left"></core-icon>
+        </paper-button>
+        <paper-button id="destroy" on-click="{{destroy}}" raised
+          title="Destroy" disabled?="{{ajaxInProgress}}">
+          <core-icon icon="delete"></core-icon>
+        </paper-button>
+      </div>
+    </template>
+
+    <template id="provider-specific-summary">
+      Provider-specific<br>
+      TODO: ‹dummy-vm-summary/› ‹aws-vm-summary/›.
+    </template>
+
+    <template id="vm-expanded">
       <template if="{{provider.type == 'dummy'}}">
         <dummy-vm-detail vmid="{{vmid}}" ajaxInProgress="{{ajaxInProgress}}">
         </dummy-vm-detail>
@@ -52,60 +86,58 @@
         </error-display>
       </template>
 
-      <br>
-
-      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOn}}">
-        Turn ON
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{powerOff}}">
-        Turn OFF
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{reboot}}">
-        Reboot
-      </button>
-      <button disabled?="{{ajaxInProgress}}" on-click="{{destroy}}">
-        Destroy
-      </button>
-
-      <br>
-      <template bind ref="override"></template>
-      <br>
-      <button type="button" on-click="{{toggleShowLogs}}">
-        <template if="{{!showLogs}}">Show logs</template>
-        <template if="{{showLogs}}">Hide logs</template>
-      </button>
-      <template if="{{showLogs}}">
-        <div id="audit">
-          <audit-display vmid="{{vmid}}"></audit-display>
-        </div>
-      </template>
+      <template bind ref="schedule"></template>
+      <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
+      <template bind ref="schedule-override"></template>
+      <template bind ref="audit"></template>
     </template>
 
-    <template id="override">
-      On schedule ‘{{schedule.name}}’,
-      <template if="{{vm.sched_override_state == null}}">
-        no override in effect.
-      </template>
-      <template if="{{vm.sched_override_state != null}}">
-        overridden to Powered {{vm.sched_override_state == true ? 'ON' : 'OFF'}}
-        until {{tstampToString(vm.sched_override_tstamp)}}.
-      </template>
-      <br>
-      <button on-click="{{overrideClear}}">Clear override</button>
-      <br>
-      Keep
-      <paper-dropdown-menu selected="{{overrideSchedState}}" valueattr="key"
-        disabled?="{{ajaxInProgress}}"
-        on-core-select="{{overrideSchedStateSelected}}">
-        <paper-item label="Powered ON" key="on"></paper-item>
-        <paper-item label="Powered OFF" key="off"></paper-item>
-      </paper-dropdown-menu>
-      for
-      <input type="number" value="{{overrideSchedMins}}"
-        disabled?="{{ajaxInProgress}}"> min
-      <button on-click="{{overrideSet}}" disabled?="{{ajaxInProgress}}">
-        Set override
-      </button>
+    <template id="schedule">
+      <div id="schedule">
+        On schedule ‘{{schedule.name}}’.
+      </div>
+    </template>
+
+    <template id="schedule-override">
+      <div id="schedule-override">
+        <template if="{{vm.sched_override_state == null}}">
+          No override in effect.
+        </template>
+        <template if="{{vm.sched_override_state != null}}">
+          Overridden to Powered
+          {{vm.sched_override_state == true ? 'ON' : 'OFF'}}
+          until {{tstampToString(vm.sched_override_tstamp)}}.
+          <button on-click="{{overrideClear}}">Clear override</button>
+        </template>
+        <br>
+        Keep
+        <paper-dropdown-menu selected="{{overrideSchedState}}" valueattr="key"
+          disabled?="{{ajaxInProgress}}"
+          on-core-select="{{overrideSchedStateSelected}}">
+          <paper-item label="Powered ON" key="on"></paper-item>
+          <paper-item label="Powered OFF" key="off"></paper-item>
+        </paper-dropdown-menu>
+        for
+        <input type="number" value="{{overrideSchedMins}}"
+          disabled?="{{ajaxInProgress}}"> min
+        <button on-click="{{overrideSet}}" disabled?="{{ajaxInProgress}}">
+          Set override
+        </button>
+      </div>
+    </template>
+
+    <template id="audit">
+      <div id="audit">
+        <button type="button" on-click="{{toggleShowLogs}}">
+          <template if="{{!showLogs}}">Show logs</template>
+          <template if="{{showLogs}}">Hide logs</template>
+        </button>
+        <template if="{{showLogs}}">
+          <div id="audit-display">
+            <audit-display vmid="{{vmid}}"></audit-display>
+          </div>
+        </template>
+      </div>
     </template>
   </template>
 

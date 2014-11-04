@@ -1,4 +1,20 @@
-div#audit {
+div#summary {
+	display: flex;
+	align-items: center;
+}
+
+#prov-summ {
+	flex-grow: 1;
+	min-width: 5em;
+}
+
+#project-name {
+	flex-grow: 1;
+	min-width: 5em;
+	text-align: center;
+}
+
+div#audit-display {
 	border: 0.1em solid black;
 	padding: 0.5em;
 	background-color: WhiteSmoke;

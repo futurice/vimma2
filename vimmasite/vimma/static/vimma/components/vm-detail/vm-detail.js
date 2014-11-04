@@ -60,6 +60,7 @@ Polymer('vm-detail', {
     overrideSchedState: 'on',
     overrideSchedMins: 10,
     showLogs: false,
+    expanded: false,
 
     ready: function() {
         this.reload();
@@ -113,7 +114,10 @@ Polymer('vm-detail', {
     },
 
     // could be better named
-    vmOperation: function(url, data) {
+    vmOperation: function(url, confirmText, data) {
+        if (!confirm(confirmText + ' this VM?')) {
+            return;
+        }
         this.fire('ajax-start');
         $.ajax({
             url: url,
@@ -136,17 +140,11 @@ Polymer('vm-detail', {
         });
     },
 
-    powerOn: function() {
-        this.vmOperation(vimmaEndpointPowerOnVM, null);
-    },
-    powerOff: function() {
-        this.vmOperation(vimmaEndpointPowerOffVM, null);
-    },
     reboot: function() {
-        this.vmOperation(vimmaEndpointRebootVM, null);
+        this.vmOperation(vimmaEndpointRebootVM, 'Reboot', null);
     },
     destroy: function() {
-        this.vmOperation(vimmaEndpointDestroyVM, null);
+        this.vmOperation(vimmaEndpointDestroyVM, 'Destroy', null);
     },
 
     overrideSchedStateSelected: function(e, detail, sender) {
@@ -182,7 +180,7 @@ Polymer('vm-detail', {
         this.ajaxOverrideSchedule({
             vmid: this.vm.id,
             state: this.overrideSchedState == 'on',
-            seconds: this.overrideSchedMins * 60
+            seconds: Math.floor(this.overrideSchedMins * 60)
         });
     },
     overrideClear: function() {
@@ -191,5 +189,9 @@ Polymer('vm-detail', {
 
     toggleShowLogs: function() {
         this.showLogs = !this.showLogs;
-    }
+    },
+
+    toggleExpanded: function() {
+        this.expanded = ! this.expanded;
+    },
 });
