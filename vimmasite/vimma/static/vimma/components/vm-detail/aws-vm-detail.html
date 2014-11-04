@@ -2,18 +2,28 @@
 <link rel="import" href="../bower_components/core-elements/core-elements.html">
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
-<!-- see <vm-detail> for ajaxInProgress and ajax-{start|end} events -->
-<polymer-element name="aws-vm-detail" attributes="vmid ajaxInProgress">
+<link rel="import" href="../ajax-state/ajax-state.html">
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="aws-vm-detail" attributes="vmid">
   <template>
+
+    <ajax-state id="ajax"></ajax-state>
+
     <template if="{{loading}}">
       Loading…
     </template>
 
     <template if="{{!loading}}">
       <template if="{{loadingSucceeded}}">
-        <template bind ref="main">
-        </template>
+        <template bind ref="main"></template>
       </template>
+    </template>
+
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <div>
+        <error-display text={{$.ajax.errorText}}></error-display>
+      </div>
     </template>
 
     <template id="main">
