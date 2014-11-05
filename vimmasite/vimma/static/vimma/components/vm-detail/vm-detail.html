@@ -3,7 +3,9 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="dummy-vm-detail.html">
+<link rel="import" href="dummy-vm-summary.html">
 <link rel="import" href="aws-vm-detail.html">
+<link rel="import" href="aws-vm-summary.html">
 <link rel="import" href="vm-schedule-picker.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
@@ -68,8 +70,19 @@
     </template>
 
     <template id="provider-specific-summary">
-      Provider-specific<br>
-      TODO: ‹dummy-vm-summary/› ‹aws-vm-summary/›.
+      <template if="{{provider.type == 'dummy'}}">
+        <dummy-vm-summary vmid="{{vmid}}"></dummy-vm-summary>
+      </template>
+
+      <template if="{{provider.type == 'aws'}}">
+        <aws-vm-summary vmid="{{vmid}}"></aws-vm-summary>
+      </template>
+
+      <template if="{{provider.type != 'dummy' && provider.type != 'aws'}}">
+        <error-display
+          text="{{'Unknown vm provider type: “' + provider.type + '”'}}">
+        </error-display>
+      </template>
     </template>
 
     <template id="vm-expanded">
