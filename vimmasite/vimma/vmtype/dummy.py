@@ -34,32 +34,14 @@ def create_vm(vm, data, user_id=None):
     # callable (which runs after comitting the transaction).
     countdown = min(max(0, data['delay']), 60)
     callables = [
-            lambda: do_power_on_vm.apply_async(args=(vm.id, user_id),
+            lambda: power_on_vm.apply_async(args=(vm.id, user_id),
                 countdown=countdown),
             ]
     return dummyVM, callables
 
 
-def power_on_vm(vm_id, data, user_id=None):
-    """
-    Power on VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-
-    The dummy provider's functions try to form a pattern which allows real
-    (non-dummy) VM providers reasonable flexibility. This is the purpose
-    of the dummy provider.
-    This is why these dummy functions have this structure and restrictions
-    (e.g. about transactions), even though some of these dummy functions do
-    almost no work.
-    """
-    do_power_on_vm.delay(vm_id=vm_id, user_id=user_id)
-
-
 @app.task
-def do_power_on_vm(vm_id, user_id=None):
+def power_on_vm(vm_id, user_id=None):
     def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
@@ -77,19 +59,8 @@ def do_power_on_vm(vm_id, user_id=None):
         aud.info('Power ON', user_id=user_id, vm_id=vm_id)
 
 
-def power_off_vm(vm_id, data, user_id=None):
-    """
-    Power off VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_power_off_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_power_off_vm(vm_id, user_id=None):
+def power_off_vm(vm_id, user_id=None):
     def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
@@ -106,19 +77,8 @@ def do_power_off_vm(vm_id, user_id=None):
         aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
 
 
-def reboot_vm(vm_id, data, user_id=None):
-    """
-    Reboot VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_reboot_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_reboot_vm(vm_id, user_id=None):
+def reboot_vm(vm_id, user_id=None):
     def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm
@@ -135,19 +95,8 @@ def do_reboot_vm(vm_id, user_id=None):
         aud.info('Reboot', user_id=user_id, vm_id=vm_id)
 
 
-def destroy_vm(vm_id, data, user_id=None):
-    """
-    Destroy VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_destroy_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_destroy_vm(vm_id, user_id=None):
+def destroy_vm(vm_id, user_id=None):
     def call():
         with transaction.atomic():
             dvm = VM.objects.get(id=vm_id).dummyvm

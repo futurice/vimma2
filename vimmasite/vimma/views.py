@@ -274,7 +274,6 @@ def power_on_vm(request):
     JSON request body:
     {
         vmid: int,
-        data: «provider-specific data»,
     }
     """
     if request.method != 'POST':
@@ -300,7 +299,8 @@ def power_on_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.power_on_vm(vm_id, body['data'], user_id=request.user.id)
+        aud.debug('Request to Power ON', vm_id=vm_id, user_id=request.user.id)
+        vmutil.get_vm_controller(vm_id).power_on(user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
@@ -317,7 +317,6 @@ def power_off_vm(request):
     JSON request body:
     {
         vmid: int,
-        data: «provider-specific data»,
     }
     """
     if request.method != 'POST':
@@ -343,7 +342,8 @@ def power_off_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.power_off_vm(vm_id, body['data'], user_id=request.user.id)
+        aud.debug('Request to Power OFF', vm_id=vm_id, user_id=request.user.id)
+        vmutil.get_vm_controller(vm_id).power_off(user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
@@ -360,7 +360,6 @@ def reboot_vm(request):
     JSON request body:
     {
         vmid: int,
-        data: «provider-specific data»,
     }
     """
     if request.method != 'POST':
@@ -386,7 +385,8 @@ def reboot_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.reboot_vm(vm_id, body['data'], user_id=request.user.id)
+        aud.debug('Request to Reboot', vm_id=vm_id, user_id=request.user.id)
+        vmutil.get_vm_controller(vm_id).reboot(user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
@@ -403,7 +403,6 @@ def destroy_vm(request):
     JSON request body:
     {
         vmid: int,
-        data: «provider-specific data»,
     }
     """
     if request.method != 'POST':
@@ -429,7 +428,8 @@ def destroy_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.destroy_vm(vm_id, body['data'], user_id=request.user.id)
+        aud.debug('Request to Destroy', vm_id=vm_id, user_id=request.user.id)
+        vmutil.get_vm_controller(vm_id).destroy(user_id=request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])

@@ -66,109 +66,82 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
     return vm_id
 
 
-def power_on_vm(vm_id, data, user_id=None):
+def get_vm_controller(vm_id):
     """
-    Power ON VM.
-
-    The data arg is specific to the provider type.
-    This function must not be called inside a transaction.
+    Return an instace of a VMController subclass, specific to the vm_id.
     """
-    # In the general case, the type-specific function will modify data (e.g.
-    # set the state to ‘requesting power on…’) and schedule (celery) tasks.
-    # The tasks must run after the data modifications have been committed, not
-    # the other way around (i.e. overwriting the task results such as
-    # ‘powered on’ with ‘requesting power on…’).
-    #
-    # For this reason, the other similar functions have the same
-    # transaction-related requirement (so they can commit the data themselves
-    # before scheduling the task).
-    #
-    # Unlike create_vm(), this function doesn't make DB writes which must be
-    # undone if the vmtype.* call fails. So not starting a transaction here.
-    # Although both this function and the callee access related DB data.
-    aud.debug('Request to Power ON, data ‘{}’'.format(data),
-            vm_id=vm_id, user_id=user_id)
-
     def get_prov_type():
         with transaction.atomic():
             return VM.objects.get(id=vm_id).provider.type
     t = retry_transaction(get_prov_type)
-
     if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_on_vm(vm_id, data, user_id=user_id)
+        return DummyVMController(vm_id)
     elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.power_on_vm(vm_id, data, user_id=user_id)
+        return AWSVMController(vm_id)
     else:
         raise ValueError('Unknown provider type “{}”'.format(t))
 
 
-def power_off_vm(vm_id, data, user_id=None):
+class VMController():
     """
-    Power OFF VM.
+    Base class showing common VM operations.
 
-    The data arg is specific to the provider type.
-    This function must not be called inside a transaction.
+    Use get_vm_controller(…) to obtain a vm-type-specific instance.
     """
-    aud.debug('Request to Power OFF, data ‘{}’'.format(data),
-            vm_id=vm_id, user_id=user_id)
 
-    def get_prov_type():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).provider.type
-    t = retry_transaction(get_prov_type)
+    def __init__(self, vm_id):
+        """
+        An instance of this class is specific to a VM id.
+        """
+        self.vm_id = vm_id
 
-    if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.power_off_vm(vm_id, data, user_id=user_id)
-    elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.power_off_vm(vm_id, data, user_id=user_id)
-    else:
-        raise ValueError('Unknown provider type “{}”'.format(t))
+    def power_on(self, user_id=None):
+        raise NotImplementedError()
+
+    def power_off(self, user_id=None):
+        raise NotImplementedError()
+
+    def reboot(self, user_id=None):
+        raise NotImplementedError()
+
+    def destroy(self, user_id=None):
+        raise NotImplementedError()
 
 
-def reboot_vm(vm_id, data, user_id=None):
+class DummyVMController(VMController):
     """
-    Reboot VM.
-
-    The data arg is specific to the provider type.
-    This function must not be called inside a transaction.
+    VMController for vms of type dummy.
     """
-    aud.debug('Request to Reboot, data ‘{}’'.format(data),
-            vm_id=vm_id, user_id=user_id)
 
-    def get_prov_type():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).provider.type
-    t = retry_transaction(get_prov_type)
+    def power_on(self, user_id=None):
+        vimma.vmtype.dummy.power_on_vm.delay(self.vm_id, user_id=user_id)
 
-    if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.reboot_vm(vm_id, data, user_id=user_id)
-    elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.reboot_vm(vm_id, data, user_id=user_id)
-    else:
-        raise ValueError('Unknown provider type “{}”'.format(t))
+    def power_off(self, user_id=None):
+        vimma.vmtype.dummy.power_off_vm.delay(self.vm_id, user_id=user_id)
+
+    def reboot(self, user_id=None):
+        vimma.vmtype.dummy.reboot_vm.delay(self.vm_id, user_id=user_id)
+
+    def destroy(self, user_id=None):
+        vimma.vmtype.dummy.destroy_vm.delay(self.vm_id, user_id=user_id)
 
 
-def destroy_vm(vm_id, data, user_id=None):
+class AWSVMController(VMController):
     """
-    Destroy VM.
-
-    The data arg is specific to the provider type.
-    This function must not be called inside a transaction.
+    VMController for AWS vms.
     """
-    aud.debug('Request to Destroy, data ‘{}’'.format(data),
-            vm_id=vm_id, user_id=user_id)
 
-    def get_prov_type():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).provider.type
-    t = retry_transaction(get_prov_type)
+    def power_on(self, user_id=None):
+        vimma.vmtype.aws.power_on_vm.delay(self.vm_id, user_id=user_id)
 
-    if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.destroy_vm(vm_id, data, user_id=user_id)
-    elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.destroy_vm(vm_id, data, user_id=user_id)
-    else:
-        raise ValueError('Unknown provider type “{}”'.format(t))
+    def power_off(self, user_id=None):
+        vimma.vmtype.aws.power_off_vm.delay(self.vm_id, user_id=user_id)
+
+    def reboot(self, user_id=None):
+        vimma.vmtype.aws.reboot_vm.delay(self.vm_id, user_id=user_id)
+
+    def destroy(self, user_id=None):
+        vimma.vmtype.aws.destroy_vm.delay(self.vm_id, user_id=user_id)
 
 
 @app.task
@@ -248,6 +221,6 @@ def switch_on_off(vm_id, powered_on):
             return
 
         if new_power_state:
-            power_on_vm(vm_id, None)
+            get_vm_controller(vm_id).power_on()
         else:
-            power_off_vm(vm_id, None)
+            get_vm_controller(vm_id).power_off()

@@ -84,7 +84,7 @@ def do_create_vm(aws_vm_config_id, vm_id, user_id):
     except:
         msg = ''.join(traceback.format_exc())
         aud.error(msg, vm_id=vm_id, user_id=user_id)
-        do_destroy_vm.delay(vm_id, user_id=user_id)
+        destroy_vm.delay(vm_id, user_id=user_id)
         raise
 
 
@@ -171,19 +171,8 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     route53_add.delay(vm_id, user_id=user_id)
 
 
-def power_on_vm(vm_id, data, user_id=None):
-    """
-    Power on VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_power_on_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_power_on_vm(vm_id, user_id=None):
+def power_on_vm(vm_id, user_id=None):
     def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
@@ -199,19 +188,8 @@ def do_power_on_vm(vm_id, user_id=None):
         route53_add.delay(vm_id, user_id=user_id)
 
 
-def power_off_vm(vm_id, data, user_id=None):
-    """
-    Power off VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_power_off_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_power_off_vm(vm_id, user_id=None):
+def power_off_vm(vm_id, user_id=None):
     def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
@@ -227,19 +205,8 @@ def do_power_off_vm(vm_id, user_id=None):
         route53_delete.delay(vm_id, user_id=user_id)
 
 
-def reboot_vm(vm_id, data, user_id=None):
-    """
-    Reboot VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_reboot_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_reboot_vm(vm_id, user_id=None):
+def reboot_vm(vm_id, user_id=None):
     def read_vars():
         with transaction.atomic():
             aws_vm = VM.objects.get(id=vm_id).awsvm
@@ -254,19 +221,8 @@ def do_reboot_vm(vm_id, user_id=None):
         aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
 
 
-def destroy_vm(vm_id, data, user_id=None):
-    """
-    Destroy VM.
-
-    ‘data’ is not used.
-
-    This function must not be called inside a transaction.
-    """
-    do_destroy_vm.delay(vm_id, user_id=user_id)
-
-
 @app.task
-def do_destroy_vm(vm_id, user_id=None):
+def destroy_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         terminate_instance.delay(vm_id, user_id=user_id)
         # can add countdown=…, but this task would still have to retry anyway
