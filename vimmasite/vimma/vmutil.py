@@ -107,6 +107,9 @@ class VMController():
     def destroy(self, user_id=None):
         raise NotImplementedError()
 
+    def update_status(self):
+        raise NotImplementedError()
+
 
 class DummyVMController(VMController):
     """
@@ -124,6 +127,9 @@ class DummyVMController(VMController):
 
     def destroy(self, user_id=None):
         vimma.vmtype.dummy.destroy_vm.delay(self.vm_id, user_id=user_id)
+
+    def update_status(self):
+        vimma.vmtype.dummy.update_vm_status.delay(self.vm_id)
 
 
 class AWSVMController(VMController):
@@ -143,11 +149,14 @@ class AWSVMController(VMController):
     def destroy(self, user_id=None):
         vimma.vmtype.aws.destroy_vm.delay(self.vm_id, user_id=user_id)
 
+    def update_status(self):
+        vimma.vmtype.aws.update_vm_status.delay(self.vm_id)
+
 
 @app.task
 def update_all_vms_status():
     """
-    Schedule tasks to check & update the state on each VM.
+    Schedule tasks to check & update the state of each VM.
 
     These tasks get the VM status from the (remote) provider and update the
     VM object.
@@ -169,18 +178,8 @@ def update_vm_status(vm_id):
     """
     aud.debug('Request status update', vm_id=vm_id)
 
-    def get_type():
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            return vm.provider.type
-    t = retry_transaction(get_type)
-
-    if t == Provider.TYPE_DUMMY:
-        vimma.vmtype.dummy.update_vm_status.delay(vm_id)
-    elif t == Provider.TYPE_AWS:
-        vimma.vmtype.aws.update_vm_status.delay(vm_id)
-    else:
-        aud.error('Unknown provider type “{}”'.format(t), vm_id=vm_id)
+    with aud.ctx_mgr(vm_id=vm_id):
+        get_vm_controller(vm_id).update_status()
 
 
 def power_log(vm_id, powered_on):
