@@ -11,8 +11,12 @@ import json
 import urllib.request
 
 from secrets import FUM_API_TOKEN
-from vimma.models import Project
+from vimma.models import Permission, Role, Project
+from vimma.perms import Perms
 import vimma.util
+
+
+IT_TEAM_ROLE_NAME = 'IT Team'
 
 
 def parse_args():
@@ -86,11 +90,11 @@ def sync_projects():
 
 def sync_admin_users():
     """
-    Allow users in certain groups full access to the Django admin site.
+    Give some users Permissions or access to the Django admin site.
     """
+    fum_groups = get_api_all('https://api.fum.futurice.com/groups/', 'groups')
     fum_admins = set()
-    for g in filter(lambda g: g['name'] in {'it'},
-            get_api_all('https://api.fum.futurice.com/groups/', 'groups')):
+    for g in filter(lambda g: g['name'] in {'it'}, fum_groups):
         fum_admins.update(g['users'])
 
     vimma_maybe_admins = {u.username for u in
@@ -109,6 +113,28 @@ def sync_admin_users():
             user.is_staff = True
             user.is_superuser = True
             user.save()
+        except User.DoesNotExist:
+            pass
+
+    fum_it_team = set()
+    for g in filter(lambda g: g['name'] == 'it', fum_groups):
+        fum_it_team.update(g['users'])
+    try:
+        it_team_role = Role.objects.get(name=IT_TEAM_ROLE_NAME)
+    except Role.DoesNotExist:
+        it_team_role = Role.objects.create(name=IT_TEAM_ROLE_NAME)
+        it_team_role.full_clean()
+    for perm_name in (Perms.EDIT_SCHEDULE,):
+        try:
+            perm = Permission.objects.get(name=perm_name)
+        except Permission.DoesNotExist:
+            print('creating permission', perm_name)
+            perm = Permission.objects.create(name=perm_name)
+            perm.full_clean()
+        it_team_role.permissions.add(perm)
+    for u in fum_it_team:
+        try:
+            User.objects.get(username=u).profile.roles.add(it_team_role)
         except User.DoesNotExist:
             pass
 
