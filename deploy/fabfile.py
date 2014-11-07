@@ -5,7 +5,7 @@ from fabric.operations import sudo
 import os, os.path
 
 
-env.hosts = env.hosts or ['vimma2-test.futurice.com:2222']
+env.hosts = env.hosts or ['vimma2.futurice.com']
 # SSH into the remote host as the '-u' cmd line arg (or your local username),
 # which can sudo (stop&start services), then change to vimma_user who owns the
 # source code.

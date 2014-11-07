@@ -32,6 +32,7 @@ put the SSL certificate in:
 /home/vimma2/server.crt
 /home/vimma2/server.key
 
+sudo su vimma2
 echo >/home/vimma2/tkt_pubkey.pem \
 "-----BEGIN PUBLIC KEY-----
 MIIBuDCCASwGByqGSM44BAEwggEfAoGBAJ8b2D4GV1cHrNUgx4nx8lOAZWqpcfQO
@@ -45,6 +46,7 @@ xnU7DCL4sPOA5yu3e8P69NyAzSIDgYUAAoGBAJSxUNG74DW4DlXwBPO4v+9GFyXT
 /DiC0K6BUcuYGHUz6CUikQep9Mx8aQMrcK6wEFNh0jWqfPW7e9B+kXLVJ+ozF/XN
 bC6xzSqdfX0hVeKr
 -----END PUBLIC KEY-----"
+exit
 
 sudo service apache2 stop
 sudo a2enmod ssl
@@ -135,6 +137,15 @@ exit
 
 Configure the SECRET_KEY and DB in /home/vimma2/config/local_settings.py
 Set the FUM_API_TOKEN in /home/vimma2/config/secrets.py
+
+
+sudo su vimma2
+EDITOR=vim crontab -e
+
+Add this entry to crontab:
+7-59/30 * * * *	PATH=/home/vimma2/env/bin:$PATH PYTHONPATH=/home/vimma2/config /home/vimma2/vimma2/scripts/import-futurice-users.py >>~/import-futu-users-out 2>>~/import-futu-users-err
+
+exit
 
 
 Now go to step 1. above, at the start of this file.
