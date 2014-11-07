@@ -21,7 +21,7 @@ class Role(models.Model):
 
     A user is assigned a set of Roles and has all permissions in those roles.
     """
-    name = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100, unique=True)
     permissions = models.ManyToManyField(Permission)
 
 
