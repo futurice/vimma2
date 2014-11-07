@@ -57,6 +57,7 @@ def run_tests():
                 sudo(repo_dir + '/vimmasite/manage.py migrate')
                 sudo(repo_dir + '/vimmasite/manage.py test vimma ' +
                         '--settings=test_settings --noinput')
+                sudo(repo_dir + '/vimmasite/manage.py create_vimma_permissions')
 
 
 @task

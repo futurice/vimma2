@@ -25,7 +25,9 @@ def delete_bower_comp_dir():
 
 def install_polymerjs():
     subprocess.check_call(['bower', 'install',
-        'Polymer/polymer', 'Polymer/core-elements', 'Polymer/paper-elements'],
+        'Polymer/polymer', 'Polymer/core-elements', 'Polymer/paper-elements',
+        # disable the ‘may bower report statistics?’ question
+        '--config.interactive=false'],
         cwd=COMP_DIR)
 
 
