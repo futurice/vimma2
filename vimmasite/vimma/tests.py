@@ -1738,6 +1738,9 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # can use special schedule if the user has permission
+        vmc.default_schedule=s
+        vmc.full_clean()
+        vmc.save()
         perm = Permission.objects.create(name=Perms.USE_SPECIAL_SCHEDULE)
         perm.full_clean()
         role = Role.objects.create(name='SpecSched Role')
@@ -1752,6 +1755,31 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
                     'project': prj.id,
                     'vmconfig': vmc.id,
                     'schedule': s3.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # can't use special vmconfig
+        vmc.requires_permission = True
+        vmc.full_clean()
+        vmc.save()
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # can use special vmconfig if the user has permission
+        perm = Permission.objects.create(name=Perms.VM_CONF_INSTANTIATE)
+        perm.full_clean()
+        role = Role.objects.create(name='SpecVmConfig Role')
+        role.full_clean()
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc.id,
+                    'schedule': s.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_powerOnOffRebootDestroy_perms_and_not_found(self):

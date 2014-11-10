@@ -246,6 +246,10 @@ def create_vm(request):
         return get_http_json_err('You may not create VMs in this project',
                 status.HTTP_403_FORBIDDEN)
 
+    if not can_do(request.user, Actions.USE_VM_CONFIG, vmconf):
+        return get_http_json_err('You may not use this VM Configuration',
+                status.HTTP_403_FORBIDDEN)
+
     if vmconf.default_schedule.id != schedule.id:
         if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
             return get_http_json_err('You may not use this schedule',
