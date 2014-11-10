@@ -5,6 +5,11 @@ To add an item, add the generic model (Provider) and link the type-specific one
 (AWSProvider) to it.
 
 
+Add TimeZones from: https://vimma.example.com/admin/vimma/timezone/
+
+Create Schedules from the UI: https://vimma.example.com/vimma
+
+
 Adding an AWS Provider:
 ======================
 Add a Provider object from:

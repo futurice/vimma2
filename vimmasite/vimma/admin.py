@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from vimma.models import (
+    TimeZone,
     Role,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
@@ -8,6 +9,7 @@ from vimma.models import (
 
 
 for model in (
+        TimeZone,
         Role,
         Provider, DummyProvider, AWSProvider,
         VMConfig, DummyVMConfig, AWSVMConfig,

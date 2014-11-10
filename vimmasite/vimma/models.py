@@ -51,6 +51,9 @@ class Profile(models.Model):
 class TimeZone(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
+    def __str__(self):
+        return self.name
+
 
 def schedule_matrix_validator(val):
     try:
