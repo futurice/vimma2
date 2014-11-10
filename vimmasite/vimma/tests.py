@@ -920,7 +920,7 @@ class VMConfigTests(APITestCase):
 
     def test_default_value_and_protected(self):
         """
-        By default, requires_permission = False and PROTECTED constraints.
+        By default, is_special = False and PROTECTED constraints.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         tz.full_clean()
@@ -932,7 +932,7 @@ class VMConfigTests(APITestCase):
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
         vmc.full_clean()
-        self.assertIs(vmc.requires_permission, False)
+        self.assertIs(vmc.is_special, False)
 
         with self.assertRaises(ProtectedError):
             p.delete()
@@ -1758,7 +1758,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # can't use special vmconfig
-        vmc.requires_permission = True
+        vmc.is_special = True
         vmc.full_clean()
         vmc.save()
         response = self.client.post(url, content_type='application/json',
@@ -1769,7 +1769,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # can use special vmconfig if the user has permission
-        perm = Permission.objects.create(name=Perms.VM_CONF_INSTANTIATE)
+        perm = Permission.objects.create(name=Perms.USE_SPECIAL_VM_CONFIG)
         perm.full_clean()
         role = Role.objects.create(name='SpecVmConfig Role')
         role.full_clean()

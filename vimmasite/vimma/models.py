@@ -158,8 +158,8 @@ class VMConfig(models.Model):
     # schedule for VMs made from this config, even if the schedule itself
     # requires additional permissions.
     default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-    # Users need Perms.VM_CONF_INSTANTIATE to create a VM from this config.
-    requires_permission = models.BooleanField(default=False)
+    # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
+    is_special = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.provider.name)

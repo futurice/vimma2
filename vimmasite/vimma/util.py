@@ -90,8 +90,8 @@ def can_do(user, what, data=None):
         return user.profile.projects.filter(id=prj.id).count() > 0
     elif what == Actions.USE_VM_CONFIG:
         vmconf = data
-        return (vmconf.requires_permission == False or
-                has_perm(user, Perms.VM_CONF_INSTANTIATE))
+        return (vmconf.is_special == False or
+                has_perm(user, Perms.USE_SPECIAL_VM_CONFIG))
     elif what == Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT:
         prj = data
         return user.profile.projects.filter(id=prj.id).count() > 0

@@ -16,7 +16,7 @@ class Perms:
     # see projects you're not a member of
     READ_ANY_PROJECT = 'read-any-project'
     # create VMs from a VMConfig which needs this additional permission
-    VM_CONF_INSTANTIATE = 'vm-config-instantiate'
+    USE_SPECIAL_VM_CONFIG = 'vm-config-use-special'
     # read all audits
     READ_ALL_AUDITS = 'read-all-audits'
 

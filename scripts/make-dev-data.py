@@ -44,7 +44,7 @@ for u2Perm in (
         Perms.EDIT_SCHEDULE,
         Perms.USE_SPECIAL_SCHEDULE,
         Perms.READ_ANY_PROJECT,
-        Perms.VM_CONF_INSTANTIATE,
+        Perms.USE_SPECIAL_VM_CONFIG,
     ):
     r2.permissions.add(Permission.objects.get(name=u2Perm))
 
