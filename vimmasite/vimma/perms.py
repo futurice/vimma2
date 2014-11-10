@@ -15,6 +15,8 @@ class Perms:
     USE_SPECIAL_SCHEDULE = 'schedule-use-special'
     # see projects you're not a member of
     READ_ANY_PROJECT = 'read-any-project'
+    # create VMs from a VMConfig belonging to a ‘special’ Provider
+    USE_SPECIAL_PROVIDER = 'provider-use-special'
     # create VMs from a VMConfig which needs this additional permission
     USE_SPECIAL_VM_CONFIG = 'vm-config-use-special'
     # read all audits

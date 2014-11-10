@@ -1782,6 +1782,38 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
                     'schedule': s.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # can't use special provider
+        prov2 = Provider.objects.create(name='My Special Provider',
+                type=Provider.TYPE_DUMMY, is_special=True)
+        prov2.full_clean()
+        dummyProv2 = DummyProvider.objects.create(provider=prov2)
+        dummyProv2.full_clean()
+        vmc2 = VMConfig.objects.create(name='My Conf 2', default_schedule=s,
+                provider=prov2)
+        vmc2.full_clean()
+        dummyc2 = DummyVMConfig.objects.create(vmconfig=vmc2)
+        dummyc2.full_clean()
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc2.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # can use special provider if the user has permission
+        perm = Permission.objects.create(name=Perms.USE_SPECIAL_PROVIDER)
+        perm.full_clean()
+        role = Role.objects.create(name='Special Provider Role')
+        role.full_clean()
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'vmconfig': vmc2.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_powerOnOffRebootDestroy_perms_and_not_found(self):
         """
         Test user permissions & ‘not found’ for the above VM operations.

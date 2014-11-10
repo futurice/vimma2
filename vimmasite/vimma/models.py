@@ -112,6 +112,9 @@ class Provider(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     # the maximum length of a schedule override which users may place on a VM
     max_override_seconds = models.BigIntegerField(default=0)
+    # To create a VM from a Config belonging to a ‘special’ provider,
+    # users need to have the Perms.USE_SPECIAL_PROVIDER permission.
+    is_special = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.get_type_display())

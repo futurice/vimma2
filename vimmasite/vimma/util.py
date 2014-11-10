@@ -88,6 +88,10 @@ def can_do(user, what, data=None):
     elif what == Actions.CREATE_VM_IN_PROJECT:
         prj = data
         return user.profile.projects.filter(id=prj.id).count() > 0
+    elif what == Actions.USE_PROVIDER:
+        prov = data
+        return (not prov.is_special or
+                has_perm(user, Perms.USE_SPECIAL_PROVIDER))
     elif what == Actions.USE_VM_CONFIG:
         vmconf = data
         return (vmconf.is_special == False or
