@@ -121,7 +121,8 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
 
     ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
 
-    security_group = ec2_conn.create_security_group(name, 'Vimma-generated')
+    security_group = ec2_conn.create_security_group(
+            '{}-{}'.format(name, vm_id), 'Vimma-generated')
     sec_grp_id = security_group.id
 
     def write_sec_grp():
