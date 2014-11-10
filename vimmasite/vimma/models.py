@@ -85,6 +85,9 @@ class Schedule(models.Model):
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
     is_special = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.name
+
 
 class Provider(models.Model):
     """
@@ -158,6 +161,9 @@ class VMConfig(models.Model):
     # Users need Perms.VM_CONF_INSTANTIATE to create a VM from this config.
     requires_permission = models.BooleanField(default=False)
 
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.provider.name)
+
 
 class DummyVMConfig(models.Model):
     """
@@ -174,6 +180,10 @@ class AWSVMConfig(models.Model):
     # Amazon Machine Image ID
     ami_id = models.CharField(max_length=50, blank=True)
     instance_type = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return '{}, {} ({})'.format(self.ami_id, self.instance_type,
+                self.vmconfig.name)
 
 
 class VM(models.Model):

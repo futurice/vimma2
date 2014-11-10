@@ -1,0 +1,21 @@
+Most items have a generic model (VM, Provider) with a ‘type’ field
+("dummy", "aws") and a type-specific model (DummyVM, AWSVM;
+DummyProvider, AWSProvider).
+To add an item, add the generic model (Provider) and link the type-specific one
+(AWSProvider) to it.
+
+
+Adding an AWS Provider:
+======================
+Add a Provider object from:
+https://vimma.example.com/admin/vimma/provider/
+Add an AWSProvider, linking to the above Provider, from:
+https://vimma.example.com/admin/vimma/awsprovider/
+
+
+Adding an AWS VM Configuration:
+==============================
+Add a VMConfig object from:
+https://vimma.example.com/admin/vimma/vmconfig/
+Add an AWSVMConfig, linking to the above VMConfig, from:
+https://vimma.example.com/admin/vimma/awsvmconfig/

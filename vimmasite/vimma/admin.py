@@ -3,10 +3,13 @@ from django.contrib import admin
 from vimma.models import (
     Role,
     Provider, DummyProvider, AWSProvider,
+    VMConfig, DummyVMConfig, AWSVMConfig,
 )
 
 
-admin.site.register(Role)
-admin.site.register(Provider)
-admin.site.register(DummyProvider)
-admin.site.register(AWSProvider)
+for model in (
+        Role,
+        Provider, DummyProvider, AWSProvider,
+        VMConfig, DummyVMConfig, AWSVMConfig,
+        ):
+    admin.site.register(model)
