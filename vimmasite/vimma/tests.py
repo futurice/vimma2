@@ -1785,21 +1785,21 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         # non-existent VM ID
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
-                    data=json.dumps({'vmid': 100, 'data': None}))
+                    data=json.dumps({'vmid': 100}))
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # can perform the actions in own project
         u.profile.projects.add(prj)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
-                    data=json.dumps({'vmid': vm.id, 'data': None}))
+                    data=json.dumps({'vmid': vm.id}))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # forbidden outside own projects
         u.profile.projects.remove(prj)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
-                    data=json.dumps({'vmid': vm.id, 'data': None}))
+                    data=json.dumps({'vmid': vm.id}))
             self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # ok if omnipotent
@@ -1809,7 +1809,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         u.profile.roles.add(role)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
-                    data=json.dumps({'vmid': vm.id, 'data': None}))
+                    data=json.dumps({'vmid': vm.id}))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
