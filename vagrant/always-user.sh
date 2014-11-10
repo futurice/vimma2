@@ -9,9 +9,9 @@ ROOT_DIR=/vagrant/vagrant
 
 "$ROOT_DIR"/virtualenv.sh
 
-# only get Polymer if it's not already present
+# only do ‘bower install’ if missing
 if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; then
-	"$ROOT_DIR"/../scripts/polymerjs-reset.py
+	"$ROOT_DIR"/../scripts/bower-reset.py
 fi
 
 "$ROOT_DIR"/test.sh

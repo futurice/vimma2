@@ -59,12 +59,12 @@ def run_tests():
 
 def prepare_repository():
     """
-    Collect static files, download PolymerJS.
+    Collect static files, bower install.
     """
     with settings(cd(home_dir), sudo_user=vimma_user):
         # otherwise bower tries to access ~/.config for the original SSH user
         with shell_env(HOME=home_dir):
-            sudo(repo_dir + '/scripts/polymerjs-reset.py')
+            sudo(repo_dir + '/scripts/bower-reset.py')
         with prefix('source ' + env_dir + '/bin/activate'):
             with shell_env(PYTHONPATH=config_dir):
                 sudo('mkdir -p ' + repo_dir + '/vimmasite/static')

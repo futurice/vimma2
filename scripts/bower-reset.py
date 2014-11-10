@@ -13,8 +13,8 @@ COMP_DIR = os.path.join(util.PRJ_ROOT,
 BOWER_COMP_DIR = os.path.join(COMP_DIR, 'bower_components')
 
 def parse_args():
-    p = argparse.ArgumentParser(description='''Delete then download PolymerJS
-            components in {}'''.format(BOWER_COMP_DIR))
+    p = argparse.ArgumentParser(description='''Delete then bower install
+            in {}'''.format(BOWER_COMP_DIR))
     return p.parse_args()
 
 
@@ -23,9 +23,8 @@ def delete_bower_comp_dir():
         shutil.rmtree(BOWER_COMP_DIR)
 
 
-def install_polymerjs():
+def bower_install():
     subprocess.check_call(['bower', 'install',
-        'Polymer/polymer', 'Polymer/core-elements', 'Polymer/paper-elements',
         # disable the ‘may bower report statistics?’ question
         '--config.interactive=false'],
         cwd=COMP_DIR)
@@ -34,4 +33,4 @@ def install_polymerjs():
 if __name__ == '__main__':
     args = parse_args()
     delete_bower_comp_dir()
-    install_polymerjs()
+    bower_install()

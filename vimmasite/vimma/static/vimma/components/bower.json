@@ -1,0 +1,9 @@
+{
+  "name": "vimma",
+  "private": true,
+  "dependencies": {
+    "polymer": "Polymer/polymer",
+    "core-elements": "Polymer/core-elements",
+    "paper-elements": "Polymer/paper-elements"
+  }
+}

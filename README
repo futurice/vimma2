@@ -36,7 +36,7 @@ virtualenv -p python3 env
 pip install -r req.txt
 
 PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings --noinput
-./scripts/polymerjs-reset.py	# install PolymerJS
+./scripts/bower-reset.py	# bower install
 
 mkdir -p vimmasite/static
 PYTHONPATH=config ./vimmasite/manage.py collectstatic --noinput --clear --link
