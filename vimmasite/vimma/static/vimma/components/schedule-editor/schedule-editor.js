@@ -45,6 +45,9 @@ Polymer('schedule-editor', {
     },
 
     delete: function() {
+        if (!confirm('Delete schedule ‘' + this.savedModel.name + '’?')) {
+            return;
+        }
         this.$.ajax.fire('start');
         $.ajax({
             url: vimmaApiScheduleDetailRoot + this.editModel.id + '/',
