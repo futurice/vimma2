@@ -35,13 +35,11 @@ def start_services():
     sudo('service apache2 start')
 
 
-@task
 def clone_repository():
     with settings(sudo_user=vimma_user):
         sudo('git clone ' + git_clone_url + ' ' + repo_dir)
 
 
-@task
 def make_env():
     with settings(sudo_user=vimma_user):
         sudo('virtualenv -p python3 ' + env_dir)
@@ -49,7 +47,6 @@ def make_env():
             sudo('pip install -r ' + repo_dir + '/req.txt')
 
 
-@task
 def run_tests():
     with settings(cd(home_dir), sudo_user=vimma_user):
         with prefix('source ' + env_dir + '/bin/activate'):
@@ -60,7 +57,6 @@ def run_tests():
                 sudo(repo_dir + '/vimmasite/manage.py create_vimma_permissions')
 
 
-@task
 def prepare_repository():
     """
     Collect static files, download PolymerJS.
@@ -76,7 +72,6 @@ def prepare_repository():
                         '--noinput --clear')
 
 
-@task
 def move_symlinks():
     with settings(sudo_user=vimma_user):
         sudo('rm -f ' + env_link + ' ' + repo_link)
