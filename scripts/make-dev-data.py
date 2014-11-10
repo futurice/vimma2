@@ -82,7 +82,7 @@ vmc1A = VMConfig.objects.create(provider=prov1, name='Config A',
         default_schedule=s1)
 DummyVMConfig.objects.create(vmconfig=vmc1A)
 vmc1B = VMConfig.objects.create(provider=prov1, name='Config B',
-        default_schedule=s1, requires_permission=True)
+        default_schedule=s1, is_special=True)
 DummyVMConfig.objects.create(vmconfig=vmc1B)
 
 vmc3A = VMConfig.objects.create(provider=prov3, name='Amazon Linux, t2.micro',
