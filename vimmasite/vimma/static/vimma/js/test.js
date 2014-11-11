@@ -53,3 +53,19 @@ QUnit.test('sameModels()', function(assert) {
     assert.strictEqual(false, sameModels(['a'], ['b']));
     assert.strictEqual(false, sameModels(['3'], [3]));
 });
+
+QUnit.test('extend', function(assert) {
+    (function() {
+        var orig = {a: 3};
+        assert.strictEqual(orig, extend(orig));
+        assert.strictEqual(orig, extend(orig, orig));
+        assert.strictEqual(orig, extend(orig, {}));
+
+        var empty = {};
+        assert.strictEqual(empty, extend(empty));
+        assert.strictEqual(empty, extend(empty, {}, empty));
+    })();
+
+    assert.deepEqual(extend({a: 4, b: 5}, {a: 3}), {a:3, b:5})
+    assert.deepEqual(extend({a: 4, b: 5}, {a: 3}, {c: 1}), {a:3, b:5, c:1})
+});

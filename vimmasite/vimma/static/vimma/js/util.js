@@ -248,3 +248,19 @@ function sameModels(a, b) {
             return true;
     }
 }
+
+
+/*
+ * Overwrite base fields with those in ext1, then ext2, etc. and return base.
+ *
+ * extend(base [, ext1, ext2, …, extn]);
+ */
+function extend(base) {
+    for (var i = 1; i < arguments.length; i++) {
+        var arg = arguments[i];
+        Object.keys(arg).forEach(function(k) {
+            base[k] = arg[k];
+        });
+    }
+    return base;
+}
