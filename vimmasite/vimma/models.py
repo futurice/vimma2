@@ -127,7 +127,7 @@ class DummyProvider(models.Model):
     provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
 
     def __str__(self):
-        return (self.provider.name)
+        return self.provider.name
 
 
 class AWSProvider(models.Model):
@@ -144,10 +144,18 @@ class AWSProvider(models.Model):
     # Optional security group added to every vm, in addition to the vm's
     # individual security group.
     default_security_group_id = models.CharField(max_length=50, blank=True)
+    # User data (e.g. a script) provided to the AWS Instances. Python Template
+    # https://docs.python.org/3/library/string.html#format-string-syntax
+    # given the ‘vm’ keyword argument. E.g.:
+    # """#!/usr/bin/env bash
+    #   echo VM NAME {vm.awsvm.name} >/test
+    #   echo region {vm.provider.awsprovider.route_53_zone} >>/test
+    #   echo {{curly braces}} >>/test
+    # """
+    user_data = models.TextField(blank=True)
 
     def __str__(self):
-        return '{} (‘{}’, ssh key ‘{}’)'.format(self.provider.name,
-                self.route_53_zone, self.ssh_key_name)
+        return '{} ({})'.format(self.provider.name, self.route_53_zone)
 
 
 class VMConfig(models.Model):

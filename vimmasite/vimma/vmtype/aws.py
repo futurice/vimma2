@@ -1,3 +1,4 @@
+import base64
 import boto.ec2
 import boto.route53
 import celery.exceptions
@@ -99,16 +100,17 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
 
     ssh_key_name, default_security_group_id = None, None
     aws_vm_id, name = None, None
-    ami_id, instance_type = None, None
+    ami_id, instance_type, user_data = None, None, None
 
     def read_vars():
         nonlocal ssh_key_name, default_security_group_id
         nonlocal aws_vm_id, name
-        nonlocal ami_id, instance_type
+        nonlocal ami_id, instance_type, user_data
         with transaction.atomic():
             aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
             aws_prov = aws_vm_config.vmconfig.provider.awsprovider
-            aws_vm = VM.objects.get(id=vm_id).awsvm
+            vm = VM.objects.get(id=vm_id)
+            aws_vm = vm.awsvm
 
             ssh_key_name = aws_prov.ssh_key_name
             default_security_group_id = aws_prov.default_security_group_id
@@ -117,6 +119,9 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
             name = aws_vm.name
             ami_id = aws_vm_config.ami_id
             instance_type = aws_vm_config.instance_type
+
+            user_data = base64.b64encode(
+                    aws_prov.user_data.format(vm=vm).encode('utf-8'))
     retry_transaction(read_vars)
 
     ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
@@ -138,7 +143,8 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
     reservation = ec2_conn.run_instances(ami_id,
             instance_type=instance_type,
             security_group_ids=security_group_ids,
-            key_name=ssh_key_name or None)
+            key_name=ssh_key_name or None,
+            user_data=user_data or None)
 
     aud.info('Got AWS reservation', user_id=user_id, vm_id=vm_id)
 
