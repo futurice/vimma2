@@ -41,6 +41,7 @@
 
       <label for="provider">Provider:</label>
       <paper-dropdown-menu id="provider" label="Select a provider…"
+          selected="{{provid}}" valueattr="key"
           on-core-select="{{providerSelected}}">
         <template repeat="{{p in providers}}">
           <paper-item label="{{p.name}}" key="{{p.id}}"></paper-item>
@@ -60,6 +61,7 @@
 
       <label for="schedule">Schedule:</label>
       <paper-dropdown-menu id="schedule" label="Select a schedule…"
+          selected="{{scheduleid}}" valueattr="key"
           on-core-select="{{scheduleSelected}}">
         <template repeat="{{s in schedules}}">
           <paper-item label="{{s.name}}" key="{{s.id}}"></paper-item>

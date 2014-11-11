@@ -8,6 +8,8 @@ Polymer('create-vm', {
             providersById[p.id] = p;
         });
         this.providersById = providersById;
+
+        this.provid = this.providers.length ? this.providers[0].id : null;
     },
     providersById: {},
 
@@ -22,6 +24,10 @@ Polymer('create-vm', {
     vmconfigsById: {},
 
     schedules: [],
+    schedulesChanged: function() {
+        this.scheduleid = this.schedules.length ? this.schedules[0].id : null;
+    },
+    scheduleid: null,   // chosen schedule
 
     // initial load and subsequent full reloads
     loading: true,
@@ -31,8 +37,6 @@ Polymer('create-vm', {
     prjid: null,    // chosen project
     provid: null,   // chosen provider
     providChanged: function() {
-        this.vmconfigid = null;
-
         this.computeVMConfigsForProvider();
         this.computeHighlightCreate();
     },
@@ -48,6 +52,9 @@ Polymer('create-vm', {
         var el = this.querySelector('::shadow #vmconfig::shadow core-dropdown::shadow core-dropdown-overlay');
         el.target.style.width = null;
         el.target.style.height = null;
+
+        this.vmconfigid = this.vmconfigsForProvider.length ?
+            this.vmconfigsForProvider[0].id : null;
     },
     vmconfigid: null,   // chosen vmconfig
     vmconfigidChanged: function() {
@@ -57,7 +64,6 @@ Polymer('create-vm', {
         this.computeNewVMType();
         this.computeHighlightCreate();
     },
-    scheduleid: null,   // chosen schedule
 
     newVMType: null,
     computeNewVMType: function() {
