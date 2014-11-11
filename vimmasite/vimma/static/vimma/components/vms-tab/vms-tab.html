@@ -34,11 +34,11 @@
       <h1>
         <show-count n="{{vmIdsInOtherProjects.length}}" name="VM"></show-count>
         in other projects
+        <button type="button" on-click="{{toggleOtherVMs}}"
+          hidden?="{{!vmIdsInOtherProjects.length}}">
+          {{showOtherVMs ? 'Hide' : 'Show'}}
+        </button>
       </h1>
-      <button type="button" on-click="{{toggleOtherVMs}}">
-        {{showOtherVMs ? 'Hide' : 'Show'}}
-      </button>
-      <br>
       <template if="{{showOtherVMs}}">
         <vm-list vmids="{{vmIdsInOtherProjects}}"></vm-list>
       </template>

@@ -67,10 +67,6 @@
           <paper-item label="{{s.name}}" key="{{s.id}}"></paper-item>
         </template>
       </paper-dropdown-menu>
-      <br>
-
-      {{prjid}}, {{provid}}, {{vmconfigid}}, {{scheduleid}} |
-      {{newVMType}} {{newVMData}}<br>
 
       <template if="{{newVMType == 'dummy'}}">
         <create-vm-dummy-data data="{{newVMData}}">
