@@ -69,3 +69,38 @@ QUnit.test('extend', function(assert) {
     assert.deepEqual(extend({a: 4, b: 5}, {a: 3}), {a:3, b:5})
     assert.deepEqual(extend({a: 4, b: 5}, {a: 3}, {c: 1}), {a:3, b:5, c:1})
 });
+
+QUnit.test('ajaxFragHead', function(assert) {
+    assert.equal(ajaxFragHead(""), "");
+    assert.equal(ajaxFragHead("/"), "");
+    assert.equal(ajaxFragHead("/a"), "");
+    assert.equal(ajaxFragHead("/a/"), "");
+    assert.equal(ajaxFragHead("/a/b"), "");
+    assert.equal(ajaxFragHead("/a/b/"), "");
+
+    assert.equal(ajaxFragHead("abc"), "abc");
+    assert.equal(ajaxFragHead("abc/"), "abc");
+    assert.equal(ajaxFragHead("abc/123"), "abc");
+});
+
+QUnit.test('ajaxFragTail', function(assert) {
+    assert.equal(ajaxFragTail(""), "");
+    assert.equal(ajaxFragTail("abc"), "");
+    assert.equal(ajaxFragTail("abc/"), "");
+    assert.equal(ajaxFragTail("abc/123"), "123");
+
+    assert.equal(ajaxFragTail("/"), "");
+    assert.equal(ajaxFragTail("/a"), "a");
+    assert.equal(ajaxFragTail("/a/"), "a/");
+    assert.equal(ajaxFragTail("/a/b"), "a/b");
+    assert.equal(ajaxFragTail("/a/b/"), "a/b/");
+});
+
+QUnit.test('ajaxFragJoin', function(assert) {
+    assert.equal(ajaxFragJoin("", ""), "");
+    assert.equal(ajaxFragJoin("a", ""), "a");
+    assert.equal(ajaxFragJoin("", "b/c/d"), "b/c/d");
+
+    assert.equal(ajaxFragJoin("a", "b"), "a/b");
+    assert.equal(ajaxFragJoin("a", "b/c"), "a/b/c");
+});

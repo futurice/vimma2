@@ -264,3 +264,45 @@ function extend(base) {
     }
     return base;
 }
+
+
+var ajaxFragPrefix = '#!', ajaxFragSep = '/';
+
+function setAjaxFrag(frag) {
+    // doesn't trigger 'hashchange' event listeners
+    history.pushState(null, '', ajaxFragPrefix + frag);
+}
+
+function getAjaxFrag() {
+    var f = window.location.hash;
+    if (f.slice(0, ajaxFragPrefix.length) == ajaxFragPrefix) {
+        return f.slice(ajaxFragPrefix.length);
+    }
+    return '';
+}
+
+// "a/b/c" → "a"
+function ajaxFragHead(frag) {
+    var idx = frag.indexOf(ajaxFragSep);
+    if (idx == -1) {
+        return frag;
+    }
+    return frag.slice(0, idx);
+}
+
+// "a/b/c" → "b/c", "a" → ""
+function ajaxFragTail(frag) {
+    var idx = frag.indexOf(ajaxFragSep);
+    if (idx == -1) {
+        return "";
+    }
+    return frag.slice(idx+1);
+}
+
+// "a", "b/c" → "a/b/c"
+function ajaxFragJoin(head, tail) {
+    if (!head.length || !tail.length) {
+        return head + tail;
+    }
+    return head + ajaxFragSep + tail;
+}

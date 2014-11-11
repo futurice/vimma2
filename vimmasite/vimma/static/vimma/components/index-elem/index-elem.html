@@ -6,31 +6,36 @@
 <link rel="import" href="../projects-tab/projects-tab.html">
 <link rel="import" href="../vms-tab/vms-tab.html">
 <link rel="import" href="../audit-display/audit-display.html">
+<link rel="import" href="../ajax-frag-history/ajax-frag-history.html">
+<link rel="import" href="../ajax-frag-splitter/ajax-frag-splitter.html">
 
-<polymer-element name="index-elem" on-core-select="{{onCoreSelect}}">
+<polymer-element name="index-elem">
   <template>
     <link rel="stylesheet" type="text/css" href="index-elem.css">
 
-    <paper-tabs selected="0">
-      <paper-tab id="{{tabIds.VMS}}">VMs</paper-tab>
-      <paper-tab id="{{tabIds.PROJECTS}}">Projects</paper-tab>
-      <paper-tab id="{{tabIds.SCHEDULES}}">Schedules</paper-tab>
-      <paper-tab id="{{tabIds.AUDIT}}">Audit (logs)</paper-tab>
+    <ajax-frag-history id="ajaxHist"></ajax-frag-history>
+    <ajax-frag-splitter id="ajaxFrag" frag="{{$.ajaxHist.frag}}">
+    </ajax-frag-splitter>
+
+    <paper-tabs selected="{{selectedIdx}}">
+      <template repeat="{{tab in tabs}}">
+        <paper-tab key="{{tab.key}}">{{tab.title}}</paper-tab>
+      </template>
     </paper-tabs>
 
-    <template if="{{selectedId == tabIds.SCHEDULES}}">
-      <schedule-list></schedule-list>
-    </template>
-
-    <template if="{{selectedId == tabIds.PROJECTS}}">
-      <projects-tab></projects-tab>
-    </template>
-
-    <template if="{{selectedId == tabIds.VMS}}">
+    <template if="{{selectedIdx == 0}}">
       <vms-tab></vms-tab>
     </template>
 
-    <template if="{{selectedId == tabIds.AUDIT}}">
+    <template if="{{selectedIdx == 1}}">
+      <projects-tab></projects-tab>
+    </template>
+
+    <template if="{{selectedIdx == 2}}">
+      <schedule-list></schedule-list>
+    </template>
+
+    <template if="{{selectedIdx == 3}}">
       <audit-display></audit-display>
     </template>
   </template>
