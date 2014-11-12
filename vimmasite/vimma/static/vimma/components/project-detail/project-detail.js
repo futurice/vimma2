@@ -1,4 +1,5 @@
 Polymer('project-detail', {
+    frag: '',
     prjid: null,
     loading: true,
     success: null,
@@ -15,6 +16,38 @@ Polymer('project-detail', {
         });
     },
     vmIds: null,
+
+    created: function() {
+        this.tabs = [
+            {key: 'vms', title: 'VMs'},
+            {key: 'users', title: 'Users'}
+        ];
+    },
+
+    observe: {
+        '$.ajaxFrag.head': 'fragHeadChanged'
+    },
+    fragHeadChanged: function() {
+        var i, key = this.$.ajaxFrag.head;
+        for (i = 0; i < this.tabs.length; i++) {
+            if (this.tabs[i].key == key) {
+                this.selectedTabIdx = i;
+                return;
+            }
+        }
+
+        // without the async, #!/projects/1/ doesn't change to the vms URL
+        this.async(function() {
+            this.frag = this.tabs[0].key;
+        });
+    },
+
+    selectedTabIdxChanged: function() {
+        var key = this.tabs[this.selectedTabIdx].key;
+        if (this.$.ajaxFrag.head != key) {
+            this.frag = key;
+        }
+    },
 
     ready: function() {
         this.reload();
@@ -101,10 +134,6 @@ Polymer('project-detail', {
                 ok, this.loadFail.bind(this));
     },
 
-    tabIds: {
-        USERS: 'users',
-        VMS: 'vms'
-    },
     onCoreSelect: function(e, detail, sender) {
         e.stopPropagation();
         if (detail.isSelected) {

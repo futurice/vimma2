@@ -5,9 +5,13 @@
 <link rel="import" href="../create-vm/create-vm.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../vm-list/vm-list.html">
+<link rel="import" href="../ajax-frag-splitter/ajax-frag-splitter.html">
 
-<polymer-element name="project-detail" attributes="prjid">
+<polymer-element name="project-detail" attributes="prjid frag">
   <template>
+    <ajax-frag-splitter id="ajaxFrag" frag="{{frag}}">
+    </ajax-frag-splitter>
+
     <template if="{{loading}}">
       Loading…
     </template>
@@ -25,24 +29,24 @@
 
     <template id="main">
       Project {{model.name}}.
-      <paper-tabs selected="0" on-core-select="{{onCoreSelect}}">
-        <paper-tab tabId="{{tabIds.VMS}}">VMs</paper-tab>
-        <paper-tab tabId="{{tabIds.USERS}}">Users</paper-tab>
+      <paper-tabs selected="{{selectedTabIdx}}">
+        <template repeat="{{tab in tabs}}">
+          <paper-tab>{{tab.title}}</paper-tab>
+        </template>
       </paper-tabs>
 
-      <template if="{{selectedTab == tabIds.USERS}}">
-        <template bind ref="user-list">
-        </template>
-      </template>
-
-      <template if="{{selectedTab == tabIds.VMS}}">
-        <template bind ref="vm-list">
-        </template>
+      <template if="{{selectedTabIdx == 0}}">
+        <template bind ref="vm-list"></template>
         <!-- Side effect: <create-vm> can now change our prjid, but we only
           reflect it on reload, after a vm creation.
           TODO: change this behaviour, it may cause hard-to-find bugs.
         -->
         <create-vm prjid="{{prjid}}" on-vm-created="{{reload}}"></create-vm>
+      </template>
+
+      <template if="{{selectedTabIdx == 1}}">
+        <template bind ref="user-list">
+        </template>
       </template>
     </template>
 

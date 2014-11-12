@@ -4,15 +4,19 @@
 
 <link rel="import" href="../project-list/project-list.html">
 <link rel="import" href="../project-detail/project-detail.html">
+<link rel="import" href="../ajax-frag-splitter/ajax-frag-splitter.html">
 
-<polymer-element name="projects-tab">
+<polymer-element name="projects-tab" attributes="frag">
   <template>
-    <template if="{{selectedProjectId == null}}">
+    <ajax-frag-splitter id="ajaxFrag" frag="{{frag}}">
+    </ajax-frag-splitter>
+
+    <template if="{{prjId == null}}">
       <project-list on-project-selected="{{projectSelected}}">
       </project-list>
     </template>
 
-    <template if="{{selectedProjectId != null}}">
+    <template if="{{prjId != null}}">
       <core-item>
         <paper-button on-click="{{unselectProject}}">
           <core-icon icon="arrow-back"></core-icon>
@@ -20,7 +24,7 @@
         </paper-button>
       </core-item>
 
-      <project-detail prjid="{{selectedProjectId}}">
+      <project-detail prjid="{{prjId}}" frag="{{$.ajaxFrag.tail}}">
       </project-detail>
     </template>
   </template>
