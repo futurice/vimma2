@@ -1,21 +1,21 @@
 Polymer('ajax-frag-splitter', {
-	frag: '',
-	created: function() {
-		// ensure the .head and .tail fields exist
-		this.splitFrag();
-	},
+    frag: '',
+    ready: function() {
+        // ensure the .head and .tail fields exist
+        this.splitFrag();
+    },
 
-	splitFrag: function() {
-		this.head = ajaxFragHead(this.frag);
-		this.tail = ajaxFragTail(this.frag);
-	},
-	joinFrag: function() {
-		this.frag = ajaxFragJoin(this.head, this.tail);
-	},
+    splitFrag: function() {
+        this.head = ajaxFragHead(this.frag);
+        this.tail = ajaxFragTail(this.frag);
+    },
+    joinFrag: function() {
+        this.frag = ajaxFragJoin(this.head, this.tail);
+    },
 
-	observe: {
-		frag: 'splitFrag',
-		head: 'joinFrag',
-		tail: 'joinFrag'
-	}
+    observe: {
+        frag: 'splitFrag',
+        head: 'joinFrag',
+        tail: 'joinFrag'
+    }
 });

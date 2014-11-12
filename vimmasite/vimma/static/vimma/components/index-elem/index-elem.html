@@ -13,8 +13,8 @@
   <template>
     <link rel="stylesheet" type="text/css" href="index-elem.css">
 
-    <ajax-frag-history id="ajaxHist"></ajax-frag-history>
-    <ajax-frag-splitter id="ajaxFrag" frag="{{$.ajaxHist.frag}}">
+    <ajax-frag-history id="ajaxHist" frag="{{frag}}"></ajax-frag-history>
+    <ajax-frag-splitter id="ajaxFrag" frag="{{frag}}">
     </ajax-frag-splitter>
 
     <paper-tabs selected="{{selectedIdx}}">

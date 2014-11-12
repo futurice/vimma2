@@ -1,26 +1,37 @@
 Polymer('ajax-frag-history', {
-	frag: '',
+    frag: '',
 
-	// Don't push an entry to browser history stack
-	_ignoreFragUpdate: false,
+    // On next change, don't push an entry to the browser history stack
+    _ignoreNextUpdate: false,
 
-	ready: function() {
-		window.addEventListener("hashchange", this.navigate.bind(this));
-	},
+    domIsReady: false,
+    domReady: function() {
+        window.addEventListener("hashchange", this.navigate.bind(this));
 
-	navigate: function() {
-		// don't push a history entry
-		this._ignoreFragUpdate = true;
-		this.frag = getAjaxFrag();
-	},
+        // When creating <ajax-frag-history frag="abc"></ajax-frag-history>:
+        // ― ready() runs
+        // ― fragChanged() runs (with frag="abc")
+        // ― domReady() runs
+        // Don't push a history item if the inital url was #!abc. So ignore
+        // frag changes until domReady.
+        this.domIsReady = true;
+    },
 
-	fragChanged: function() {
-		if (this._ignoreFragUpdate) {
-			this._ignoreFragUpdate = false;
-			return;
-		}
+    navigate: function() {
+        this._ignoreNextUpdate = true;
+        this.frag = getAjaxFrag();
+    },
 
-		// doesn't trigger 'hashchange' event listeners
-		setAjaxFrag(this.frag);
-	}
+    fragChanged: function() {
+        if (!this.domIsReady) {
+            return;
+        }
+        if (this._ignoreNextUpdate) {
+            this._ignoreNextUpdate = false;
+            return;
+        }
+
+        // doesn't trigger 'hashchange' event listeners
+        setAjaxFrag(this.frag);
+    }
 });

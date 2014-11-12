@@ -6,10 +6,13 @@ Polymer('index-elem', {
             {key: 'schedules', title: 'Schedules'},
             {key: 'audit', title: 'Audit (logs)'}
         ];
+        this.frag = getAjaxFrag();
     },
+
+    domIsReady: false,
     domReady: function() {
-        this.$.ajaxFrag.frag = getAjaxFrag();
-        this.async(this.updateSelectedIdx);
+        this.domIsReady = true;
+        this.updateSelectedIdx();
     },
 
     observe: {
@@ -17,6 +20,9 @@ Polymer('index-elem', {
     },
 
     updateSelectedIdx: function() {
+        if (!this.domIsReady) {
+            return;
+        }
         var i, key = this.$.ajaxFrag.head;
         for (i = 0; i < this.tabs.length; i++) {
             if (this.tabs[i].key == key) {
@@ -24,7 +30,7 @@ Polymer('index-elem', {
                 return;
             }
         }
-        this.$.ajaxFrag.frag = this.tabs[0].key;
+        this.frag = this.tabs[0].key;
     },
 
     selectedIdxChanged: function() {
@@ -32,7 +38,7 @@ Polymer('index-elem', {
         // Don't overwrite the entire fragment on page load if the tab
         // doesn't change (i.e. don't replace "vms/3" with "vms").
         if (this.$.ajaxFrag.head != key) {
-            this.$.ajaxFrag.frag = key;
+            this.frag = key;
         }
     }
 });
