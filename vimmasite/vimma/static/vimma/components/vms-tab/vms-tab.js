@@ -32,6 +32,8 @@ Polymer('vms-tab', {
 
     /* Data model */
 
+    // URL fragment
+    frag: '',
     profile: null,
     profileChanged: function() {
         var idSet = {};

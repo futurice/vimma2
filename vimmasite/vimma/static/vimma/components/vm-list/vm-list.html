@@ -2,14 +2,16 @@
 
 <link rel="import" href="../vm-detail/vm-detail.html">
 
-<polymer-element name="vm-list" attributes="vmids">
+<polymer-element name="vm-list" attributes="vmids frag">
   <template>
     <link rel="stylesheet" type="text/css" href="vm-list.css">
 
-    <ul class="vm-list">
+    <ul class="vm-list"
+      on-vm-expanded="{{vmExpanded}}" on-vm-collapsed="{{vmCollapsed}}">
       <template repeat="{{vmid in vmids}}">
         <li>
-          <vm-detail vmid="{{vmid}}"></vm-detail>
+          <vm-detail vmid="{{vmid}}" initiallyExpanded="{{vmid == frag}}">
+          </vm-detail>
         </li>
       </template>
     </ul>

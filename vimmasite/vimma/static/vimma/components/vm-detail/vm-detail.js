@@ -20,9 +20,10 @@ Polymer('vm-detail', {
     overrideSchedState: 'on',
     overrideSchedMins: 10,
     showLogs: false,
-    expanded: false,
+    initiallyExpanded: false,
 
     ready: function() {
+        this.expanded = this.initiallyExpanded;
         this.reload();
     },
 
@@ -150,5 +151,6 @@ Polymer('vm-detail', {
 
     toggleExpanded: function() {
         this.expanded = !this.expanded;
+        this.fire(this.expanded ? 'vm-expanded' : 'vm-collapsed');
     },
 });

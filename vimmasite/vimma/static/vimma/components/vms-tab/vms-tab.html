@@ -6,7 +6,7 @@
 <link rel="import" href="../show-count/show-count.html">
 <link rel="import" href="../vm-list/vm-list.html">
 
-<polymer-element name="vms-tab">
+<polymer-element name="vms-tab" attributes="frag">
   <template>
     <link rel="stylesheet" type="text/css" href="vms-tab.css">
 
@@ -29,7 +29,7 @@
         <show-count n="{{vmIdsInOwnProjects.length}}" name="VM"></show-count>
         in your projects
       </h1>
-      <vm-list vmids="{{vmIdsInOwnProjects}}"></vm-list>
+      <vm-list vmids="{{vmIdsInOwnProjects}}" frag="{{frag}}"></vm-list>
 
       <h1>
         <show-count n="{{vmIdsInOtherProjects.length}}" name="VM"></show-count>
