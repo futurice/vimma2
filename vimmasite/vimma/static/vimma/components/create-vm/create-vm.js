@@ -39,6 +39,12 @@ Polymer('create-vm', {
     },
     shownConfs: [],
     shownConfsChanged: function() {
+        // reset dropdown size when its input changes (seems a Polymer bug)
+        // Adapted (for newer Polymer) from http://stackoverflow.com/q/26283638
+        var el = this.querySelector('::shadow #vmconfig paper-dropdown::shadow div#scroller');
+        el.style.width = null;
+        el.style.height = null;
+
         this.shownConfsIdx = this.shownConfs.length ? 0 : null;
         this.async(this.shownConfsIdxChanged);
     },
