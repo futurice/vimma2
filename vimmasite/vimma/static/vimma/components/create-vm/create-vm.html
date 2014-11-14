@@ -3,12 +3,15 @@
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
 <link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../ajax-state/ajax-state.html">
 <link rel="import" href="create-vm-dummy-data.html">
 <link rel="import" href="create-vm-aws-data.html">
 
-<polymer-element name="create-vm" attributes="prjid">
+<polymer-element name="create-vm" attributes="initialProjectId">
   <template>
     <link rel="stylesheet" type="text/css" href="create-vm.css">
+
+    <ajax-state id="ajax"></ajax-state>
 
     <div id="container">
       <template if="{{loading}}">
@@ -16,11 +19,11 @@
       </template>
 
       <template if="{{!loading}}">
-        <template if="{{!success}}">
-          <error-display text={{errorText}}></error-display>
+        <template if="{{!loadingSucceeded}}">
+          <error-display text="{{$.ajax.errorText}}"></error-display>
         </template>
 
-        <template if="{{success}}">
+        <template if="{{loadingSucceeded}}">
           <template bind ref="main">
           </template>
         </template>
@@ -30,43 +33,53 @@
     <template id="main">
       <h1>Create a VM</h1>
       <label for="project">Project:</label>
-      <paper-dropdown-menu id="project" label="Select a project…"
-          selected="{{prjid}}" valueattr="key"
-          on-core-select="{{projectSelected}}">
-        <template repeat="{{p in projects}}">
-          <paper-item label="{{p.name}}" key="{{p.id}}"></paper-item>
-        </template>
+      <paper-dropdown-menu id="project" label="Select a project…">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{prjIdx}}">
+            <template repeat="{{p in projects}}">
+              <paper-item>{{p.name}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
       </paper-dropdown-menu>
       <br>
 
       <label for="provider">Provider:</label>
-      <paper-dropdown-menu id="provider" label="Select a provider…"
-          selected="{{provid}}" valueattr="key"
-          on-core-select="{{providerSelected}}">
-        <template repeat="{{p in providers}}">
-          <paper-item label="{{p.name}}" key="{{p.id}}"></paper-item>
-        </template>
+      <paper-dropdown-menu id="provider" label="Select a provider…">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{provIdx}}">
+            <template repeat="{{p in providers}}">
+              <paper-item>{{p.name}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
       </paper-dropdown-menu>
       <br>
 
       <label for="vmconfig">VM Configuration:</label>
-      <paper-dropdown-menu id="vmconfig" label="Select a VM configuration…"
-          selected="{{vmconfigid}}" valueattr="key"
-          on-core-select="{{vmconfigSelected}}">
-        <template repeat="{{c in vmconfigsForProvider}}">
-          <paper-item label="{{c.name}}" key="{{c.id}}"></paper-item>
-        </template>
+      <paper-dropdown-menu id="vmconfig" label="Select a VM configuration…">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{shownConfsIdx}}">
+            <template repeat="{{c in shownConfs}}">
+              <paper-item>{{c.name}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
       </paper-dropdown-menu>
       <br>
 
       <label for="schedule">Schedule:</label>
-      <paper-dropdown-menu id="schedule" label="Select a schedule…"
-          selected="{{scheduleid}}" valueattr="key"
-          on-core-select="{{scheduleSelected}}">
-        <template repeat="{{s in schedules}}">
-          <paper-item label="{{s.name}}" key="{{s.id}}"></paper-item>
-        </template>
+      <paper-dropdown-menu id="schedule" label="Select a schedule…">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{scheduleIdx}}">
+            <template repeat="{{s in schedules}}">
+              <paper-item>{{s.name}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
       </paper-dropdown-menu>
+
+      <br>
 
       <template if="{{newVMType == 'dummy'}}">
         <create-vm-dummy-data data="{{newVMData}}">
@@ -76,8 +89,9 @@
       <template if="{{newVMType == 'aws'}}">
         <create-vm-aws-data data="{{newVMData}}">
         </create-vm-aws-data>
-        <br>
       </template>
+
+      <br>
 
       <template if="{{newVMType != null && newVMType != 'dummy' && newVMType != 'aws'}}">
         <error-display text="Unknown VM Type “{{newVMType}}”."></error-display>
@@ -86,15 +100,12 @@
 
       <paper-button id="create" raised
         class="{{ {highlight: highlightCreateBtn} | tokenList }}"
-        on-click="{{createVM}}" disabled="{{ajaxInProgress}}">
+        on-click="{{createVM}}" disabled="{{$.ajax.inProgress}}">
           <core-icon icon="create"></core-icon>
           Create VM
       </paper-button>
-      <template if={{!ajaxInProgress}}>
-        <template if={{!ajaxSuccess}}>
-          <br>
-          <error-display text={{ajaxErrTxt}}></error-display>
-        </template>
+      <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+          <error-display text="{{$.ajax.errorText}}"></error-display>
       </template>
     </template>
   </template>

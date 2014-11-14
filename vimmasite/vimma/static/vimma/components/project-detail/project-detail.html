@@ -37,11 +37,8 @@
 
       <template if="{{$.ajaxFrag.head == tabs[0].key}}">
         <template bind ref="vm-list"></template>
-        <!-- Side effect: <create-vm> can now change our prjid, but we only
-          reflect it on reload, after a vm creation.
-          TODO: change this behaviour, it may cause hard-to-find bugs.
-        -->
-        <create-vm prjid="{{prjid}}" on-vm-created="{{reload}}"></create-vm>
+        <create-vm initialProjectId="{{prjid}}" on-vm-created="{{reload}}">
+        </create-vm>
       </template>
 
       <template if="{{$.ajaxFrag.head == tabs[1].key}}">

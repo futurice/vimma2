@@ -2,16 +2,21 @@ Polymer('create-vm-aws-data', {
     data: null,
     dataChanged: function() {
         if (this.data == null) {
-            // without setTimeout, the data field in <create-vm> gets
-            // disconnected from our own.
-            setTimeout(this.setDefaultData.bind(this), 0);
+            this.async(this.setDefaultData);
         }
     },
     setDefaultData: function() {
         this.data = {
             name: '',
-            region: 'eu-west-1'
+            region: ''
         };
+        this.regionIdx = 4;
+        this.async(this.regionIdxChanged);
+    },
+
+    regionIdx: null,
+    regionIdxChanged: function() {
+        this.data.region = this.regions[this.regionIdx];
     },
 
     created: function() {
@@ -30,7 +35,7 @@ Polymer('create-vm-aws-data', {
         ];
         this.regions.sort();
 
-        this.setDefaultData();
+        this.async(this.setDefaultData);
     },
 
     regionSelected: function(e, detail, sender) {

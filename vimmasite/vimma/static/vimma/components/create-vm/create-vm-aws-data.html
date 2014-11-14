@@ -6,13 +6,17 @@
   <template>
     <paper-input label="Name" floatingLabel="true" value="{{data.name}}">
     </paper-input>
+    <br>
 
     <label for="region">Region:</label>
-    <paper-dropdown-menu id="region" selected="{{data.region}}" valueattr="label"
-      on-core-select="{{regionSelected}}">
-      <template repeat="{{r in regions}}">
-        <paper-item label="{{r}}"></paper-item>
-      </template>
+    <paper-dropdown-menu id="region">
+      <paper-dropdown class="dropdown">
+        <core-menu class="menu" selected="{{regionIdx}}">
+          <template repeat="{{r in regions}}">
+            <paper-item>{{r}}</paper-item>
+          </template>
+        </core-menu>
+      </paper-dropdown>
     </paper-dropdown-menu>
   </template>
 

@@ -1,80 +1,75 @@
 Polymer('create-vm', {
+    loading: true,
+    loadingSucceeded: false,
+
+    observe: {
+        prjIdx: 'computeHighlightCreate',
+        scheduleid: 'computeHighlightCreate'
+    },
+
     projects: [],
+    initialProjectId: null, // initial project selection, optional
+    prjIdx: null,   // selected project index
 
     providers: [],
     providersChanged: function() {
-        var providersById = {};
-        this.providers.forEach(function(p) {
-            providersById[p.id] = p;
-        });
-        this.providersById = providersById;
-
-        this.provid = this.providers.length ? this.providers[0].id : null;
+        if (this.providers.length) {
+            this.provIdx = 0;
+        }
     },
-    providersById: {},
-
-    vmconfigs: [],
-    vmconfigsChanged: function() {
-        var vmconfigsById = {};
-        this.vmconfigs.forEach(function(v) {
-            vmconfigsById[v.id] = v;
-        });
-        this.vmconfigsById = vmconfigsById;
-    },
-    vmconfigsById: {},
-
-    schedules: [],
-    schedulesChanged: function() {
-        this.scheduleid = this.schedules.length ? this.schedules[0].id : null;
-    },
-    scheduleid: null,   // chosen schedule
-
-    // initial load and subsequent full reloads
-    loading: true,
-    success: null,
-    errorText: null,
-
-    prjid: null,    // chosen project
-    provid: null,   // chosen provider
-    providChanged: function() {
-        this.computeVMConfigsForProvider();
+    provIdx: null,  // selected index
+    provIdxChanged: function() {
+        this.computeShownConfs();
         this.computeHighlightCreate();
     },
-    vmconfigsForProvider: [],
-    computeVMConfigsForProvider: function() {
-        this.vmconfigsForProvider = this.vmconfigs.filter((function(vmc) {
-            return vmc.provider == this.provid;
+
+    all_vmconfigs: [],
+
+    schedules: [],
+    scheduleIdx: null,
+
+    computeShownConfs: function() {
+        var provId = null;
+        if (this.provIdx != null) {
+            provId = this.providers[this.provIdx].id;
+        }
+        this.shownConfs = this.all_vmconfigs.filter((function(vmc) {
+            return vmc.provider == provId;
         }).bind(this));
     },
-    vmconfigsForProviderChanged: function() {
-        // reset dropdown size when its input changes (seems a Polymer bug)
-        // http://stackoverflow.com/q/26283638
-        var el = this.querySelector('::shadow #vmconfig::shadow core-dropdown::shadow core-dropdown-overlay');
-        el.target.style.width = null;
-        el.target.style.height = null;
-
-        this.vmconfigid = this.vmconfigsForProvider.length ?
-            this.vmconfigsForProvider[0].id : null;
+    shownConfs: [],
+    shownConfsChanged: function() {
+        this.shownConfsIdx = this.shownConfs.length ? 0 : null;
+        this.async(this.shownConfsIdxChanged);
     },
-    vmconfigid: null,   // chosen vmconfig
-    vmconfigidChanged: function() {
+    shownConfsIdx: null,
+    shownConfsIdxChanged: function() {
+        this.scheduleIdx = null;
+        if (this.shownConfsIdx != null) {
+            var s_id = this.shownConfs[this.shownConfsIdx].default_schedule;
+            this.schedules.forEach((function(s, idx) {
+                if (s.id == s_id) {
+                    this.scheduleIdx = idx;
+                }
+            }).bind(this));
+        }
+        
         // request a reset of the type-specific ‘data’ for the new VM
         this.newVMData = null;
-
         this.computeNewVMType();
         this.computeHighlightCreate();
     },
 
-    newVMType: null,
     computeNewVMType: function() {
-        if (this.vmconfigid == null) {
+        if (this.shownConfsIdx == null) {
             this.newVMType = null;
             return;
         }
-        var vmc = this.vmconfigsById[this.vmconfigid],
-            prov = this.providersById[vmc.provider];
+        var vmc = this.shownConfs[this.shownConfsIdx],
+            prov = this.providers[this.provIdx];
         this.newVMType = prov.type;
     },
+    newVMType: null,
 
     /*
      * Type-specific data for the new VM. We bind this to the type-specific
@@ -83,43 +78,34 @@ Polymer('create-vm', {
      */
     newVMData: null,
 
-    /*
-     * AJAX operations while the element is loaded:
-     * ― create new VM
-     */
-    ajaxInProgress: false,
-    ajaxSuccess: true,
-    ajaxErrTxt: '',
-
-    observe: {
-        prjid: 'computeHighlightCreate',
-        scheduleid: 'computeHighlightCreate'
-    },
-
     ready: function() {
         this.reload();
     },
 
     reload: function() {
         this.loading = true;
-        this.success = null;
-        this.errorText = null;
+        this.$.ajax.fire('start');
 
         this.projects = [];
+        this.prjIdx = null;
         this.providers = [];
-        this.vmconfigs = [];
+        this.provIdx = null;
+        this.all_vmconfigs = [];
         this.schedules = [];
 
         this.loadItems();
     },
     loadFail: function(errorText) {
+        this.$.ajax.fire('end', {success: false, errorText: errorText});
+
         this.loading = false;
-        this.success = false;
-        this.errorText = errorText;
+        this.loadingSucceeded = false;
     },
     loadSuccess: function() {
+        this.$.ajax.fire('end', {success: true});
+
         this.loading = false;
-        this.success = true;
+        this.loadingSucceeded = true;
     },
 
     loadItems: function() {
@@ -127,8 +113,16 @@ Polymer('create-vm', {
             var i = 0;
             this.projects = resultArr[i++];
             this.providers = resultArr[i++];
-            this.vmconfigs = resultArr[i++];
+            this.all_vmconfigs = resultArr[i++];
             this.schedules = resultArr[i++];
+
+            if (this.projects.length && this.initialProjectId != null) {
+                this.projects.forEach((function(p, idx) {
+                    if (p.id == this.initialProjectId) {
+                        this.prjIdx = idx;
+                    }
+                }).bind(this));
+            }
 
             this.loadSuccess();
         }).bind(this);
@@ -138,39 +132,18 @@ Polymer('create-vm', {
                 ok, this.loadFail.bind(this));
     },
 
-    projectSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.prjid = detail.item.templateInstance.model.p.id;
-        }
-    },
-    providerSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.provid = detail.item.templateInstance.model.p.id;
-        }
-    },
-    vmconfigSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.vmconfigid = detail.item.templateInstance.model.c.id;
-        }
-    },
-    scheduleSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.scheduleid = detail.item.templateInstance.model.s.id;
-        }
-    },
-
     highlightCreateBtn: false,
     computeHighlightCreate: function() {
-        this.highlightCreateBtn = Boolean(this.prjid && this.provid &&
-                this.vmconfigid && this.scheduleid);
+        this.highlightCreateBtn = this.prjIdx != null && this.provIdx != null
+            && this.shownConfsIdx != null && this.scheduleIdx != null;
     },
 
     createVM: function() {
-        this.ajaxInProgress = true;
+        var prj = this.projects[this.prjIdx] || null,
+            vmc = this.shownConfs[this.shownConfsIdx] || null,
+            sched = this.schedules[this.scheduleIdx] || null;
+
+        this.$.ajax.fire('start');
         $.ajax({
             url: vimmaEndpointCreateVM,
             type: 'POST',
@@ -179,21 +152,18 @@ Polymer('create-vm', {
                 'X-CSRFToken': $.cookie('csrftoken')
             },
             data: JSON.stringify({
-                project:    this.prjid,
-                vmconfig:   this.vmconfigid,
-                schedule:   this.scheduleid,
+                project:    prj && prj.id,
+                vmconfig:   vmc && vmc.id,
+                schedule:   sched && sched.id,
                 data:       this.newVMData
             }),
-            complete: (function(data) {
-                this.ajaxInProgress = false;
-            }).bind(this),
             success: (function(data) {
-                this.ajaxSuccess = true;
+                this.$.ajax.fire('end', {success: true});
                 this.fire('vm-created');
             }).bind(this),
             error: (function() {
-                this.ajaxSuccess = false;
-                this.ajaxErrTxt = getAjaxErr.apply(this, arguments);
+                var errorText = getAjaxErr.apply(this, arguments);
+                this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
     }
