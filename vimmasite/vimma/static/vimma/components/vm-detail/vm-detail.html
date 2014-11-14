@@ -49,7 +49,7 @@
 
         <paper-button id="reload" on-click="{{reload}}" raised
           title="Refresh" disabled?="{{$.ajax.inProgress}}">
-          <core-icon icon="refresh"></core-icon>
+          <core-icon icon="cached"></core-icon>
         </paper-button>
 
         <div id="prov-summ">
@@ -60,7 +60,7 @@
 
         <paper-button id="reboot" on-click="{{reboot}}" raised
           title="Reboot" disabled?="{{$.ajax.inProgress}}">
-          <core-icon icon="rotate-left"></core-icon>
+          <core-icon icon="redo"></core-icon>
         </paper-button>
         <paper-button id="destroy" on-click="{{destroy}}" raised
           title="Destroy" disabled?="{{$.ajax.inProgress}}">
