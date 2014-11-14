@@ -45,16 +45,17 @@
     <template id="create-schedule">
       <paper-input label="New schedule name" floatingLabel="true"
         required error="The name may not be empty"
-        value="{{newScheduleName}}" disabled?="{{$.ajax.inProgress}}"
-        on-input="{{nameEdited}}">
+        value="{{newScheduleName}}" disabled?="{{$.ajax.inProgress}}">
       </paper-input>
       <br>
-      <paper-dropdown-menu label="Select a TimeZone"
-        on-core-select="{{timezoneSelected}}">
-        <template repeat="{{tz in timezones}}">
-          <paper-item label="{{tz.name}}" tzid="{{tz.id}}">
-          </paper-item>
-        </template>
+      <paper-dropdown-menu label="Select a TimeZone">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{tzIdx}}">
+            <template repeat="{{tz in timezones}}">
+              <paper-item>{{tz.name}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
       </paper-dropdown-menu>
       <br>
       <paper-button id="create" raised

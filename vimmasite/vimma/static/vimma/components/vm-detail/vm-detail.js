@@ -16,13 +16,19 @@ Polymer('vm-detail', {
     vm: null,
     provider: null,
     project: null,
-    // what the schedule-override will be, if the user sets one
-    overrideSchedState: 'on',
+
     overrideSchedMins: 10,
+    overrideSchedStateIdx: 0,
     showLogs: false,
     initiallyExpanded: false,
 
     ready: function() {
+        // what the schedule-override will be, if the user sets one
+        this.overrideSchedStates = [
+            {key: true, label: 'Powered ON'},
+            {key: false, label: 'Powered OFF'}
+        ];
+
         this.expanded = this.initiallyExpanded;
         this.reload();
     },
@@ -105,12 +111,6 @@ Polymer('vm-detail', {
         this.vmOperation(vimmaEndpointDestroyVM, 'Destroy', null);
     },
 
-    overrideSchedStateSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.overrideSchedState = detail.item.getAttribute('key');
-        }
-    },
     tstampToString: function(ts) {
         return new Date(ts * 1000).toString();
     },
@@ -137,7 +137,7 @@ Polymer('vm-detail', {
     overrideSet: function() {
         this.ajaxOverrideSchedule({
             vmid: this.vm.id,
-            state: this.overrideSchedState == 'on',
+            state: this.overrideSchedStates[this.overrideSchedStateIdx].key,
             seconds: Math.floor(this.overrideSchedMins * 60)
         });
     },

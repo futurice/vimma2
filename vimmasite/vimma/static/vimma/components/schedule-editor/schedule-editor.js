@@ -21,27 +21,29 @@ Polymer('schedule-editor', {
 
     observe: {
         'editModel.name': 'checkUnsavedChanges',
-        'editModel.timezone': 'checkUnsavedChanges',
+        'editModel.timezone': 'editTzChanged',
         'editModel.is_special': 'checkUnsavedChanges',
         'editModel.matrix': 'checkUnsavedChanges',
         'savedModel': 'checkUnsavedChanges'
     },
 
+    tzIdx: null,
+    tzIdxChanged: function() {
+        this.editModel.timezone = this.timezones[this.tzIdx].id;
+    },
+
+    editTzChanged: function() {
+        this.timezones.forEach((function(tz, idx) {
+            if (tz.id == this.editModel.timezone) {
+                this.tzIdx = idx;
+            }
+        }).bind(this));
+        this.checkUnsavedChanges();
+    },
+
     hasUnsavedChanges: false,
     checkUnsavedChanges: function() {
         this.hasUnsavedChanges = !sameModels(this.savedModel, this.editModel);
-    },
-
-    nameEdited: function(e, detail, sender) {
-        sender.commit();
-    },
-
-    timezoneSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.editModel.timezone = parseInt(
-                    detail.item.getAttribute('tzid'), 10);
-        }
     },
 
     delete: function() {

@@ -7,6 +7,10 @@ Polymer('schedule-list', {
 
     newScheduleName: '',
     newScheduleTimeZone: null,
+    tzIdx: null,
+    tzIdxChanged: function() {
+        this.newScheduleTimeZone = this.timezones[this.tzIdx].id;
+    },
 
     created: function() {
         this.defaultMatrix = [];
@@ -59,17 +63,6 @@ Polymer('schedule-list', {
     scheduleDeleted: function(e, detail, sender) {
         var arrayIdx = parseInt(sender.getAttribute('arrayIdx'));
         this.schedules.splice(arrayIdx, 1);
-    },
-    nameEdited: function(e, detail, sender) {
-        sender.commit();
-    },
-
-    timezoneSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.newScheduleTimeZone = parseInt(
-                    detail.item.getAttribute('tzid'), 10);
-        }
     },
 
     create: function() {

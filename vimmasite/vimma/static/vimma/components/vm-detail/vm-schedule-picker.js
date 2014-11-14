@@ -2,13 +2,30 @@ Polymer('vm-schedule-picker', {
     loading: true,
     loadingSucceeded: false,
 
-    vm: null,
-    vmChanged: function() {
-        this.newSchedId = this.vm ? this.vm.schedule : null;
+    observe: {
+        vm: 'setNewSchedIdx',
+        schedules: 'setNewSchedIdx'
     },
+
+    vm: null,
     schedules: null,
 
-    // the schedule ID selected by the user
+    setNewSchedIdx: function() {
+        this.newSchedIdx = null;
+        if (this.vm && this.schedules) {
+            this.schedules.forEach((function(s, idx) {
+                if (s.id == this.vm.schedule) {
+                    this.newSchedIdx = idx;
+                }
+            }).bind(this));
+        }
+    },
+    // the index of the schedule selected by the user
+    newSchedIdx: null,
+    newSchedIdxChanged: function() {
+        this.newSchedId = this.newSchedIdx == null ? null :
+            this.schedules[this.newSchedIdx].id;
+    },
     newSchedId: null,
 
     ready: function() {
@@ -53,13 +70,6 @@ Polymer('vm-schedule-picker', {
         }).bind(this);
         apiGetAll([vimmaApiScheduleList],
             ok, this.loadFail.bind(this));
-    },
-
-    schedSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.newSchedId = detail.item.templateInstance.model.s.id;
-        }
     },
 
     save: function() {

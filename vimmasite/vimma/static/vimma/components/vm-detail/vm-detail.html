@@ -121,11 +121,14 @@
         </template>
         <br>
         Keep
-        <paper-dropdown-menu selected="{{overrideSchedState}}" valueattr="key"
-          disabled?="{{$.ajax.inProgress}}"
-          on-core-select="{{overrideSchedStateSelected}}">
-          <paper-item label="Powered ON" key="on"></paper-item>
-          <paper-item label="Powered OFF" key="off"></paper-item>
+        <paper-dropdown-menu disabled?="{{$.ajax.inProgress}}">
+          <paper-dropdown class="dropdown">
+            <core-menu class="menu" selected="{{overrideSchedStateIdx}}">
+              <template repeat="{{s in overrideSchedStates}}">
+                <paper-item>{{s.label}}</paper-item>
+              </template>
+            </core-menu>
+          </paper-dropdown>
         </paper-dropdown-menu>
         for
         <input type="number" value="{{overrideSchedMins}}"
