@@ -35,7 +35,7 @@
         </template>
       </paper-tabs>
 
-      <template if="{{selectedTabIdx == 0}}">
+      <template if="{{$.ajaxFrag.head == tabs[0].key}}">
         <template bind ref="vm-list"></template>
         <!-- Side effect: <create-vm> can now change our prjid, but we only
           reflect it on reload, after a vm creation.
@@ -44,7 +44,7 @@
         <create-vm prjid="{{prjid}}" on-vm-created="{{reload}}"></create-vm>
       </template>
 
-      <template if="{{selectedTabIdx == 1}}">
+      <template if="{{$.ajaxFrag.head == tabs[1].key}}">
         <template bind ref="user-list">
         </template>
       </template>

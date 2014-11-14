@@ -23,19 +23,19 @@
       </template>
     </paper-tabs>
 
-    <template if="{{selectedIdx == 0}}">
+    <template if="{{$.ajaxFrag.head == tabs[0].key}}">
       <vms-tab frag="{{$.ajaxFrag.tail}}"></vms-tab>
     </template>
 
-    <template if="{{selectedIdx == 1}}">
+    <template if="{{$.ajaxFrag.head == tabs[1].key}}">
       <projects-tab frag="{{$.ajaxFrag.tail}}"></projects-tab>
     </template>
 
-    <template if="{{selectedIdx == 2}}">
+    <template if="{{$.ajaxFrag.head == tabs[2].key}}">
       <schedule-list></schedule-list>
     </template>
 
-    <template if="{{selectedIdx == 3}}">
+    <template if="{{$.ajaxFrag.head == tabs[3].key}}">
       <audit-display></audit-display>
     </template>
   </template>
