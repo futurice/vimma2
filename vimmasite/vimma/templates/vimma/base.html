@@ -5,7 +5,9 @@
     <script src="{% static 'vimma/js/util.js' %}"></script>
 
     <script>
-      var vimmaApiRoot = '{% url "api-root" %}',
+      var indexUrl = '{% url "index" %}',
+
+          vimmaApiRoot = '{% url "api-root" %}',
           vimmaApiScheduleList = '{% url "schedule-list" %}',
           vimmaApiScheduleDetailRoot = apiDetailRootUrl(
               '{% url "schedule-detail" 0 %}'),
