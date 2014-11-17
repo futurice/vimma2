@@ -29,10 +29,15 @@ def stop_services():
     sudo('service apache2 stop')
 
 
-@task
 def start_services():
     sudo('service supervisor start')
     sudo('service apache2 start')
+
+
+@task
+def restart_services():
+    stop_services()
+    start_services()
 
 
 def clone_repository():
