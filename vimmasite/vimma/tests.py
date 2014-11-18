@@ -2331,9 +2331,20 @@ class AuditTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = response.data['results']
             self.assertEqual({x['text'] for x in items}, text_set)
-        check_results(Audit.DEBUG, {'-d', '-w', '-e'})
-        check_results(Audit.WARNING, {'-w', '-e'})
-        check_results(Audit.ERROR, {'-e'})
+
+        def check_filtering():
+            check_results(Audit.DEBUG, {'-d', '-w', '-e'})
+            check_results(Audit.WARNING, {'-w', '-e'})
+            check_results(Audit.ERROR, {'-e'})
+
+        check_filtering()
+
+        # regression: filtering by min_level not working for omnipotent user
+        perm_omni = Permission.objects.create(name=Perms.OMNIPOTENT)
+        omni_role = Role.objects.create(name='Omni Role')
+        omni_role.permissions.add(perm_omni)
+        u.profile.roles.add(omni_role)
+        check_filtering()
 
 
 class PowerLogTests(TestCase):

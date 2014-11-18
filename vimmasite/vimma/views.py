@@ -176,12 +176,12 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if can_do(user, Actions.READ_ALL_AUDITS):
-            return Audit.objects.filter()
-
-        projects = user.profile.projects.all()
-        prj_ids = [p.id for p in projects]
-        queryset = Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
-                Q(user__id=user.id))
+            queryset = Audit.objects.filter()
+        else:
+            projects = user.profile.projects.all()
+            prj_ids = [p.id for p in projects]
+            queryset = Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
+                    Q(user__id=user.id))
 
         min_lvl = self.request.QUERY_PARAMS.get('min_level', None)
         if min_lvl is not None:
