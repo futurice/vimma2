@@ -19,7 +19,7 @@ Polymer('vm-detail', {
 
     overrideSchedMins: 10,
     overrideSchedStateIdx: 0,
-    showLogs: false,
+    showLogs: true,
     initiallyExpanded: false,
 
     ready: function() {
@@ -41,8 +41,7 @@ Polymer('vm-detail', {
         this.vm = null;
         this.provider = null;
         this.project = null;
-        this.showLogs = false;
-        // keep this.expanded
+        // keep this.expanded and this.showLogs
         this.loadVM();
     },
     loadFail: function(errorText) {

@@ -180,6 +180,14 @@
         minLevelChanged: function(ev, detail, sender) {
             this.minLevelIdx = sender.selectedIndex;
             this.reload();
+        },
+
+        getAuditLevelName: function(lvl) {
+            if (lvl in auditNameForLevel) {
+                return auditNameForLevel[lvl];
+            }
+            console.log('Unknown audit level ‘' + lvl + '’');
+            return lvl;
         }
     });
 })();

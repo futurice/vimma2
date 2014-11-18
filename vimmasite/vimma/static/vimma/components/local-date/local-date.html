@@ -3,15 +3,15 @@
 <link rel="import" href="../plain-text/plain-text.html">
 
 <!--
-  Display a Date object or a string representing a datetime.
-  The displayed value is in local (browser) time.
+  Display a Date object, timestamp or a string representing a datetime
+  (anything that can be passed to the new Date(…) constructor).
+  The displayed date and time are in local (browser) time.
+  The date is omitted if it's today, unless alwaysshowdate is true.
 -->
-<polymer-element name="local-date" attributes="date">
+<polymer-element name="local-date" attributes="date alwaysshowdate">
   <template>
-    <template if="{{showDate}}">
-      <plain-text text="{{dateStr}}"></plain-text>
-    </template>
-    <plain-text text="{{timeStr}}"></plain-text>
+    <link rel="stylesheet" type="text/css" href="local-date.css">
+    <span id="result" title="{{isoStr}}">{{result}}</span>
   </template>
 
   <script src="local-date.js"></script>

@@ -1,19 +1,21 @@
 Polymer('local-date', {
     date: '',
+    alwaysshowdate: false,
 
-    dateStr: 'YYYY-MM-DD',
-    showDate: true,
-    timeStr: 'HH:MM:SS.mmm',
+    result: 'YYYY-MM-DD HH:MM:SS.mmm',
     isoStr: '', // can't find a way to show this as <some-elem title=…>
 
     ready: function() {
-        this.dateObj = new Date(this.date);
+        var dateObj = new Date(this.date);
+        this.isoStr = dateObj.toISOString();
         var now = new Date();
 
-        if (now.getFullYear() == this.dateObj.getFullYear() &&
-                now.getMonth() == this.dateObj.getMonth() &&
-                now.getDate() == this.dateObj.getDate()) {
-            this.showDate = false;
+        var showDate = true;
+        if (!this.alwaysshowdate &&
+                now.getFullYear() == dateObj.getFullYear() &&
+                now.getMonth() == dateObj.getMonth() &&
+                now.getDate() == dateObj.getDate()) {
+            showDate = false;
         }
 
         function fmtInt(i) {
@@ -35,12 +37,12 @@ Polymer('local-date', {
             return s;
         }
 
-        this.dateStr = [this.dateObj.getFullYear(), this.dateObj.getMonth(),
-            this.dateObj.getDate()].map(fmtInt).join('-');
-        this.timeStr = [this.dateObj.getHours(), this.dateObj.getMinutes(),
-            this.dateObj.getSeconds()].map(fmtInt).join(':') + '.' +
-                fmtMillis(this.dateObj.getMilliseconds());
+        var dateStr = [dateObj.getFullYear(), dateObj.getMonth(),
+            dateObj.getDate()].map(fmtInt).join('-');
+        var timeStr = [dateObj.getHours(), dateObj.getMinutes(),
+            dateObj.getSeconds()].map(fmtInt).join(':') + '.' +
+                fmtMillis(dateObj.getMilliseconds());
 
-        this.isoStr = this.dateObj.toISOString();
+        this.result = showDate ? dateStr + ' ' + timeStr : timeStr;
     }
 });

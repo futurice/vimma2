@@ -141,10 +141,11 @@
 
     <template id="audit">
       <div id="audit">
-        <button type="button" on-click="{{toggleShowLogs}}">
-          <template if="{{!showLogs}}">Show logs</template>
-          <template if="{{showLogs}}">Hide logs</template>
-        </button>
+        <strong id="toggle-logs" on-click="{{toggleShowLogs}}"
+            title="{{showLogs ? 'Hide logs' : 'Show logs'}}">
+          <template if="{{!showLogs}}">▹ Logs</template>
+          <template if="{{showLogs}}">▾ Logs</template>
+        </strong>
         <template if="{{showLogs}}">
           <div id="audit-display">
             <audit-display vmid="{{vmid}}"></audit-display>

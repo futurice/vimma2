@@ -15,3 +15,45 @@
 #show-more {
 	width: 100%;
 }
+
+#refresh {
+	color: green;
+}
+
+table#table > thead {
+	font-weight: bold;
+}
+table#table > tbody > tr > td,
+table#table > thead > tr > td {
+	padding-left: 0.4em;
+	padding-right: 0.4em;
+	border: 0.1em solid DarkSlateGray;
+}
+table#table > tbody > tr:nth-child(even) {
+	background-color: White;
+}
+table#table > tbody > tr:nth-child(odd) {
+	background-color: White;
+}
+
+table#table > tbody > tr.DEBUG {
+	color: Black;
+}
+table#table > tbody > tr.INFO {
+	color: MidnightBlue;
+}
+table#table > tbody > tr.WARNING {
+	color: #FF7E00;
+	font-weight: bold;
+}
+table#table > tbody > tr.ERROR {
+	color: Red;
+	font-weight: bold;
+}
+
+table#table > tbody > tr > td plain-text::shadow div#box {
+	background-color: #f9f9f9;
+}
+table#table > tbody > tr > td plain-text::shadow div#box.trims:hover {
+	background-color: #f3f3f3;
+}

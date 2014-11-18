@@ -19,3 +19,7 @@ div#audit-display {
 	padding: 0.5em;
 	background-color: WhiteSmoke;
 }
+
+strong#toggle-logs {
+	cursor: pointer;
+}

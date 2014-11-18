@@ -49,6 +49,14 @@
 
           // [{id: …, name: …}, …]
           auditLevels = JSON.parse('{{audit_level_choices_json|escapejs}}'),
+          // {id1: name1, id2: name2, …}
+          auditNameForLevel = (function() {
+            var result = {};
+            auditLevels.forEach(function(a) {
+              result[a.id] = a.name;
+            });
+            return result;
+          })(),
 
           _dummy_end;
     </script>

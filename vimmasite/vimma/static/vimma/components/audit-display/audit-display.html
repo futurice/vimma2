@@ -8,14 +8,10 @@
 
 <polymer-element name="audit-display" attributes="vmid userid">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="audit-display.css">
 
     <ajax-state id="ajax"></ajax-state>
-
-    <button on-click="{{reload}}" disabled?="{{$.ajax.inProgress}}">
-      Refresh logs
-    </button>
-    <br>
 
     <template if="{{!apiResult && $.ajax.inProgress}}">
       Loading…
@@ -32,7 +28,7 @@
     <template id="main">
       <div id="box">
         <template bind ref="navigation"></template>
-        <template bind ref="table"></template>
+        <template bind ref="table-template"></template>
       </div>
     </template>
 
@@ -43,9 +39,14 @@
           ← prev
         </button>
         <span id="item-range">
+          <button id="refresh" type="button"
+                  title="Refresh logs"
+                  on-click="{{reload}}"
+                  disabled?="{{$.ajax.inProgress}}">
+            <span class="glyphicon glyphicon-refresh"></span>
+          </button>
           <!-- show 0–0 for no items -->
-          Logs {{firstItemNr}}–{{getLastItemNr()}}
-          of {{apiResult.count}}
+          Logs {{firstItemNr}}–{{getLastItemNr()}} of {{apiResult.count}}
           with level ≥
           <select on-change="{{minLevelChanged}}"
             disabled?="{{$.ajax.inProgress}}">
@@ -63,21 +64,37 @@
       </div>
     </template>
 
-    <template id="table">
-      <table>
-        <!--
-          Using a named template so its content can access getUserText(…).
-          This wouldn't be possible using an unnamed template.
-        -->
-        <template repeat="{{apiResult.results as r}}">
+    <template id="table-template">
+      <table id="table">
+        <thead>
           <tr>
-            <td><local-date date="{{r.timestamp}}"></local-date></td>
-            <td>{{r.level}}</td>
-            <td>{{r.vm || '—'}}</td>
-            <td title="{{getUserTooltip(r.user)}}">{{getUserText(r.user)}}</td>
-            <td><plain-text text="{{r.text}}"></plain-text></td>
+            <td>Timestamp</td>
+            <td>Level</td>
+            <td>vm</td>
+            <td>user</td>
+            <td>Audit</td>
           </tr>
-        </template>
+        </thead>
+        <tbody>
+          <!--
+            Using a named template so its content can access getUserText(…).
+            This wouldn't be possible using an unnamed template.
+          -->
+          <template repeat="{{apiResult.results as r}}">
+            <tr class="{{getAuditLevelName(r.level)}}">
+              <td>
+                <local-date date="{{r.timestamp}}" alwaysshowdate="{{true}}">
+                </local-date>
+              </td>
+              <td>{{getAuditLevelName(r.level)}}</td>
+              <td>{{r.vm || '—'}}</td>
+              <td title="{{getUserTooltip(r.user)}}">
+                {{getUserText(r.user)}}
+              </td>
+              <td><plain-text text="{{r.text}}"></plain-text></td>
+            </tr>
+          </template>
+        </tbody>
       </table>
 
       <button id="show-more" type="button" on-click="{{showMore}}"
