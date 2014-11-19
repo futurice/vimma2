@@ -1,0 +1,16 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="human-size.html">
+
+<polymer-element name="human-time" attributes="seconds">
+  <template><!--
+  --><human-size
+        n="{{seconds}}"
+        unit="s"
+        sayplural="{{false}}"
+        multiples="{{multiples}}">
+    </human-size><!--
+  --></template>
+
+  <script src="human-time.js"></script>
+</polymer-element>

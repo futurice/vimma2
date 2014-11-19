@@ -3,6 +3,7 @@
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
 <link rel="import" href="../show-count/show-count.html">
+<link rel="import" href="../human-size/human-time.html">
 
 <polymer-element name="vm-recent-errors" attributes="vmid maxsecs showabsence">
   <template>
@@ -25,7 +26,8 @@
       <template if="{{!errors}}">
         <template if="{{showabsence}}">
           <div class="no-errors">
-            No errors in the last {{maxsecs}} seconds.
+            No errrors in the past
+            <human-time seconds="{{maxsecs}}"></human-time>.
           </div>
         </template>
       </template>
@@ -33,7 +35,7 @@
       <template if="{{errors}}">
         <div class="errors">
           <show-count n="{{errors}}" name="error"></show-count>
-          in the past {{maxsecs}} seconds.
+          in the past <human-time seconds="{{maxsecs}}"></human-time>.
         </div>
       </template>
     </template>
