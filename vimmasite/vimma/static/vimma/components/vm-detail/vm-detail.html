@@ -54,6 +54,7 @@
 
         <div id="prov-summ">
           <template bind ref="provider-specific-summary"></template>
+          <template bind ref="vm-comment"></template>
         </div>
 
         <span id="project-name">{{project.name}}</span>
@@ -85,6 +86,12 @@
       </template>
     </template>
 
+    <template id="vm-comment">
+      <template if="{{vm.comment}}">
+        <div>Comment: {{vm.comment}}</div>
+      </template>
+    </template>
+
     <template id="vm-expanded">
       <template if="{{provider.type == 'dummy'}}">
         <dummy-vm-detail vmid="{{vmid}}">
@@ -101,6 +108,7 @@
         </error-display>
       </template>
 
+      <template bind ref="vm-comment"></template>
       <div>
         <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
       </div>

@@ -225,6 +225,7 @@ def create_vm(request):
         project: int,
         vmconfig: int,
         schedule: int,
+        comment: string,
         data: «provider-specific data»,
     }
     """
@@ -264,7 +265,7 @@ def create_vm(request):
         return HttpResponse()
 
     try:
-        vmutil.create_vm(vmconf, prj, schedule, body['data'],
+        vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
                 user_id=request.user.id)
         return HttpResponse()
     except:

@@ -29,7 +29,7 @@ aud = Auditor(__name__)
 # Often retrying the transaction.
 
 
-def create_vm(vmconfig, project, schedule, data, user_id=None):
+def create_vm(vmconfig, project, schedule, comment, data, user_id=None):
     """
     Create a new VM, return its ID if successful otherwise throw an exception.
 
@@ -38,16 +38,21 @@ def create_vm(vmconfig, project, schedule, data, user_id=None):
     The data arg is specific to the provider type.
     This function must not be called inside a transaction.
     """
-    aud.debug(('Request to create VM: config ‘{.name}’, project ‘{.name}’, ' +
-        'schedule ‘{.name}’, data ‘{}’').format(vmconfig, project, schedule,
-            data), user_id=user_id)
+    aud.debug(('Request to create VM: ' +
+        'config {vmconfig.id} ({vmconfig.name}), ' +
+        'project {project.id} ({project.name}’), ' +
+        'schedule {schedule.id} ({schedule.name}), ' +
+        'comment ‘{comment}’, data ‘{data}’').format(
+            vmconfig=vmconfig, project=project, schedule=schedule,
+            comment=comment, data=data),
+        user_id=user_id)
     # The transaction guarantees that if the vmtype.* call fails, the generic
     # VM object won't be present in the DB.
     callables = []
     with transaction.atomic():
         prov = vmconfig.provider
         vm = VM.objects.create(provider=prov, project=project,
-                schedule=schedule)
+                schedule=schedule, comment=comment)
         vm.full_clean()
         vm_id = vm.id
 

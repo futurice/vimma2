@@ -80,6 +80,11 @@
       </paper-dropdown-menu>
 
       <br>
+      <paper-input label="Comment (optional)" floatingLabel="true"
+        value="{{comment}}">
+      </paper-input>
+
+      <br>
 
       <template if="{{newVMType == 'dummy'}}">
         <create-vm-dummy-data data="{{newVMData}}">

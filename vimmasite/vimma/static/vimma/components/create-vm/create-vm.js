@@ -28,6 +28,8 @@ Polymer('create-vm', {
     schedules: [],
     scheduleIdx: null,
 
+    comment: '',
+
     computeShownConfs: function() {
         var provId = null;
         if (this.provIdx != null) {
@@ -59,7 +61,7 @@ Polymer('create-vm', {
                 }
             }).bind(this));
         }
-        
+
         // request a reset of the type-specific ‘data’ for the new VM
         this.newVMData = null;
         this.computeNewVMType();
@@ -98,6 +100,7 @@ Polymer('create-vm', {
         this.provIdx = null;
         this.all_vmconfigs = [];
         this.schedules = [];
+        this.comment = '';
 
         this.loadItems();
     },
@@ -161,6 +164,7 @@ Polymer('create-vm', {
                 project:    prj && prj.id,
                 vmconfig:   vmc && vmc.id,
                 schedule:   sched && sched.id,
+                comment:    this.comment,
                 data:       this.newVMData
             }),
             success: (function(data) {

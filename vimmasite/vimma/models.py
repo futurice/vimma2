@@ -215,6 +215,8 @@ class VM(models.Model):
     sched_override_state = models.NullBooleanField(default=None)
     # end of schedule override, in seconds since epoch
     sched_override_tstamp = models.BigIntegerField(blank=True, null=True)
+    # User-entered text about this vm
+    comment = models.CharField(max_length=200, blank=True)
 
 
 class DummyVM(models.Model):
