@@ -7,6 +7,7 @@
 <link rel="import" href="aws-vm-detail.html">
 <link rel="import" href="aws-vm-summary.html">
 <link rel="import" href="vm-schedule-picker.html">
+<link rel="import" href="../vm-recent-errors/vm-recent-errors.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
 
@@ -55,6 +56,7 @@
         <div id="prov-summ">
           <template bind ref="provider-specific-summary"></template>
           <template bind ref="vm-comment"></template>
+          <template bind ref="recent-errors"></template>
         </div>
 
         <span id="project-name">{{project.name}}</span>
@@ -92,6 +94,18 @@
       </template>
     </template>
 
+    <template id="recent-errors">
+      <div>
+        <vm-recent-errors vmid="{{vmid}}"></vm-recent-errors>
+      </div>
+    </template>
+    <template id="recent-errors-verbose">
+      <div>
+        <vm-recent-errors vmid="{{vmid}}" showabsence="{{true}}">
+        </vm-recent-errors>
+      </div>
+    </template>
+
     <template id="vm-expanded">
       <template if="{{provider.type == 'dummy'}}">
         <dummy-vm-detail vmid="{{vmid}}">
@@ -113,6 +127,7 @@
         <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
       </div>
       <template bind ref="schedule-override"></template>
+      <template bind ref="recent-errors-verbose"></template>
       <template bind ref="audit"></template>
     </template>
 
