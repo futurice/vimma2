@@ -12,10 +12,13 @@
 
     <ajax-state id="ajax"></ajax-state>
 
-    <paper-input label="Schedule Name" floatingLabel="true"
-      required error="The name may not be empty"
-      value="{{editModel.name}}" disabled?="{{$.ajax.inProgress}}">
-    </paper-input>
+    <div class="input-holder">
+      <paper-input-decorator label="Schedule Name" floatingLabel="{{true}}"
+          error="The name may not be empty" isInvalid="{{!editModel.name}}"
+          disabled?="{{$.ajax.inProgress}}">
+        <input is="core-input" value="{{editModel.name}}">
+      </paper-input-decorator>
+    </div>
 
     <matrix-editor matrix="{{editModel.matrix}}"
       disabled?="{{$.ajax.inProgress}}"

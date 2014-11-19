@@ -16,3 +16,7 @@
 	background: CornflowerBlue;
 	color: white;
 }
+
+div.input-holder {
+	display: inline-block;
+}

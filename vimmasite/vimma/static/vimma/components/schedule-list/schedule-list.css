@@ -25,3 +25,7 @@ ul#schedules > li + li {
 #create::shadow #ripple {
 	color: yellow;
 }
+
+div.input-holder {
+	display: inline-block;
+}

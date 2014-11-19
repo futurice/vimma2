@@ -20,10 +20,12 @@ Polymer('create-vm-dummy-data', {
         this.setDefaultData();
     },
 
+    delayInvalid: false,
     computeDelay: function() {
         if (this.data) {
             if (typeof(this.data.delay) == 'string') {
                 this.data.delay = parseInt(this.data.delay);
+                this.delayInvalid = !Number.isInteger(this.data.delay);
             }
         }
     }

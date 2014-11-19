@@ -9,6 +9,9 @@ Polymer('schedule-editor', {
             this.matrixColLabels.push(i + ':30 → ' + ((i+1) % 24) + ':00');
         }
     },
+    // hack to make the floating label visible on initial load; otherwise
+    // we don't need the editModel field here, ready() (over)writes it.
+    editModel: {name: '?'},
     ready: function() {
         // The external interface is ‘schedule’. Internally we have a last
         // saved model and the currently editing model.

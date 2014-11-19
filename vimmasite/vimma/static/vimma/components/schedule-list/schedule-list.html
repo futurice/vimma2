@@ -43,10 +43,13 @@
     </template>
 
     <template id="create-schedule">
-      <paper-input label="New schedule name" floatingLabel="true"
-        required error="The name may not be empty"
-        value="{{newScheduleName}}" disabled?="{{$.ajax.inProgress}}">
-      </paper-input>
+      <div class="input-holder">
+        <paper-input-decorator label="New schedule name" floatingLabel="{{true}}"
+          error="The name may not be empty" isInvalid="{{!newScheduleName}}"
+          disabled?="{{$.ajax.inProgress}}">
+          <input is="core-input" value="{{newScheduleName}}">
+        </paper-input-decorator>
+      </div>
       <br>
       <paper-dropdown-menu label="Select a TimeZone">
         <paper-dropdown class="dropdown">

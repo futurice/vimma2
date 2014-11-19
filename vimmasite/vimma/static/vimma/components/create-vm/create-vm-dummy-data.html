@@ -4,12 +4,19 @@
 
 <polymer-element name="create-vm-dummy-data" attributes="data">
   <template>
-    <paper-input label="Name" floatingLabel="true"
-      required error="The name is required" value="{{data.name}}">
-    </paper-input>
-    <paper-input label="Delay before turning ON" floatingLabel="true"
-      required type="number" error="Must be a number" value="{{data.delay}}">
-    </paper-input>
+    <link rel="stylesheet" type="text/css" href="create-vm-dummy-data.css">
+    <div id="name-holder">
+      <paper-input-decorator label="Name" floatingLabel="{{true}}"
+          error="The name is required" isInvalid="{{!data.name.length}}">
+        <input is="core-input" value="{{data.name}}">
+      </paper-input-decorator>
+    </div>
+    <div id="delay-holder">
+       <paper-input-decorator label="Delay before turning ON" floatingLabel="{{true}}"
+            error="Must be a number" isInvalid="{{delayInvalid}}">
+          <input is="core-input" type="number" value="{{data.delay}}">
+        </paper-input-decorator>
+    </div>
   </template>
 
   <script src="create-vm-dummy-data.js"></script>
