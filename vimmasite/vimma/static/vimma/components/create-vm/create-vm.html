@@ -49,7 +49,7 @@
         <paper-dropdown class="dropdown">
           <core-menu class="menu" selected="{{provIdx}}">
             <template repeat="{{p in providers}}">
-              <paper-item>{{p.name}}</paper-item>
+              <paper-item>{{p.name}} ({{p.type}})</paper-item>
             </template>
           </core-menu>
         </paper-dropdown>
