@@ -8,7 +8,8 @@ from vimma.views import (
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
     AuditViewSet,
-    index, test, create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
+    index, base_js, test,
+    create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
     override_schedule, change_vm_schedule,
 )
 
@@ -34,6 +35,7 @@ urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
 
     url(r'^$', index, name='index'),
+    url(r'^base.js$', base_js, name='base_js'),
     url(r'^test$', test, name='test'),
 
     url(r'^createvm$', create_vm, name='createVM'),

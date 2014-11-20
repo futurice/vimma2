@@ -700,7 +700,8 @@ class WebViewsPermissionTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        check('index')
+        for viewname in ('index', 'base_js', 'test'):
+            check(viewname)
 
 
 class ProviderTests(APITestCase):

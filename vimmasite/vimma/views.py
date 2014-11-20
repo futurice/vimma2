@@ -198,10 +198,18 @@ def index(request):
     """
     Homepage.
     """
-    return render(request, 'vimma/index.html', {
+    return render(request, 'vimma/index.html')
+
+
+@login_required_or_forbidden
+def base_js(request):
+    """
+    base.js, included by the html template(s).
+    """
+    return render(request, 'vimma/base.js', {
         'settings': settings,
         'audit_level_choices_json': audit_levels_json,
-    })
+    }, content_type='application/javascript; charset=utf-8')
 
 
 @login_required_or_forbidden
@@ -209,10 +217,7 @@ def test(request):
     """
     JavaScript Unit Tests.
     """
-    return render(request, 'vimma/test.html', {
-        'settings': settings,
-        'audit_level_choices_json': audit_levels_json,
-    })
+    return render(request, 'vimma/test.html')
 
 
 @login_required_or_forbidden
