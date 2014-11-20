@@ -7,7 +7,6 @@ Polymer('user-display', {
     loadingSucceeded: false,
 
     ready: function() {
-        console.log(this.userid);
         this.reload();
     },
 
