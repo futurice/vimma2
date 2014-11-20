@@ -5,6 +5,8 @@ Polymer('aws-vm-detail', {
 
     vm: null,
     awsvm: null,
+    provider: null,
+    awsprovider: null,
 
     attached: function() {
         this.reload();
@@ -36,10 +38,20 @@ Polymer('aws-vm-detail', {
         var ok = (function(resultArr) {
             this.vm = resultArr[0];
             this.awsvm = resultArr[1].results[0];
-            this.loadSuccess();
+            this.loadProvider();
         }).bind(this);
         apiGet([vimmaApiVMDetailRoot + this.vmid + '/',
                 vimmaApiAWSVMDetailRoot + '?vm=' + this.vmid],
+                ok, this.loadFail.bind(this));
+    },
+    loadProvider: function() {
+        var ok = (function(resultArr) {
+            this.provider = resultArr[0];
+            this.awsprovider = resultArr[1].results[0];
+            this.loadSuccess();
+        }).bind(this);
+        apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/',
+                vimmaApiAWSProviderDetailRoot + '?provider=' + this.vm.provider],
                 ok, this.loadFail.bind(this));
     }
 });

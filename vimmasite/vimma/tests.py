@@ -853,7 +853,8 @@ class AWSProviderTests(APITestCase):
             """
             Check visible and invisible fields returned by the API.
             """
-            self.assertEqual(set(apiDict.keys()), {'id'})
+            self.assertEqual(set(apiDict.keys()),
+                    {'id', 'provider', 'route_53_zone'})
 
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
@@ -1559,6 +1560,41 @@ class AWSVMTests(APITestCase):
         prj.delete()
         s.delete()
         tz.delete()
+
+    def test_ip_address(self):
+        """
+        Test the IP address default, check that it can't be None.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        awsvm = AWSVM.objects.create(vm=vm, name='empty', region='a')
+        awsvm.full_clean()
+        self.assertEqual(awsvm.ip_address, '')
+
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        AWSVM.objects.create(vm=vm, name='empty', region='a',
+                ip_address='').full_clean()
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        AWSVM.objects.create(vm=vm, name='ip', region='a',
+                ip_address='192.168.0.1').full_clean()
+
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm.full_clean()
+        with self.assertRaises(IntegrityError):
+            AWSVM.objects.create(vm=vm, name='ip', region='a',
+                    ip_address=None).full_clean()
 
     def test_api_permissions(self):
         """

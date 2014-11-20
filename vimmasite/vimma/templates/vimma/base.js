@@ -24,6 +24,9 @@ var indexUrl = '{% url "index" %}',
     vimmaApiProviderList = '{% url "provider-list" %}',
     vimmaApiProviderDetailRoot = apiDetailRootUrl(
             '{% url "provider-detail" 0 %}'),
+    vimmaApiAWSProviderList = '{% url "awsprovider-list" %}',
+    vimmaApiAWSProviderDetailRoot = apiDetailRootUrl(
+            '{% url "awsprovider-detail" 0 %}'),
     vimmaApiVMConfigList = '{% url "vmconfig-list" %}',
     vimmaApiAuditList = '{% url "audit-list" %}',
 
