@@ -20,6 +20,10 @@
 	color: green;
 }
 
+table#table > tbody local-date {
+	font-family: monospace;
+}
+
 table#table > thead {
 	font-weight: bold;
 }

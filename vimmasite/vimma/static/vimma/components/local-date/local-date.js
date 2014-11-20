@@ -1,9 +1,10 @@
 Polymer('local-date', {
     date: '',
     alwaysshowdate: false,
+    hidemillis: false,
 
     result: 'YYYY-MM-DD HH:MM:SS.mmm',
-    isoStr: '', // can't find a way to show this as <some-elem title=…>
+    isoStr: '',
 
     ready: function() {
         var dateObj = new Date(this.date);
@@ -40,8 +41,10 @@ Polymer('local-date', {
         var dateStr = [dateObj.getFullYear(), dateObj.getMonth(),
             dateObj.getDate()].map(fmtInt).join('-');
         var timeStr = [dateObj.getHours(), dateObj.getMinutes(),
-            dateObj.getSeconds()].map(fmtInt).join(':') + '.' +
-                fmtMillis(dateObj.getMilliseconds());
+            dateObj.getSeconds()].map(fmtInt).join(':');
+        if (!this.hidemillis) {
+            timeStr += '.' + fmtMillis(dateObj.getMilliseconds());
+        }
 
         this.result = showDate ? dateStr + ' ' + timeStr : timeStr;
     }

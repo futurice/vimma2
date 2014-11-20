@@ -271,7 +271,7 @@ def create_vm(request):
 
     try:
         vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
-                user_id=request.user.id)
+                request.user.id)
         return HttpResponse()
     except:
         lines = traceback.format_exception_only(*sys.exc_info()[:2])

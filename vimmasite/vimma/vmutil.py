@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import transaction
 
 from vimma.audit import Auditor
@@ -29,7 +30,7 @@ aud = Auditor(__name__)
 # Often retrying the transaction.
 
 
-def create_vm(vmconfig, project, schedule, comment, data, user_id=None):
+def create_vm(vmconfig, project, schedule, comment, data, user_id):
     """
     Create a new VM, return its ID if successful otherwise throw an exception.
 
@@ -51,18 +52,18 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id=None):
     callables = []
     with transaction.atomic():
         prov = vmconfig.provider
+        user = User.objects.get(id=user_id)
         vm = VM.objects.create(provider=prov, project=project,
-                schedule=schedule, comment=comment)
+                schedule=schedule, comment=comment, created_by=user)
         vm.full_clean()
         vm_id = vm.id
 
         t = prov.type
         if t == Provider.TYPE_DUMMY:
-            dvm, callables = vimma.vmtype.dummy.create_vm(vm, data,
-                    user_id=user_id)
+            dvm, callables = vimma.vmtype.dummy.create_vm(vm, data, user_id)
         elif t == Provider.TYPE_AWS:
             awsvm, callables = vimma.vmtype.aws.create_vm(vmconfig, vm, data,
-                    user_id=user_id)
+                    user_id)
         else:
             raise ValueError('Unknown provider type “{}”'.format(prov.type))
 

@@ -1214,6 +1214,35 @@ class VMTests(APITestCase):
         s.delete()
         tz.delete()
 
+    def test_set_null_foreign_keys(self):
+        """
+        Test foreign keys with on_delete=SET_NULL.
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        prj.full_clean()
+
+        u = util.create_vimma_user('a', 'a@example.com', 'p')
+        vm = VM.objects.create(provider=prv, project=prj, schedule=s,
+                created_by=u)
+        vm.full_clean()
+        def check_creator_id(user_id):
+            user = VM.objects.get(id=vm.id).created_by
+            if user == None:
+                self.assertTrue(user_id is None)
+            else:
+                self.assertEqual(user_id, user.id)
+
+        check_creator_id(u.id)
+        u.delete()
+        check_creator_id(None)
+
     def test_api_permissions(self):
         """
         Users can read VM objects in their own projects, or in all projects

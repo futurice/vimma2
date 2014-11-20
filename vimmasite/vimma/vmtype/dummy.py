@@ -13,7 +13,7 @@ import vimma.vmutil
 aud = Auditor(__name__)
 
 
-def create_vm(vm, data, user_id=None):
+def create_vm(vm, data, user_id):
     """
     Create a dummy VM, linking to parent ‘vm’, from ‘data’ → (vm, callables)
 

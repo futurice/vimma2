@@ -5,13 +5,15 @@
 <!--
   Display a Date object, timestamp or a string representing a datetime
   (anything that can be passed to the new Date(…) constructor).
+
+  By default shows 'YYYY-MM-DD HH:MM:SS.mmm'.
   The displayed date and time are in local (browser) time.
   The date is omitted if it's today, unless alwaysshowdate is true.
+  hidemillis doesn't display milliseconds (.mmm above).
 -->
-<polymer-element name="local-date" attributes="date alwaysshowdate">
+<polymer-element name="local-date" attributes="date alwaysshowdate hidemillis">
   <template>
-    <link rel="stylesheet" type="text/css" href="local-date.css">
-    <span id="result" title="{{isoStr}}">{{result}}</span>
+    <span title="{{isoStr}}">{{result}}</span>
   </template>
 
   <script src="local-date.js"></script>

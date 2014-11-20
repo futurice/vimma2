@@ -210,6 +210,9 @@ class VM(models.Model):
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, null=True, blank=True,
+            on_delete=models.SET_NULL)
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
     sched_override_state = models.NullBooleanField(default=None)

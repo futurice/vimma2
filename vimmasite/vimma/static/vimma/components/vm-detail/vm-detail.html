@@ -8,6 +8,8 @@
 <link rel="import" href="aws-vm-summary.html">
 <link rel="import" href="vm-schedule-picker.html">
 <link rel="import" href="../vm-recent-errors/vm-recent-errors.html">
+<link rel="import" href="../local-date/local-date.html">
+<link rel="import" href="../user-display/user-display.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
 
@@ -122,6 +124,11 @@
         </error-display>
       </template>
 
+      <div>
+        Created by <user-display userid="{{vm.created_by}}"></user-display> on
+        <local-date date="{{vm.created_at}}" hidemillis="{{true}}">
+        </local-date>
+      </div>
       <template bind ref="vm-comment"></template>
       <div>
         <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>

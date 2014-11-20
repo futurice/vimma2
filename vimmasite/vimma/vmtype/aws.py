@@ -55,7 +55,7 @@ def route53_connect_to_aws_vm_region(aws_vm_id):
             aws_secret_access_key=access_key_secret)
 
 
-def create_vm(vmconfig, vm, data, user_id=None):
+def create_vm(vmconfig, vm, data, user_id):
     """
     Create an AWS VM from vmconfig & data, linking to parent ‘vm’.
     
@@ -81,7 +81,7 @@ def create_vm(vmconfig, vm, data, user_id=None):
 @app.task
 def do_create_vm(aws_vm_config_id, vm_id, user_id):
     try:
-        do_create_vm_impl(aws_vm_config_id, vm_id, user_id=user_id)
+        do_create_vm_impl(aws_vm_config_id, vm_id, user_id)
     except:
         msg = ''.join(traceback.format_exc())
         aud.error(msg, vm_id=vm_id, user_id=user_id)
@@ -89,7 +89,7 @@ def do_create_vm(aws_vm_config_id, vm_id, user_id):
         raise
 
 
-def do_create_vm_impl(aws_vm_config_id, vm_id, user_id=None):
+def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
     """
     The implementation for the similarly named task.
 
