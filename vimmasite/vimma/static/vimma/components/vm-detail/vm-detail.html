@@ -15,6 +15,7 @@
 
 <polymer-element name="vm-detail" attributes="vmid initiallyExpanded">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="vm-detail.css">
 
     <ajax-state id="ajax"></ajax-state>
@@ -54,6 +55,11 @@
           title="Refresh" disabled?="{{$.ajax.inProgress}}">
           <core-icon icon="cached"></core-icon>
         </paper-button>
+
+        <template if="{{vm.destroyed_at}}">
+          <span title="Destroyed"
+            class="destroyed-logo glyphicon glyphicon-warning-sign"></span>
+        </template>
 
         <div id="prov-summ">
           <template bind ref="provider-specific-summary"></template>
@@ -109,6 +115,25 @@
     </template>
 
     <template id="vm-expanded">
+      <template if="{{vm.destroy_request_at || vm.destroyed_at}}">
+        <div id="destroyed-details">
+          Destruction requested on
+          <local-date date="{{vm.destroy_request_at}}" alwaysshowdate>
+          </local-date>
+          by <user-display userid="{{vm.destroy_request_by}}"></user-display>.
+          <br>
+
+          <template if="{{!vm.destroyed_at}}">
+            Destruction has not succeeded yet.
+          </template>
+          <template if="{{vm.destroyed_at}}">
+            Destruction completed on
+            <local-date date="{{vm.destroyed_at}}" alwaysshowdate>
+            </local-date>.
+          </template>
+        </div>
+      </template>
+
       <template if="{{provider.type == 'dummy'}}">
         <dummy-vm-detail vmid="{{vmid}}">
         </dummy-vm-detail>

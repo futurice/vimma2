@@ -212,7 +212,7 @@ class VM(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL)
+            on_delete=models.SET_NULL, related_name='created_vms')
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
     sched_override_state = models.NullBooleanField(default=None)
@@ -220,6 +220,13 @@ class VM(models.Model):
     sched_override_tstamp = models.BigIntegerField(blank=True, null=True)
     # User-entered text about this vm
     comment = models.CharField(max_length=200, blank=True)
+
+    # First a user requests destruction
+    destroy_request_at = models.DateTimeField(blank=True, null=True)
+    destroy_request_by = models.ForeignKey(User, null=True, blank=True,
+            on_delete=models.SET_NULL, related_name='destroy_requested_vms')
+    # When all destruction tasks succeed, mark the VM as destroyed
+    destroyed_at = models.DateTimeField(blank=True, null=True)
 
 
 class DummyVM(models.Model):
@@ -259,6 +266,12 @@ class AWSVM(models.Model):
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)
     ip_address = models.CharField(max_length=50, blank=True)
+
+    # Destruction happens using several asynchronous tasks, which mark these
+    # fields when they succeed. When all fields are True we can mark the parent
+    # .vm model as destroyed.
+    instance_terminated = models.BooleanField(default=False)
+    security_group_deleted = models.BooleanField(default=False)
 
 
 class Audit(models.Model):

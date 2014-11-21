@@ -4,29 +4,29 @@
 <link rel="import" href="../ajax-state/ajax-state.html">
 
 <polymer-element name="user-display" attributes="userid">
-  <template>
-    <ajax-state id="ajax"></ajax-state>
+  <template><!--
+    --><ajax-state id="ajax"></ajax-state><!--
 
-    <template if="{{loading}}">
+    --><template if="{{loading}}">
       Loading…
-    </template>
+    </template><!--
 
-    <template if="{{!loading}}">
-      <template if="{{loadingSucceeded}}">
-        <template bind ref="main"></template>
-      </template>
-    </template>
+    --><template if="{{!loading}}"><!--
+      --><template if="{{loadingSucceeded}}"><!--
+        --><template bind ref="main"></template><!--
+      --></template><!--
+    --></template><!--
 
-    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+    --><template if="{{!$.ajax.inProgress && !$.ajax.success}}">
       <error-display text={{$.ajax.errorText}}></error-display>
-    </template>
+    </template><!--
 
-    <template id="main">
-      <span title="{{user.username}}">
-        {{user.first_name}} {{user.last_name}}
-      </span>
-    </template>
-  </template>
+    --><template id="main"><!--
+      --><span title="{{user.username}}"
+        >{{user.first_name}} {{user.last_name}}</span
+      ><!--
+    --></template><!--
+  --></template>
 
   <script src="user-display.js"></script>
 </polymer-element>

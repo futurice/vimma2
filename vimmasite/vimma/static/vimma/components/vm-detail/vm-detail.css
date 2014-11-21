@@ -23,3 +23,12 @@ div#audit-display {
 strong#toggle-logs {
 	cursor: pointer;
 }
+
+.destroyed-logo {
+	color: DarkGoldenRod;
+}
+
+div#destroyed-details {
+	color: DarkGoldenRod;
+	font-weight: bold;
+}

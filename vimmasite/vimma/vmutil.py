@@ -114,6 +114,11 @@ class VMController():
         raise NotImplementedError()
 
     def update_status(self):
+        """
+        Get the VM status from the remote provider and save it in the Vimma DB.
+        Call power_log() to log the current power state (on or off).
+        Call switch_on_off() which turns the vm on or off if needed.
+        """
         raise NotImplementedError()
 
 
@@ -167,9 +172,9 @@ def update_all_vms_status():
     These tasks get the VM status from the (remote) provider and update the
     VM object.
     """
-    aud.debug('Update status of all VMs')
+    aud.debug('Update status of all non-destroyed VMs')
     with transaction.atomic():
-        vm_ids = map(lambda v: v.id, VM.objects.filter())
+        vm_ids = map(lambda v: v.id, VM.objects.filter(destroyed_at=None))
     for x in vm_ids:
         # don't allow a single VM to break the loop, e.g. with missing
         # foreign keys. Make a separate task for each instead of handling
@@ -218,6 +223,7 @@ def switch_on_off(vm_id, powered_on):
             raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
                 powered_on, type(powered_on), bool))
 
+        # TODO: maybe move this to the update status task
         # clean-up, but not required
         discard_expired_schedule_override(vm_id)
 

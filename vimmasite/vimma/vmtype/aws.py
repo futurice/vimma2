@@ -2,7 +2,9 @@ import base64
 import boto.ec2
 import boto.route53
 import celery.exceptions
+import datetime
 from django.db import transaction
+from django.utils.timezone import utc
 import sys
 import traceback
 
@@ -247,11 +249,20 @@ def delete_security_group(self, vm_id, user_id=None):
             sec_grp_id = aws_vm.security_group_id
             return aws_vm_id, sec_grp_id
 
+    def write_security_group_deleted():
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.security_group_deleted = True
+            aws_vm.full_clean()
+            aws_vm.save()
+            mark_vm_destroyed_if_needed(aws_vm)
+
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
         aws_vm_id, sec_grp_id = retry_transaction(read_vars)
         conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.delete_security_group(group_id=sec_grp_id)
+        retry_transaction(write_security_group_deleted)
     aud.info('Deleted security group {}'.format(sec_grp_id), **aud_kw)
 
 
@@ -264,11 +275,20 @@ def terminate_instance(self, vm_id, user_id=None):
             inst_id = aws_vm.instance_id
             return aws_vm_id, inst_id
 
+    def write_instance_terminated():
+        with transaction.atomic():
+            aws_vm = VM.objects.get(id=vm_id).awsvm
+            aws_vm.instance_terminated = True
+            aws_vm.full_clean()
+            aws_vm.save()
+            mark_vm_destroyed_if_needed(aws_vm)
+
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'terminate instance', **aud_kw):
         aws_vm_id, inst_id = retry_transaction(read_vars)
         conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.terminate_instances(instance_ids=[inst_id])
+        retry_transaction(write_instance_terminated)
     aud.info('Terminated instance {}'.format(inst_id), **aud_kw)
 
 
@@ -394,3 +414,16 @@ def route53_delete(self, vm_id, user_id=None):
         else:
             aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
                     **aud_kw)
+
+
+def mark_vm_destroyed_if_needed(awsvm):
+    """
+    Mark the parent .vm model destroyed if the awsvm is destroyed, else no-op.
+
+    This function may only be called inside a transaction.
+    """
+    if awsvm.instance_terminated and awsvm.security_group_deleted:
+        vm = awsvm.vm
+        vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
+        vm.full_clean()
+        vm.save()

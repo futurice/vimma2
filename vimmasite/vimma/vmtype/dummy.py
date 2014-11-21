@@ -1,4 +1,6 @@
+import datetime
 from django.db import transaction
+from django.utils.timezone import utc
 
 from vimma.audit import Auditor
 from vimma.celery import app
@@ -99,7 +101,8 @@ def reboot_vm(vm_id, user_id=None):
 def destroy_vm(vm_id, user_id=None):
     def call():
         with transaction.atomic():
-            dvm = VM.objects.get(id=vm_id).dummyvm
+            vm = VM.objects.get(id=vm_id)
+            dvm = vm.dummyvm
             if dvm.destroyed:
                 aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
                     'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
@@ -107,7 +110,12 @@ def destroy_vm(vm_id, user_id=None):
                 return
             dvm.poweredon = False
             dvm.destroyed = True
+            dvm.full_clean()
             dvm.save()
+
+            vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
+            vm.full_clean()
+            vm.save()
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         retry_transaction(call)

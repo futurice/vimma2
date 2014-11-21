@@ -432,16 +432,30 @@ def destroy_vm(request):
 
     body = json.loads(request.read().decode('utf-8'))
     vm_id = body['vmid']
-    try:
-        vm = VM.objects.get(id=vm_id)
-    except ObjectDoesNotExist as e:
-        return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
-    if not can_do(request.user,
-            Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
-        return get_http_json_err('You may not destroy VMs in this project',
-                status.HTTP_403_FORBIDDEN)
-    del vm
+    def check_err():
+        with transaction.atomic():
+            try:
+                vm = VM.objects.get(id=vm_id)
+            except ObjectDoesNotExist as e:
+                return get_http_json_err('{}'.format(e),
+                        status.HTTP_404_NOT_FOUND)
+
+            if not can_do(request.user,
+                    Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT,
+                    vm.project):
+                return get_http_json_err(
+                        'You may not destroy VMs in this project',
+                        status.HTTP_403_FORBIDDEN)
+
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            vm.destroy_request_at = now
+            vm.destroy_request_by = request.user
+            vm.full_clean()
+            vm.save()
+    err = retry_transaction(check_err)
+    if err:
+        return err
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
