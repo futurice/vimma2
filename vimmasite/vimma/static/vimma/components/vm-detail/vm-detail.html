@@ -118,7 +118,8 @@
       <template if="{{vm.destroy_request_at || vm.destroyed_at}}">
         <div id="destroyed-details">
           Destruction requested on
-          <local-date date="{{vm.destroy_request_at}}" alwaysshowdate>
+          <local-date date="{{vm.destroy_request_at}}"
+            alwaysshowdate hidemillis>
           </local-date>
           by <user-display userid="{{vm.destroy_request_by}}"></user-display>.
           <br>
@@ -128,7 +129,7 @@
           </template>
           <template if="{{vm.destroyed_at}}">
             Destruction completed on
-            <local-date date="{{vm.destroyed_at}}" alwaysshowdate>
+            <local-date date="{{vm.destroyed_at}}" alwaysshowdate hidemillis>
             </local-date>.
           </template>
         </div>
