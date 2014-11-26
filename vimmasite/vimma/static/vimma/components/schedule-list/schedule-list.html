@@ -8,6 +8,7 @@
 
 <polymer-element name="schedule-list">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="schedule-list.css">
 
     <ajax-state id="ajax"></ajax-state>
@@ -16,21 +17,23 @@
       Loading…
     </template>
 
-    <template if="{{!loading && loadingSucceeded}}">
-      Showing {{schedules.length}}
-      {{schedules.length == 1 ? 'schedule' : 'schedules'}}
-
-      <template bind ref="schedule-list"></template>
-      <template bind ref="create-schedule"></template>
-    </template>
-
     <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
       <br>
       <error-display text="{{$.ajax.errorText}}"></error-display>
     </template>
 
+    <template if="{{!loading && loadingSucceeded}}">
+      <template bind ref="create-schedule"></template>
+      <template bind ref="schedule-list"></template>
+    </template>
+
 
     <template id="schedule-list">
+      <h1>
+        Showing {{schedules.length}}
+        {{schedules.length == 1 ? 'schedule' : 'schedules'}}
+      </h1>
+
       <ul id="schedules">
         <template repeat="{{schedule, idx in schedules}}">
           <li>
@@ -43,30 +46,55 @@
     </template>
 
     <template id="create-schedule">
-      <div class="input-holder">
-        <paper-input-decorator label="New schedule name" floatingLabel="{{true}}"
-          error="The name may not be empty" isInvalid="{{!newScheduleName}}"
-          disabled?="{{$.ajax.inProgress}}">
-          <input is="core-input" value="{{newScheduleName}}">
-        </paper-input-decorator>
+      <template bind ref="create-schedule-collapsed"
+        if="{{!showCreateSchedule}}">
+      </template>
+      <template bind ref="create-schedule-expanded"
+        if="{{showCreateSchedule}}">
+      </template>
+    </template>
+
+    <template id="create-schedule-collapsed">
+      <button type="button" class="btn btn-primary"
+          on-click="{{toggleCreateSchedule}}">
+        <span class="glyphicon glyphicon-plus"></span>
+        Create Schedule
+      </button>
+    </template>
+
+    <template id="create-schedule-expanded">
+      <div>
+        <span id="create-close" title="Cancel"
+          on-click="{{toggleCreateSchedule}}"
+          class="glyphicon glyphicon-remove"></span>
+
+        <h1>Create a new Schedule</h1>
+
+        <div class="input-holder">
+          <paper-input-decorator label="New schedule name" floatingLabel="{{true}}"
+            error="The name may not be empty" isInvalid="{{!newScheduleName}}"
+            disabled?="{{$.ajax.inProgress}}">
+            <input is="core-input" value="{{newScheduleName}}">
+          </paper-input-decorator>
+        </div>
+        <br>
+        <paper-dropdown-menu label="Select a TimeZone">
+          <paper-dropdown class="dropdown">
+            <core-menu class="menu" selected="{{tzIdx}}">
+              <template repeat="{{tz in timezones}}">
+                <paper-item>{{tz.name}}</paper-item>
+              </template>
+            </core-menu>
+          </paper-dropdown>
+        </paper-dropdown-menu>
+        <br>
+        <paper-button id="create" raised
+          on-click={{create}} disabled?="{{$.ajax.inProgress}}"
+          class="{{ {highlight: newScheduleName.length && newScheduleTimeZone != null} | tokenList }}">
+          <core-icon icon="create"></core-icon>
+          Create
+        </paper-button>
       </div>
-      <br>
-      <paper-dropdown-menu label="Select a TimeZone">
-        <paper-dropdown class="dropdown">
-          <core-menu class="menu" selected="{{tzIdx}}">
-            <template repeat="{{tz in timezones}}">
-              <paper-item>{{tz.name}}</paper-item>
-            </template>
-          </core-menu>
-        </paper-dropdown>
-      </paper-dropdown-menu>
-      <br>
-      <paper-button id="create" raised
-        on-click={{create}} disabled?="{{$.ajax.inProgress}}"
-        class="{{ {highlight: newScheduleName.length && newScheduleTimeZone != null} | tokenList }}">
-        <core-icon icon="create"></core-icon>
-        Create
-      </paper-button>
     </template>
   </template>
 

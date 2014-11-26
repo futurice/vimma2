@@ -29,3 +29,13 @@ ul#schedules > li + li {
 div.input-holder {
 	display: inline-block;
 }
+
+#create-close {
+	float: right;
+	cursor: pointer;
+	font-size: 2em;
+	color: DarkGray;
+}
+#create-close:hover {
+	color: DimGray;
+}

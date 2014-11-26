@@ -82,13 +82,20 @@ Polymer('schedule-list', {
             }),
             success: (function(data) {
                 this.$.ajax.fire('end', {success: true});
-                this.schedules.push(data);
+                this.schedules.unshift(data);
                 this.newScheduleName = '';
+                this.newScheduleTimeZone = null;
+                this.toggleCreateSchedule();
             }).bind(this),
             error: (function(xhr, txtStatus, saveErr) {
                 var errorText = getAjaxErr.apply(this, arguments);
                 this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
+    },
+
+    showCreateSchedule: false,
+    toggleCreateSchedule: function() {
+        this.showCreateSchedule = !this.showCreateSchedule;
     }
 });
