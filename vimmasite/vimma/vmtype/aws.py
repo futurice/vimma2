@@ -344,7 +344,7 @@ def _update_vm_status_impl(vm_id):
         vimma.vmutil.switch_on_off(vm_id, powered_on)
 
 
-@app.task(bind=True, max_retries=24, default_retry_delay=5)
+@app.task(bind=True, max_retries=12, default_retry_delay=10)
 def route53_add(self, vm_id, user_id=None):
     def read_vars():
         with transaction.atomic():
