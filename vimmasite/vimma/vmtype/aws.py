@@ -63,7 +63,6 @@ def create_vm(vmconfig, vm, data, user_id):
     
     Returns (aws_vm, callables).
     data = {
-        region: string,
         name: string,
     }
 
@@ -73,7 +72,7 @@ def create_vm(vmconfig, vm, data, user_id):
     aws_vm_config = vmconfig.awsvmconfig
 
     aws_vm = AWSVM.objects.create(vm=vm, name=data['name'],
-            region=data['region'])
+            region=aws_vm_config.region)
     aws_vm.full_clean()
 
     callables = [lambda: do_create_vm.delay(aws_vm_config.id, vm.id, user_id)]

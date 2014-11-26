@@ -1085,8 +1085,21 @@ class AWSVMConfigTests(APITestCase):
         """
         AWSVMConfig requires vmconfig.
         """
+        region = AWSVMConfig.regions[0]
         with self.assertRaises(ValidationError):
-            AWSVMConfig().full_clean()
+            AWSVMConfig(region=region).full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        p.full_clean()
+        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+                provider=p)
+        vmc.full_clean()
+        AWSVMConfig.objects.create(region=region, vmconfig=vmc).full_clean()
 
     def test_protected(self):
         """
@@ -1102,7 +1115,8 @@ class AWSVMConfigTests(APITestCase):
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
         vmc.full_clean()
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc)
+        region = AWSVMConfig.regions[0]
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region)
         awsc.full_clean()
 
         with self.assertRaises(ProtectedError):
@@ -1130,7 +1144,8 @@ class AWSVMConfigTests(APITestCase):
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
         vmc.full_clean()
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc)
+        region = AWSVMConfig.regions[0]
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region)
         awsc.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))

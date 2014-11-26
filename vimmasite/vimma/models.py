@@ -191,6 +191,22 @@ class AWSVMConfig(models.Model):
     Type-specific info for a VMConfig of type Provider.TYPE_AWS.
     """
     vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
+
+    regions = sorted([
+        'us-west-2',
+        'ap-southeast-1',
+        'us-gov-west-1',
+        'ap-northeast-1',
+        'sa-east-1',
+        'cn-north-1',
+        'ap-southeast-2',
+        'us-east-1',
+        'eu-west-1',
+        'us-west-1'
+    ])
+    REGION_CHOICES = ((r, r) for r in regions)
+    region = models.CharField(max_length=20, choices=REGION_CHOICES)
+
     # Amazon Machine Image ID
     ami_id = models.CharField(max_length=50, blank=True)
     instance_type = models.CharField(max_length=50, blank=True)

@@ -7,16 +7,8 @@ Polymer('create-vm-aws-data', {
     },
     setDefaultData: function() {
         this.data = {
-            name: '',
-            region: ''
+            name: ''
         };
-        this.regionIdx = 4;
-        this.async(this.regionIdxChanged);
-    },
-
-    regionIdx: null,
-    regionIdxChanged: function() {
-        this.data.region = this.regions[this.regionIdx];
     },
 
     created: function() {
@@ -36,12 +28,5 @@ Polymer('create-vm-aws-data', {
         this.regions.sort();
 
         this.async(this.setDefaultData);
-    },
-
-    regionSelected: function(e, detail, sender) {
-        e.stopPropagation();
-        if (detail.isSelected) {
-            this.data.region = detail.item.templateInstance.model.r;
-        }
     }
 });

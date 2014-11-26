@@ -88,4 +88,4 @@ DummyVMConfig.objects.create(vmconfig=vmc1B)
 vmc3A = VMConfig.objects.create(provider=prov3, name='Amazon Linux, t2.micro',
         default_schedule=s1)
 AWSVMConfig.objects.create(vmconfig=vmc3A,
-        ami_id='ami-748e2903', instance_type='t2.micro')
+        ami_id='ami-748e2903', instance_type='t2.micro', region='eu-west-1')

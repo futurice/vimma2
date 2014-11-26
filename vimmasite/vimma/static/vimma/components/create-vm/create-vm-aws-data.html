@@ -6,18 +6,6 @@
   <template>
     <paper-input label="Name" floatingLabel="true" value="{{data.name}}">
     </paper-input>
-    <br>
-
-    <label for="region">Region:</label>
-    <paper-dropdown-menu id="region">
-      <paper-dropdown class="dropdown">
-        <core-menu class="menu" selected="{{regionIdx}}">
-          <template repeat="{{r in regions}}">
-            <paper-item>{{r}}</paper-item>
-          </template>
-        </core-menu>
-      </paper-dropdown>
-    </paper-dropdown-menu>
   </template>
 
   <script src="create-vm-aws-data.js"></script>
