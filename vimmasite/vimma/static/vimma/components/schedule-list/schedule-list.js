@@ -9,7 +9,8 @@ Polymer('schedule-list', {
     newScheduleTimeZone: null,
     tzIdx: null,
     tzIdxChanged: function() {
-        this.newScheduleTimeZone = this.timezones[this.tzIdx].id;
+        var tz = this.timezones[this.tzIdx];
+        this.newScheduleTimeZone = tz ? tz.id : null;
     },
 
     created: function() {
@@ -84,7 +85,7 @@ Polymer('schedule-list', {
                 this.$.ajax.fire('end', {success: true});
                 this.schedules.unshift(data);
                 this.newScheduleName = '';
-                this.newScheduleTimeZone = null;
+                this.tzIdx = null;
                 this.toggleCreateSchedule();
             }).bind(this),
             error: (function(xhr, txtStatus, saveErr) {
