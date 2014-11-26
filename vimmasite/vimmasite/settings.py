@@ -127,4 +127,8 @@ LOGGING = {
 }
 
 
+# On VM creation, set a schedule override to keep it Powered On.
+VM_CREATION_OVERRIDE_SECS = 60*60
+
+
 from local_settings import *

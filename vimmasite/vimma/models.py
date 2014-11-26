@@ -226,15 +226,16 @@ class VM(models.Model):
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL, related_name='created_vms')
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
     sched_override_state = models.NullBooleanField(default=None)
     # end of schedule override, in seconds since epoch
     sched_override_tstamp = models.BigIntegerField(blank=True, null=True)
     # User-entered text about this vm
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, null=True, blank=True,
+            on_delete=models.SET_NULL, related_name='created_vms')
     comment = models.CharField(max_length=200, blank=True)
 
     # First a user requests destruction

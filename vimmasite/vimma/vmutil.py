@@ -1,5 +1,8 @@
+import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils.timezone import utc
 
 from vimma.audit import Auditor
 from vimma.celery import app
@@ -53,8 +56,14 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
     with transaction.atomic():
         prov = vmconfig.provider
         user = User.objects.get(id=user_id)
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        sched_override_tstamp = (now.timestamp() +
+                settings.VM_CREATION_OVERRIDE_SECS)
+
         vm = VM.objects.create(provider=prov, project=project,
-                schedule=schedule, comment=comment, created_by=user)
+                schedule=schedule, sched_override_state=True,
+                sched_override_tstamp=sched_override_tstamp,
+                comment=comment, created_by=user)
         vm.full_clean()
         vm_id = vm.id
 
