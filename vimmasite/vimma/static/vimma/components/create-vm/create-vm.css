@@ -16,3 +16,13 @@
 	border: 0.15em solid khaki;
 	padding: 0.5em;
 }
+
+#close {
+	color: DarkGray;
+	font-size: 2em;
+	float: right;
+	cursor: pointer;
+}
+#close:hover {
+	color: DimGray;
+}

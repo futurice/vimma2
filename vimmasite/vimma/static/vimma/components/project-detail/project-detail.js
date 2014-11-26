@@ -139,5 +139,10 @@ Polymer('project-detail', {
         if (detail.isSelected) {
             this.selectedTab = detail.item.getAttribute('tabId');
         }
+    },
+
+    showCreateVMComponent: false,
+    toggleCreateVM: function() {
+        this.showCreateVMComponent = !this.showCreateVMComponent;
     }
 });

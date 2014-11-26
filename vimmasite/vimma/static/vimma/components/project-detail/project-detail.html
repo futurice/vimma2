@@ -9,6 +9,8 @@
 
 <polymer-element name="project-detail" attributes="prjid frag">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
+
     <ajax-frag-splitter id="ajaxFrag" frag="{{frag}}">
     </ajax-frag-splitter>
 
@@ -28,7 +30,7 @@
     </template>
 
     <template id="main">
-      Project {{model.name}}.
+      <h1>Project {{model.name}}</h1>
       <paper-tabs selected="{{selectedTabIdx}}">
         <template repeat="{{tab in tabs}}">
           <paper-tab>{{tab.title}}</paper-tab>
@@ -37,8 +39,6 @@
 
       <template if="{{$.ajaxFrag.head == tabs[0].key}}">
         <template bind ref="vm-list"></template>
-        <create-vm initialProjectId="{{prjid}}" on-vm-created="{{reload}}">
-        </create-vm>
       </template>
 
       <template if="{{$.ajaxFrag.head == tabs[1].key}}">
@@ -48,7 +48,7 @@
     </template>
 
     <template id="user-list">
-      {{users.length}} user{{users.length != 1 ? 's': ''}}.
+      <h1><show-count n="{{users.length}}" name="user"></show-count></h1>
       <template repeat="{{u in users}}">
         <core-item label="{{u.first_name + ' ' + u.last_name}}">
         </core-item>
@@ -56,7 +56,20 @@
     </template>
 
     <template id="vm-list">
-      Showing {{vms.length}} VMs.
+      <template if="{{!showCreateVMComponent}}">
+        <button type="button" class="btn btn-primary"
+            on-click="{{toggleCreateVM}}">
+          <span class="glyphicon glyphicon-plus"></span>
+          Create VM
+        </button>
+      </template>
+      <template if="{{showCreateVMComponent}}">
+        <create-vm initialProjectId="{{prjid}}" showCloseBtn
+          on-vm-created="{{reload}}" on-cancel-create-vm="{{toggleCreateVM}}">
+        </create-vm>
+      </template>
+
+      <h1>Showing {{vms.length}} VMs</h1>
 
       <vm-list vmids="{{vmIds}}" frag="{{$.ajaxFrag.tail}}"></vm-list>
     </template>

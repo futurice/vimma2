@@ -7,6 +7,8 @@ Polymer('create-vm', {
         scheduleid: 'computeHighlightCreate'
     },
 
+    showCloseBtn: false,
+
     projects: [],
     initialProjectId: null, // initial project selection, optional
     prjIdx: null,   // selected project index
@@ -176,5 +178,9 @@ Polymer('create-vm', {
                 this.$.ajax.fire('end', {success: false, errorText: errorText});
             }).bind(this)
         });
+    },
+
+    closeClicked: function() {
+        this.fire('cancel-create-vm');
     }
 });

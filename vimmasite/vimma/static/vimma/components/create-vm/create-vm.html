@@ -7,8 +7,9 @@
 <link rel="import" href="create-vm-dummy-data.html">
 <link rel="import" href="create-vm-aws-data.html">
 
-<polymer-element name="create-vm" attributes="initialProjectId">
+<polymer-element name="create-vm" attributes="initialProjectId showCloseBtn">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="create-vm.css">
 
     <ajax-state id="ajax"></ajax-state>
@@ -31,6 +32,11 @@
     </div>
 
     <template id="main">
+      <template if="{{showCloseBtn}}">
+        <span id="close" title="Cancel" on-click="{{closeClicked}}"
+          class="glyphicon glyphicon-remove"></span>
+      </template>
+
       <h1>Create a VM</h1>
       <label for="project">Project:</label>
       <paper-dropdown-menu id="project" label="Select a project…">

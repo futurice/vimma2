@@ -71,6 +71,11 @@ Polymer('vms-tab', {
         this.showOtherVMs = !this.showOtherVMs;
     },
 
+    showCreateVMComponent: false,
+    toggleCreateVM: function() {
+        this.showCreateVMComponent = !this.showCreateVMComponent;
+    },
+
     /* Functions loading the data */
 
     loadProfile: function() {

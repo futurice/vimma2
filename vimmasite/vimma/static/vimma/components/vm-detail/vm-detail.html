@@ -176,7 +176,7 @@
           <button on-click="{{overrideClear}}">Clear override</button>
         </template>
         <br>
-        Keep
+        <label>Keep</label>
         <paper-dropdown-menu disabled?="{{$.ajax.inProgress}}">
           <paper-dropdown class="dropdown">
             <core-menu class="menu" selected="{{overrideSchedStateIdx}}">
@@ -186,7 +186,7 @@
             </core-menu>
           </paper-dropdown>
         </paper-dropdown-menu>
-        for
+        <label>for</label>
         <input type="number" value="{{overrideSchedMins}}"
           disabled?="{{$.ajax.inProgress}}"> min
         <button on-click="{{overrideSet}}" disabled?="{{$.ajax.inProgress}}">

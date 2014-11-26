@@ -7,6 +7,7 @@
 
 <polymer-element name="vm-schedule-picker" attributes="vmid">
   <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="vm-schedule-picker.css">
 
     <ajax-state id="ajax"></ajax-state>
@@ -22,7 +23,7 @@
     </template>
 
     <template id="main">
-      Schedule
+      <label>Schedule:</label>
       <paper-dropdown-menu disabled?="{{$.ajax.inProgress}}">
         <paper-dropdown class="dropdown">
           <core-menu class="menu" selected="{{newSchedIdx}}">
