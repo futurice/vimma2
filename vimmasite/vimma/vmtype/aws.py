@@ -259,8 +259,10 @@ def delete_security_group(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
         aws_vm_id, sec_grp_id = retry_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.delete_security_group(group_id=sec_grp_id)
+        # check if the VM creation failed to create the security group
+        if sec_grp_id:
+            conn = ec2_connect_to_aws_vm_region(aws_vm_id)
+            conn.delete_security_group(group_id=sec_grp_id)
         retry_transaction(write_security_group_deleted)
     aud.info('Deleted security group {}'.format(sec_grp_id), **aud_kw)
 
@@ -285,8 +287,10 @@ def terminate_instance(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'terminate instance', **aud_kw):
         aws_vm_id, inst_id = retry_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.terminate_instances(instance_ids=[inst_id])
+        # check if the VM creation failed to create the instance
+        if inst_id:
+            conn = ec2_connect_to_aws_vm_region(aws_vm_id)
+            conn.terminate_instances(instance_ids=[inst_id])
         retry_transaction(write_instance_terminated)
     aud.info('Terminated instance {}'.format(inst_id), **aud_kw)
 

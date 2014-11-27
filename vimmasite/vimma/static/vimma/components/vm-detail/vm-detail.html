@@ -117,11 +117,15 @@
     <template id="vm-expanded">
       <template if="{{vm.destroy_request_at || vm.destroyed_at}}">
         <div id="destroyed-details">
-          Destruction requested on
-          <local-date date="{{vm.destroy_request_at}}"
-            alwaysshowdate hidemillis>
-          </local-date>
-          by <user-display userid="{{vm.destroy_request_by}}"></user-display>.
+          Destruction requested<!--
+          --><template if="{{vm.destroy_request_at}}">
+            on <local-date date="{{vm.destroy_request_at}}"
+              alwaysshowdate hidemillis>
+            </local-date
+          ></template
+          ><template if="{{vm.destroy_request_by}}">
+            by <user-display userid="{{vm.destroy_request_by}}"></user-display
+          ></template>.
           <br>
 
           <template if="{{!vm.destroyed_at}}">
