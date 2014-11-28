@@ -15,9 +15,12 @@ Polymer('create-vm', {
 
     providers: [],
     providersChanged: function() {
-        if (this.providers.length) {
-            this.provIdx = 0;
-        }
+        this.provIdx = null;
+        this.providers.forEach(function(p, i) {
+            if (p.default) {
+                this.provIdx = i;
+            }
+        }, this);
     },
     provIdx: null,  // selected index
     provIdxChanged: function() {
@@ -49,7 +52,12 @@ Polymer('create-vm', {
         el.style.width = null;
         el.style.height = null;
 
-        this.shownConfsIdx = this.shownConfs.length ? 0 : null;
+        this.shownConfsIdx = null;
+        this.shownConfs.forEach(function(c, i) {
+            if (c.default) {
+                this.shownConfsIdx = i;
+            }
+        }, this);
         this.async(this.shownConfsIdxChanged);
     },
     shownConfsIdx: null,

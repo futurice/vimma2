@@ -721,6 +721,55 @@ class ProviderTests(APITestCase):
         Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_DUMMY).full_clean()
 
+    def test_default(self):
+        """
+        Test the behavior of the ‘default’ field on save().
+        """
+        # test the code path when the first created object is already default
+        p1 = Provider.objects.create(name='p1', type=Provider.TYPE_DUMMY,
+                default=True).id
+        Provider.objects.get(id=p1).full_clean()
+        self.assertIs(Provider.objects.get(id=p1).default, True)
+        Provider.objects.get(id=p1).delete()
+
+        # First object, auto-set as default
+        p1 = Provider.objects.create(name='p1', type=Provider.TYPE_DUMMY).id
+        Provider.objects.get(id=p1).full_clean()
+        self.assertIs(Provider.objects.get(id=p1).default, True)
+
+        # second object, not default
+        p2 = Provider.objects.create(name='p2', type=Provider.TYPE_DUMMY).id
+        Provider.objects.get(id=p2).full_clean()
+        self.assertIs(Provider.objects.get(id=p2).default, False)
+
+        p = Provider.objects.get(id=p1)
+        p.default = False
+        p.full_clean()
+        p.save()
+
+        # marked back as default on save
+        self.assertIs(Provider.objects.get(id=p1).default, True)
+        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+
+        # new default object removes previous default(s)
+        p3 = Provider.objects.create(name='p3', type=Provider.TYPE_DUMMY,
+                default=True).id
+        Provider.objects.get(id=p3).full_clean()
+        self.assertIs(Provider.objects.get(id=p3).default, True)
+        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+
+        # the default flag works globally for all providers of all types
+        a1 = Provider.objects.create(name='a1', type=Provider.TYPE_AWS).id
+        Provider.objects.get(id=a1).full_clean()
+        self.assertIs(Provider.objects.get(id=p3).default, True)
+        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+
+        a2 = Provider.objects.create(name='a2', type=Provider.TYPE_AWS,
+                default=True).id
+        Provider.objects.get(id=a2).full_clean()
+        self.assertIs(Provider.objects.get(id=a2).default, True)
+        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+
     def test_api_permissions(self):
         """
         Users can read Provider objects. The API doesn't allow writing.
@@ -945,6 +994,77 @@ class VMConfigTests(APITestCase):
         p.delete()
         s.delete()
         tz.delete()
+
+    def test_default(self):
+        """
+        Test the behavior of the ‘default’ field on save().
+        """
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+        d = Provider.objects.create(name='Dummy P', type=Provider.TYPE_DUMMY)
+        d.full_clean()
+
+        # test the code path when the first created object is already default
+        d1 = VMConfig.objects.create(name='d1', default_schedule=s,
+                provider=d, default=True).id
+        VMConfig.objects.get(id=d1).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d1).default, True)
+        VMConfig.objects.get(id=d1).delete()
+
+        # First object, auto-set as default
+        d1 = VMConfig.objects.create(name='d1', default_schedule=s,
+                provider=d).id
+        VMConfig.objects.get(id=d1).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d1).default, True)
+
+        # second object, not default
+        d2 = VMConfig.objects.create(name='d2', default_schedule=s,
+                provider=d).id
+        VMConfig.objects.get(id=d2).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d2).default, False)
+
+        x = VMConfig.objects.get(id=d1)
+        x.default = False
+        x.full_clean()
+        x.save()
+
+        # marked back as default on save
+        self.assertIs(VMConfig.objects.get(id=d1).default, True)
+        self.assertEqual(VMConfig.objects.filter(default=True).count(), 1)
+
+        # new default object removes previous default(s)
+        d3 = VMConfig.objects.create(name='d3', default_schedule=s,
+                provider=d, default=True).id
+        VMConfig.objects.get(id=d3).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d3).default, True)
+        self.assertEqual(VMConfig.objects.filter(default=True).count(), 1)
+
+        # the default flag works per-provider instance
+        a = Provider.objects.create(name='AWS P', type=Provider.TYPE_AWS)
+        a.full_clean()
+        a1 = VMConfig.objects.create(name='a1', default_schedule=s,
+                provider=a).id
+        VMConfig.objects.get(id=a1).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d3).default, True)
+        self.assertIs(VMConfig.objects.get(id=a1).default, True)
+        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
+
+        a2 = VMConfig.objects.create(name='a2', default_schedule=s,
+                provider=a).id
+        VMConfig.objects.get(id=a2).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d3).default, True)
+        self.assertIs(VMConfig.objects.get(id=a1).default, True)
+        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
+
+        a3 = VMConfig.objects.create(name='a3', default_schedule=s,
+                provider=a, default=True).id
+        VMConfig.objects.get(id=a3).full_clean()
+        self.assertIs(VMConfig.objects.get(id=d3).default, True)
+        self.assertIs(VMConfig.objects.get(id=a3).default, True)
+        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
 
     def test_api_permissions(self):
         """

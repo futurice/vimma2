@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 import json
 import logging
 import re
@@ -115,9 +115,21 @@ class Provider(models.Model):
     # To create a VM from a Config belonging to a ‘special’ provider,
     # users need to have the Perms.USE_SPECIAL_PROVIDER permission.
     is_special = models.BooleanField(default=False)
+    # flag showing which Provider is the default one, preselected in the UI
+    default = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.get_type_display())
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.default:
+                (self.__class__.objects.filter().exclude(id=self.id)
+                        .update(default=False))
+            elif (not self.__class__.objects.filter(default=True)
+                    .exclude(id=self.id).exists()):
+                self.default = True
+            super().save(*args, **kwargs)
 
 
 class DummyProvider(models.Model):
@@ -174,9 +186,24 @@ class VMConfig(models.Model):
     default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
     # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
     is_special = models.BooleanField(default=False)
+    # flag showing which VMConfig is the default one for its provider,
+    # preselected in the UI
+    default = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.provider.name)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.default:
+                (self.__class__.objects.filter(provider=self.provider)
+                        .exclude(id=self.id)
+                        .update(default=False))
+            elif (not self.__class__.objects
+                    .filter(provider=self.provider, default=True)
+                    .exclude(id=self.id).exists()):
+                self.default = True
+            super().save(*args, **kwargs)
 
 
 class DummyVMConfig(models.Model):
