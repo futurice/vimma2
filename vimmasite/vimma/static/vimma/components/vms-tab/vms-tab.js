@@ -102,5 +102,10 @@ Polymer('vms-tab', {
         }).bind(this);
         apiGetAll([vimmaApiVMList, vimmaApiProjectList],
                 ok, this.loadFail.bind(this));
+    },
+
+    vmCreated: function() {
+        this.showCreateVMComponent = false;
+        this.reload();
     }
 });

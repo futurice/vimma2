@@ -35,7 +35,7 @@
         </button>
       </template>
       <template if="{{showCreateVMComponent}}">
-        <create-vm showCloseBtn on-vm-created="{{reload}}"
+        <create-vm showCloseBtn on-vm-created="{{vmCreated}}"
           on-cancel-create-vm="{{toggleCreateVM}}"></create-vm>
       </template>
 
