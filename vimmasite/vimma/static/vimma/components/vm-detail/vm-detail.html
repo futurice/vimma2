@@ -154,6 +154,7 @@
         </error-display>
       </template>
 
+      <template bind ref="status-updated-at"></template>
       <div>
         Created by <user-display userid="{{vm.created_by}}"></user-display> on
         <local-date date="{{vm.created_at}}" hidemillis="{{true}}">
@@ -166,6 +167,18 @@
       <template bind ref="schedule-override"></template>
       <template bind ref="recent-errors-verbose"></template>
       <template bind ref="audit"></template>
+    </template>
+
+    <template id="status-updated-at">
+      <div>
+        VM status as at
+        <template if="{{vm.status_updated_at}}">
+          <local-date date="{{vm.status_updated_at}}" hidemillis></local-date>
+        </template>
+        <template if="{{!vm.status_updated_at}}">
+          –
+        </template>
+      </div>
     </template>
 
     <template id="schedule-override">

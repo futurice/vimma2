@@ -124,7 +124,10 @@ class VMController():
 
     def update_status(self):
         """
-        Get the VM status from the remote provider and save it in the Vimma DB.
+        This method is responsible for the following actions (e.g. schedule
+        them as asynchronous tasks):
+        Get the VM status from the remote provider, save it in the Vimma DB and
+        mark the timestamp of this update.
         Call power_log() to log the current power state (on or off).
         Call switch_on_off() which turns the vm on or off if needed.
         """

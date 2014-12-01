@@ -177,6 +177,22 @@ def vm_at_now(vm_id):
     return retry_transaction(call)
 
 
+def set_vm_status_updated_at_now(vm_id):
+    """
+    Set status_updated_at to now for vm_id.
+
+    This method must not be called inside a transaction.
+    """
+    def call():
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            vm.status_updated_at = now
+            vm.full_clean()
+            vm.save()
+    retry_transaction(call)
+
+
 def retry_transaction(call, max_retries=5, start_delay_millis=100):
     """
     Call ‘call’ and return its return values.

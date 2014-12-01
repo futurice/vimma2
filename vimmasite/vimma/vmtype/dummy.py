@@ -8,7 +8,7 @@ from vimma.models import (
     VM,
     DummyVM,
 )
-from vimma.util import retry_transaction
+from vimma.util import retry_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
 
 
@@ -143,6 +143,8 @@ def update_vm_status(vm_id):
         destroyed, poweredon = retry_transaction(call)
         if destroyed:
             poweredon = False
+
+        set_vm_status_updated_at_now(vm_id)
 
         vimma.vmutil.power_log(vm_id, poweredon)
         if not destroyed:

@@ -265,6 +265,11 @@ class VM(models.Model):
             on_delete=models.SET_NULL, related_name='created_vms')
     comment = models.CharField(max_length=200, blank=True)
 
+    # When the VM status was updated from the remote provider. The status
+    # fields are in the provider-specific VM submodels, but updating the status
+    # is a common action for all VMs so the field is here.
+    status_updated_at = models.DateTimeField(null=True, blank=True)
+
     # First a user requests destruction
     destroy_request_at = models.DateTimeField(blank=True, null=True)
     destroy_request_by = models.ForeignKey(User, null=True, blank=True,

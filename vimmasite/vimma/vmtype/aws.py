@@ -14,7 +14,7 @@ from vimma.models import (
     VM,
     AWSVMConfig, AWSVM,
 )
-from vimma.util import retry_transaction
+from vimma.util import retry_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
 
 
@@ -334,6 +334,8 @@ def _update_vm_status_impl(vm_id):
             aws_vm.save()
     retry_transaction(write_data)
     aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)
+
+    set_vm_status_updated_at_now(vm_id)
 
     on_states = {'pending', 'running', 'stopping', 'shutting-down'}
     off_states = {'stopped', 'terminated'}
