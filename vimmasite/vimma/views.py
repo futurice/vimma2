@@ -39,8 +39,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'projects')
 
 class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    model = Profile
     serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
     # TODO: filtering bug in Django REST Framework: when using a serializer
     # class to return only some model fields, trying to filter by a
     # non-existing value (?user=999999) returns all profiles (instead of none).
@@ -54,12 +54,17 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    model = User
     serializer_class = UserSerializer
+    queryset = User.objects.all()
 
+
+class TimeZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TimeZone
 
 class TimeZoneViewSet(viewsets.ReadOnlyModelViewSet):
-    model = TimeZone
+    serializer_class = TimeZoneSerializer
+    queryset = TimeZone.objects.all()
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
@@ -73,15 +78,24 @@ class SchedulePermission(BasePermission):
             return True
         return can_do(request.user, Actions.WRITE_SCHEDULES)
 
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+
 class ScheduleViewSet(viewsets.ModelViewSet):
-    model = Schedule
+    serializer_class = ScheduleSerializer
+    queryset = Schedule.objects.all()
     permission_classes = (IsAuthenticated, SchedulePermission,)
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
 
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+
 class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
-    model = Project
+    serializer_class = ProjectSerializer
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
@@ -92,13 +106,23 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         return user.profile.projects
 
 
+class ProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Provider
+
 class ProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    model = Provider
+    serializer_class = ProviderSerializer
+    queryset = Provider.objects.all()
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
+class DummyProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DummyProvider
+
 class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    model = DummyProvider
+    serializer_class = DummyProviderSerializer
+    queryset = DummyProvider.objects.all()
 
 class AWSProviderSerializer(serializers.ModelSerializer):
     class Meta:
@@ -106,26 +130,45 @@ class AWSProviderSerializer(serializers.ModelSerializer):
         fields = ('id', 'provider', 'route_53_zone')
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    model = AWSProvider
     serializer_class = AWSProviderSerializer
+    queryset = AWSProvider.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('provider',)
 
 
+class VMConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VMConfig
+
 class VMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    model = VMConfig
+    serializer_class = VMConfigSerializer
+    queryset = VMConfig.objects.all()
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
+class DummyVMConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DummyVMConfig
+
 class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    model = DummyVMConfig
+    serializer_class = DummyVMConfigSerializer
+    queryset = DummyVMConfig.objects.all()
+
+class AWSVMConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSVMConfig
 
 class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    model = AWSVMConfig
+    serializer_class = AWSVMConfigSerializer
+    queryset = AWSVMConfig.objects.all()
 
+
+class VMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VM
 
 class VMViewSet(viewsets.ReadOnlyModelViewSet):
-    model = VM
+    serializer_class = VMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('project',)
 
@@ -143,8 +186,12 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         return VM.objects.filter(project__id__in=prj_ids)
 
 
+class DummyVMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DummyVM
+
 class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
-    model = DummyVM
+    serializer_class = DummyVMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('vm',)
 
@@ -158,8 +205,12 @@ class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
         return DummyVM.objects.filter(vm__project__id__in=prj_ids)
 
 
+class AWSVMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSVM
+
 class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
-    model = AWSVM
+    serializer_class = AWSVMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('vm',)
 
@@ -173,8 +224,12 @@ class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
         return AWSVM.objects.filter(vm__project__id__in=prj_ids)
 
 
+class AuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Audit
+
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
-    model = Audit
+    serializer_class = AuditSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('vm', 'user')
     ordering = ('-timestamp')
