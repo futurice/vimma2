@@ -24,7 +24,8 @@
     </template>
 
     <template id="main">
-      ‘{{awsvm.name}}’ (AWS), state ‘{{awsvm.state}}’
+      {{awsvm.name}}.{{awsprovider.route_53_zone}} (AWS),
+      state ‘{{awsvm.state}}’
     </template>
   </template>
 
