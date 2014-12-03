@@ -41,10 +41,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProfileSerializer
     queryset = Profile.objects.all()
-    # TODO: filtering bug in Django REST Framework: when using a serializer
-    # class to return only some model fields, trying to filter by a
-    # non-existing value (?user=999999) returns all profiles (instead of none).
-    # This also affects the AWSProviderViewSet.
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('projects', 'user')
 

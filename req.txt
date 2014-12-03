@@ -2,7 +2,7 @@ django
 psycopg2
 djangorestframework
 markdown
-django-filter==0.6
+django-filter
 pytz
 celery
 boto
