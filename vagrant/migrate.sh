@@ -9,3 +9,4 @@ set +u
 . /home/vagrant/env/bin/activate
 set -u
 PYTHONPATH=/vagrant/config /vagrant/vimmasite/manage.py migrate
+PYTHONPATH=/vagrant/config /vagrant/vimmasite/manage.py create_vimma_permissions

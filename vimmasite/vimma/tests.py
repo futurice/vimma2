@@ -2596,3 +2596,106 @@ class PowerLogTests(TestCase):
 
         with self.assertRaises(PowerLog.DoesNotExist):
             PowerLog.objects.get(id=pl_id)
+
+    def test_api_permissions(self):
+        """
+        Users can read PowerLog objects if the VM is in one of their projects.
+        The API is read-only.
+        """
+        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
+        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
+        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
+        pD.full_clean()
+        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
+        pS.full_clean()
+
+        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
+        vmD.full_clean()
+        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
+        vmS.full_clean()
+
+        uF.profile.projects.add(pD)
+        uH.profile.projects.add(pD, pS)
+
+        perm = Permission.objects.create(name=Perms.READ_ALL_POWER_LOGS)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        uB.profile.roles.add(role)
+
+        plD1 = PowerLog.objects.create(vm=vmD, powered_on=True)
+        plD1.full_clean()
+        plD2 = PowerLog.objects.create(vm=vmD, powered_on=True)
+        plD2.full_clean()
+        plS1 = PowerLog.objects.create(vm=vmS, powered_on=False)
+        plS1.full_clean()
+        plS2 = PowerLog.objects.create(vm=vmS, powered_on=True)
+        plS2.full_clean()
+
+        def check_user_sees(username, powerlog_id_set):
+            """
+            Check that username sees all powerlogs in the set and nothing else.
+            """
+            self.assertTrue(self.client.login(username=username, password='-'))
+            response = self.client.get(reverse('powerlog-list'))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = response.data['results']
+            self.assertEqual({x['id'] for x in items}, powerlog_id_set)
+
+        check_user_sees('Fry', {plD1.id, plD2.id})
+        check_user_sees('Hubert', {plD1.id, plD2.id, plS1.id, plS2.id})
+        check_user_sees('Bender', {plD1.id, plD2.id, plS1.id, plS2.id})
+
+        # Test Filtering
+
+        # filter by .vm field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('powerlog-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, set())
+
+        self.assertTrue(self.client.login(username='Hubert', password='-'))
+        response = self.client.get(reverse('powerlog-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, {plS1.id, plS2.id})
+
+        # test write operations
+
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('powerlog-detail', args=[plD1.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('powerlog-detail', args=[plD1.id]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('powerlog-detail',
+            args=[plD1.id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('powerlog-list'), item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)

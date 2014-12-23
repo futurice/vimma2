@@ -22,7 +22,7 @@ from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit,
+    Audit, PowerLog,
 )
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
@@ -248,6 +248,26 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
 
 audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
     for c in Audit.LEVEL_CHOICES])
+
+
+class PowerLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PowerLog
+
+class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PowerLogSerializer
+    filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
+    filter_fields = ('vm',)
+    ordering = ('-timestamp',)
+
+    def get_queryset(self):
+        user = self.request.user
+        if can_do(user, Actions.READ_ALL_POWER_LOGS):
+            return PowerLog.objects.filter()
+        else:
+            projects = user.profile.projects.all()
+            prj_ids = [p.id for p in projects]
+            return PowerLog.objects.filter(vm__project__id__in=prj_ids)
 
 
 @login_required_or_forbidden

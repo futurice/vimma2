@@ -21,6 +21,7 @@ class Perms:
     USE_SPECIAL_VM_CONFIG = 'vm-config-use-special'
     # read all audits
     READ_ALL_AUDITS = 'read-all-audits'
+    READ_ALL_POWER_LOGS = 'read-all-power-logs'
 
 # Collect all permissions so we can pre-populate the DB with them
 ALL_PERMS = {getattr(Perms, x) for x in dir(Perms) if not x.startswith('_')}
