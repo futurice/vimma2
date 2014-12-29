@@ -20,7 +20,7 @@ div#audit-display {
 	background-color: WhiteSmoke;
 }
 
-strong#toggle-logs {
+strong#toggle-logs, strong#toggle-power-log {
 	cursor: pointer;
 }
 

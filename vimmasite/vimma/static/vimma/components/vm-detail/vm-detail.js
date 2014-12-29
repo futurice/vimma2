@@ -20,6 +20,7 @@ Polymer('vm-detail', {
     overrideSchedMins: 10,
     overrideSchedStateIdx: 0,
     showLogs: true,
+    showPowerLog: true,
     initiallyExpanded: false,
 
     ready: function() {
@@ -41,7 +42,7 @@ Polymer('vm-detail', {
         this.vm = null;
         this.provider = null;
         this.project = null;
-        // keep this.expanded and this.showLogs
+        // keep this.expanded, this.showLogs and this.showPowerLog
         this.loadVM();
     },
     loadFail: function(errorText) {
@@ -146,6 +147,10 @@ Polymer('vm-detail', {
 
     toggleShowLogs: function() {
         this.showLogs = !this.showLogs;
+    },
+
+    toggleShowPowerLog: function() {
+        this.showPowerLog = !this.showPowerLog;
     },
 
     toggleExpanded: function() {

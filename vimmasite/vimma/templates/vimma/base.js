@@ -29,6 +29,7 @@ var indexUrl = '{% url "index" %}',
             '{% url "awsprovider-detail" 0 %}'),
     vimmaApiVMConfigList = '{% url "vmconfig-list" %}',
     vimmaApiAuditList = '{% url "audit-list" %}',
+    vimmaApiPowerLogList = '{% url "powerlog-list" %}',
 
     vimmaEndpointCreateVM = '{% url "createVM" %}',
     vimmaEndpointPowerOnVM = '{% url "powerOnVM" %}',

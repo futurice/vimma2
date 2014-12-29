@@ -7,6 +7,7 @@
     "paper-elements": "Polymer/paper-elements",
     "jquery": "",
     "jquery.cookie": "",
-    "bootstrap": ""
+    "bootstrap": "",
+    "highcharts": ""
   }
 }

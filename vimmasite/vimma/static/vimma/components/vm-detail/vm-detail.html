@@ -10,6 +10,7 @@
 <link rel="import" href="../vm-recent-errors/vm-recent-errors.html">
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../user-display/user-display.html">
+<link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
 
@@ -167,6 +168,7 @@
       <template bind ref="schedule-override"></template>
       <template bind ref="recent-errors-verbose"></template>
       <template bind ref="audit"></template>
+      <template bind ref="power-log"></template>
     </template>
 
     <template id="status-updated-at">
@@ -222,6 +224,21 @@
         <template if="{{showLogs}}">
           <div id="audit-display">
             <audit-display vmid="{{vmid}}"></audit-display>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template id="power-log">
+      <div id="power-log">
+        <strong id="toggle-power-log" on-click="{{toggleShowPowerLog}}"
+            title="{{showPowerLog ? 'Hide power log' : 'Show power log'}}">
+          <template if="{{!showPowerLog}}">▹ Power Log</template>
+          <template if="{{showPowerLog}}">▾ Power Log</template>
+        </strong>
+        <template if="{{showPowerLog}}">
+          <div id="power-log-display">
+            <power-log vmid="{{vmid}}"></power-log>
           </div>
         </template>
       </div>

@@ -1,0 +1,32 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../ajax-state/ajax-state.html">
+<link rel="import" href="../error-display/error-display.html">
+
+<polymer-element name="power-log" attributes="vmid">
+  <template>
+    <link rel="stylesheet" type="text/css" href="power-log.css">
+
+    <ajax-state id="ajax"></ajax-state>
+
+    <div>
+      <template if="{{loading}}">
+        Loading…
+      </template>
+
+      <template if="{{!loading && loadingSucceeded}}">
+        <template bind ref="main"></template>
+      </template>
+
+      <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+          <error-display text={{$.ajax.errorText}}></error-display>
+      </template>
+    </div>
+
+    <template id="main">
+      <div id="container"></div>
+    </template>
+  </template>
+
+  <script src="power-log.js"></script>
+</polymer-element>
