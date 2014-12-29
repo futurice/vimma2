@@ -1,14 +1,19 @@
-Provision and manage virtual machines from cloud providers (AWS)
+[![Build Status](https://travis-ci.org/futurice/vimma2.svg?branch=master)](https://travis-ci.org/futurice/vimma2)
 
-Vimma is distributed under the BSD 3-clause license, see the file COPYING.
+# Provision and manage virtual machines from cloud providers (AWS)
 
+Vimma is distributed under the BSD 3-clause license, see the file `COPYING`.
+
+```
 The deploy/DEPLOY file describes deploying to a production server.
 The CONFIG file describes adding VM Providers and Configurations.
 The DOC file has some explanations about the structure & features.
+```
 
 
-Dev Setup:
+# Dev Setup:
 
+```bash
 cp config/local_settings.py.example config/local_settings.py
 # set the SECRET_KEY to a random string
 # choose a DB (SQLite3 or PostgreSQL)
@@ -18,19 +23,23 @@ cp config/secrets.py.example config/secrets.py
 
 cp config/dev_secrets.py.example config/dev_secrets.py
 # set up AWS credentials for dev testing
+```
 
 
-Running in a Vagrant VM (accept the dummy https certificate in your browser):
+## Running in a Vagrant VM (accept the dummy https certificate in your browser):
 
+```bash
 vagrant up
 # Add ‘127.0.0.1	dev.futurice.com’ to /etc/resolv.conf
 https://dev.futurice.com:8081/vimma/
 https://dev.futurice.com:8081/vimma/test
+```
 
 
-Running on your machine:
+## Running on your machine:
 
 Create a Python3 virtual enviroment and use it for most commands.
+```bash
 virtualenv -p python3 env
 . env/bin/activate
 pip install -r req.txt
@@ -51,3 +60,4 @@ REMOTE_USER=u2 PYTHONPATH=config ./vimmasite/manage.py runserver
 
 http://localhost:8000/vimma/
 http://localhost:8000/vimma/test
+```
