@@ -1,0 +1,19 @@
+language: python
+python:
+  - "3.4"
+env:
+  global:
+    - PYTHONPATH=config
+  matrix:
+    - TRAVIS_DB=sqlite
+    - TRAVIS_DB=postgresql
+
+addons:
+  postgresql: "9.3"
+
+install:
+  - cp config/local_settings.py.travis config/local_settings.py
+  - pip install -r req.txt
+  - psql -c 'create database vimma;' -U postgres
+
+script: ./vimmasite/manage.py test vimma --settings=test_settings --noinput
