@@ -6,8 +6,10 @@ from django.utils.timezone import utc
 
 from vimma.audit import Auditor
 from vimma.celery import app
+import vimma.expiry
 from vimma.models import (
     Provider, VM,
+    Expiration, VMExpiration,
     PowerLog,
 )
 from vimma.util import (
@@ -66,6 +68,12 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
                 comment=comment, created_by=user)
         vm.full_clean()
         vm_id = vm.id
+
+        expire_dt = now + datetime.timedelta(
+                seconds=settings.DEFAULT_VM_EXPIRY_SECS)
+        expiration = Expiration.objects.create(expires_at=expire_dt)
+        expiration.full_clean()
+        VMExpiration.objects.create(expiration=expiration, vm=vm).full_clean()
 
         t = prov.type
         if t == Provider.TYPE_DUMMY:
@@ -247,3 +255,98 @@ def switch_on_off(vm_id, powered_on):
             get_vm_controller(vm_id).power_on()
         else:
             get_vm_controller(vm_id).power_off()
+
+
+@app.task
+def expiration_notify(vm_id):
+    """
+    Notify of vm expiration.
+    """
+    with aud.ctx_mgr(vm_id=vm_id):
+        def read():
+            with transaction.atomic():
+                vm = VM.objects.get(id=vm_id)
+                return vm.vmexpiration.expiration.expires_at
+        exp_date = retry_transaction(read)
+        aud.warning('Notify of VM expiration on ' + str(exp_date),
+                vm_id=vm_id)
+
+
+@app.task
+def expiration_grace_action(vm_id):
+    """
+    Perform the action at the end of the vm's grace period.
+    """
+    with aud.ctx_mgr(vm_id=vm_id):
+        def read():
+            with transaction.atomic():
+                vm = VM.objects.get(id=vm_id)
+                return vm.vmexpiration.expiration.expires_at
+        exp_date = retry_transaction(read)
+        aud.warning('Perform action at the end of grace period for VM ' +
+                'which expired on ' + str(exp_date),
+                vm_id=vm_id)
+
+
+@app.task
+def dispatch_all_expiration_notifications():
+    """
+    Check which Expiration items need a notification and run controller.notify.
+    """
+    aud.debug('Check which Expiration items need a notification')
+    with aud.ctx_mgr():
+        def read():
+            with transaction.atomic():
+                return list(map(lambda e: e.id, Expiration.objects.filter(
+                    grace_end_action_performed=False)))
+        ids = retry_transaction(read)
+        for x in ids:
+            # don't allow a single item to break the loop (in some corner case).
+            # Make a separate task for each instead of handling
+            # all in this task.
+            dispatch_expiration_notification.delay(x)
+
+@app.task
+def dispatch_expiration_notification(exp_id):
+    """
+    Check the Expiration item and notify if needed.
+    """
+    aud.debug('Checking if Expiration id ' + str(exp_id) +
+            ' needs a notification')
+
+    with aud.ctx_mgr():
+        c = vimma.expiry.get_controller(exp_id)
+        if c.needs_notification():
+            c.notify()
+
+
+@app.task
+def dispatch_all_expiration_grace_end_actions():
+    """
+    Check which Expiration items need a grace-end action and run it.
+    """
+    aud.debug('Check which Expiration items need a grace-end action')
+    with aud.ctx_mgr():
+        def read():
+            with transaction.atomic():
+                return list(map(lambda e: e.id, Expiration.objects.filter(
+                    grace_end_action_performed=False)))
+        ids = retry_transaction(read)
+        for x in ids:
+            # don't allow a single item to break the loop (in some corner case).
+            # Make a separate task for each instead of handling
+            # all in this task.
+            dispatch_expiration_grace_end_action.delay(x)
+
+@app.task
+def dispatch_expiration_grace_end_action(exp_id):
+    """
+    Check the Expiration item and perform the grace end action if needed.
+    """
+    aud.debug('Checking if Expiration id ' + str(exp_id) +
+            ' needs a grace-end action')
+
+    with aud.ctx_mgr():
+        c = vimma.expiry.get_controller(exp_id)
+        if c.needs_grace_end_action():
+            c.perform_grace_end_action()

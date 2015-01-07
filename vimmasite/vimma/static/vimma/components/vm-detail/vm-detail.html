@@ -11,6 +11,7 @@
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../user-display/user-display.html">
 <link rel="import" href="../power-log/power-log.html">
+<link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
 
@@ -159,8 +160,9 @@
       <div>
         Created by <user-display userid="{{vm.created_by}}"></user-display> on
         <local-date date="{{vm.created_at}}" hidemillis="{{true}}">
-        </local-date>
+        </local-date>.
       </div>
+      <template bind ref="expiration"></template>
       <template bind ref="vm-comment"></template>
       <div>
         <vm-schedule-picker vmid="{{vmid}}"></vm-schedule-picker>
@@ -181,6 +183,10 @@
           –
         </template>
       </div>
+    </template>
+
+    <template id="expiration">
+      <expiration-item expid={{vmExpiration.expiration}}></expiration-item>
     </template>
 
     <template id="schedule-override">

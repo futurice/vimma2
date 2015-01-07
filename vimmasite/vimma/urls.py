@@ -7,10 +7,10 @@ from vimma.views import (
     ProviderViewSet, DummyProviderViewSet, AWSProviderViewSet,
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
-    AuditViewSet, PowerLogViewSet,
+    AuditViewSet, PowerLogViewSet, ExpirationViewSet, VMExpirationViewSet,
     index, base_js, test,
     create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
-    override_schedule, change_vm_schedule,
+    override_schedule, change_vm_schedule, set_expiration,
 )
 
 
@@ -31,6 +31,8 @@ router.register(r'dummyvms', DummyVMViewSet, 'dummyvm')
 router.register(r'awsvm', AWSVMViewSet, 'awsvm')
 router.register(r'audit', AuditViewSet, 'audit')
 router.register(r'powerlog', PowerLogViewSet, 'powerlog')
+router.register(r'expiration', ExpirationViewSet, 'expiration')
+router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')
 
 urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
@@ -47,4 +49,5 @@ urlpatterns = patterns('',
 
     url(r'^override-schedule$', override_schedule, name='overrideSchedule'),
     url(r'^change-vm-schedule$', change_vm_schedule, name='changeVMSchedule'),
+    url(r'^set-expiration$', set_expiration, name='setExpiration'),
 )

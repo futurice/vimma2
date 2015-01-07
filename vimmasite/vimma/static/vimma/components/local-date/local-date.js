@@ -38,7 +38,7 @@ Polymer('local-date', {
             return s;
         }
 
-        var dateStr = [dateObj.getFullYear(), dateObj.getMonth(),
+        var dateStr = [dateObj.getFullYear(), dateObj.getMonth() + 1,
             dateObj.getDate()].map(fmtInt).join('-');
         var timeStr = [dateObj.getHours(), dateObj.getMinutes(),
             dateObj.getSeconds()].map(fmtInt).join(':');

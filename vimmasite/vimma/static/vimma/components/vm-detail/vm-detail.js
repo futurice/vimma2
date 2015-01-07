@@ -16,6 +16,7 @@ Polymer('vm-detail', {
     vm: null,
     provider: null,
     project: null,
+    vmExpiration: null,
 
     overrideSchedMins: 10,
     overrideSchedStateIdx: 0,
@@ -42,6 +43,7 @@ Polymer('vm-detail', {
         this.vm = null;
         this.provider = null;
         this.project = null;
+        this.vmExpiration = null;
         // keep this.expanded, this.showLogs and this.showPowerLog
         this.loadVM();
     },
@@ -61,19 +63,21 @@ Polymer('vm-detail', {
     loadVM: function() {
         var ok = (function(resultArr) {
             this.vm = resultArr[0];
-            this.loadProvPrj();
+            this.loadProvPrjVmExp();
         }).bind(this);
         apiGet([vimmaApiVMDetailRoot + this.vmid + '/'],
                 ok, this.loadFail.bind(this));
     },
-    loadProvPrj: function() {
+    loadProvPrjVmExp: function() {
         var ok = (function(resultArr) {
             this.provider = resultArr[0];
             this.project = resultArr[1];
+            this.vmExpiration = resultArr[2].results[0];
             this.loadSuccess();
         }).bind(this);
         apiGet([vimmaApiProviderDetailRoot + this.vm.provider + '/',
-                vimmaApiProjectDetailRoot + this.vm.project + '/'],
+                vimmaApiProjectDetailRoot + this.vm.project + '/',
+                vimmaApiVMExpirationDetailRoot + '?vm=' + this.vm.id],
                 ok, this.loadFail.bind(this));
     },
 

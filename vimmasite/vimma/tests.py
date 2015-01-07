@@ -15,12 +15,13 @@ from rest_framework.test import APITestCase
 
 from vimma import util
 from vimma.actions import Actions
+from vimma import expiry
 from vimma.models import (
     Permission, Role, Project, Profile, TimeZone, Schedule,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit, PowerLog,
+    Audit, PowerLog, Expiration, VMExpiration,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -2312,6 +2313,120 @@ class ChangeVMScheduleTests(TestCase):
         checkScheduleId(vm.id, s3.id)
 
 
+class SetExpirationTests(TestCase):
+    """
+    Test the setExpiration endpoint.
+    """
+
+    def test_login_required(self):
+        """
+        The user must be logged in.
+        """
+        response = self.client.get(reverse('setExpiration'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unsupported_methods(self):
+        """
+        Only POST is supported (e.g. GET, PUT, DELETE are not).
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        url = reverse('setExpiration')
+        for meth in self.client.get, self.client.put, self.client.delete:
+            response = meth(url)
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_VM_perms_and_not_found(self):
+        """
+        Test user permissions and ‘not found’ for VM Expirations.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_DUMMY)
+        prov.full_clean()
+        dummyProv = DummyProvider.objects.create(provider=prov)
+        dummyProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm.full_clean()
+
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        now_ts = int(now.timestamp())
+        future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
+        future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
+        past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
+        exp = Expiration.objects.create(expires_at=now)
+        vm_exp = VMExpiration.objects.create(expiration=exp, vm=vm)
+
+        url = reverse('setExpiration')
+
+        def checkExpiration(exp_id, timestamp):
+            """
+            Check that exp_id expires at timestamp.
+            """
+            self.assertEqual(
+                int(Expiration.objects.get(id=exp_id).expires_at.timestamp()),
+                timestamp)
+
+        checkExpiration(exp.id, now_ts)
+
+        # non-existent Expiration ID
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': -100, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code,
+                status.HTTP_404_NOT_FOUND)
+        checkExpiration(exp.id, now_ts)
+
+        # can't change vm expiration outside own projects
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, now_ts)
+
+        # ok in own projects
+        u.profile.projects.add(prj)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, future_ts)
+
+        # can't set in the past
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': past_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, future_ts)
+
+        # also ok if user has the required permission
+        u.profile.projects.remove(prj)
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='your God')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': exp.id, 'timestamp': future2_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, future2_ts)
+
+        # can't set beyond a certain limit
+        bad_ts = int((now + datetime.timedelta(
+            seconds=settings.DEFAULT_VM_EXPIRY_SECS+60)).timestamp())
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': bad_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, future2_ts)
+
+
 class CanDoTests(TestCase):
 
     def test_create_vm_in_project(self):
@@ -2699,3 +2814,150 @@ class PowerLogTests(TestCase):
                 format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class ExpirationTests(TestCase):
+
+    def test_needs_notification(self):
+        """
+        Test the expiry.needs_notification function.
+        """
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        for exp, last_notif, ints in (
+            (now, None, [-10]),
+            (now-datetime.timedelta(seconds=10), None, [5]),
+            (now+datetime.timedelta(seconds=10),
+                now-datetime.timedelta(seconds=5), [-100, -11]),
+            ):
+            self.assertTrue(expiry.needs_notification(exp, last_notif, ints))
+
+        for exp, last_notif, ints in (
+            (now, None, []),
+            (now+datetime.timedelta(seconds=10),
+                now-datetime.timedelta(seconds=5), [-100, -3]),
+            ):
+            self.assertFalse(expiry.needs_notification(exp, last_notif, ints))
+
+    def test_api_permissions_vm(self):
+        """
+        Users can read Expiration and VMExpiration objects
+        for the vms in one of their projects.
+
+        The API is read-only.
+        """
+        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
+        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
+        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv.full_clean()
+        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
+        pD.full_clean()
+        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
+        pS.full_clean()
+
+        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
+        vmD.full_clean()
+        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
+        vmS.full_clean()
+
+        uF.profile.projects.add(pD)
+        uH.profile.projects.add(pD, pS)
+
+        perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
+        perm.full_clean()
+        role = Role.objects.create(name='All Seeing')
+        role.full_clean()
+        role.permissions.add(perm)
+        uB.profile.roles.add(role)
+
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+
+        # an expiration object without a linked ‘subclass’ (it doesn't
+        # represent a VM or anything else). No API calls below return it.
+        # This tests that we always check the Expiration object's type, then
+        # apply visibility rules for that type.
+        expNothing = Expiration.objects.create(expires_at=now)
+
+        expD = Expiration.objects.create(expires_at=now)
+        expD.full_clean()
+        vm_expD = VMExpiration.objects.create(expiration=expD, vm=vmD)
+        vm_expD.full_clean()
+        expS = Expiration.objects.create(expires_at=now)
+        expS.full_clean()
+        vm_expS = VMExpiration.objects.create(expiration=expS, vm=vmS)
+        vm_expS.full_clean()
+
+        def check_user_sees(username, exp_id_set, vm_exp_id_set):
+            """
+            Check that username sees all expirations and vm expirations
+            in the sets and nothing else.
+            """
+            self.assertTrue(self.client.login(username=username, password='-'))
+            for (view_name, id_set) in (
+                    ('expiration-list', exp_id_set),
+                    ('vmexpiration-list', vm_exp_id_set),
+                    ):
+                response = self.client.get(reverse(view_name))
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                items = response.data['results']
+                self.assertEqual({x['id'] for x in items}, id_set)
+
+        check_user_sees('Fry', {expD.id}, {vm_expD.id})
+        check_user_sees('Hubert', {expD.id, expS.id}, {vm_expD.id, vm_expS.id})
+        check_user_sees('Bender', {expD.id, expS.id}, {vm_expD.id, vm_expS.id})
+
+        # Test Filtering
+
+        # filter VMExpiration by .vm field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('vmexpiration-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, set())
+
+        self.assertTrue(self.client.login(username='Hubert', password='-'))
+        response = self.client.get(reverse('vmexpiration-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, {vm_expS.id})
+
+        # test write operations
+
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        for (view_root, arg) in (
+                ('expiration', expD.id),
+                ('vmexpiration', vm_expD.id),
+                ):
+            response = self.client.get(reverse(view_root + '-detail',
+                args=[arg]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            item = response.data
+
+            # can't modify
+            response = self.client.put(reverse(view_root + '-detail',
+                args=[arg]),
+                    item, format='json')
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+            # can't delete
+            response = self.client.delete(reverse(view_root + '-detail',
+                args=[arg]))
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)
+
+            # can't create
+            del item['id']
+            response = self.client.post(reverse(view_root + '-list'), item,
+                    format='json')
+            self.assertEqual(response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED)

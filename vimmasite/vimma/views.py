@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import utc
 import json
+import pytz
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
@@ -18,11 +19,12 @@ import traceback
 from vimma import vmutil
 from vimma.actions import Actions
 from vimma.audit import Auditor
+import vimma.expiry
 from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit, PowerLog,
+    Audit, PowerLog, Expiration, VMExpiration,
 )
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
@@ -268,6 +270,51 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
             projects = user.profile.projects.all()
             prj_ids = [p.id for p in projects]
             return PowerLog.objects.filter(vm__project__id__in=prj_ids)
+
+
+class ExpirationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expiration
+        # explicitly list the fields to include vmexpiration
+        fields = ('id', 'expires_at', 'last_notification',
+                'grace_end_action_performed', 'vmexpiration')
+
+class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ExpirationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # VM expirations
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return Expiration.objects.filter(vmexpiration__isnull=False)
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return Expiration.objects.filter(
+                vmexpiration__vm__project__id__in=prj_ids)
+
+        # as we add other Expiration object types, we'll extend the queryset
+
+
+class VMExpirationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VMExpiration
+
+class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = VMExpirationSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vm',)
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return VMExpiration.objects.filter()
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
 
 
 @login_required_or_forbidden
@@ -686,4 +733,57 @@ def change_vm_schedule(request):
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
         aud.error(msg, user_id=request.user.id, vm_id=vm_id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def set_expiration(request):
+    """
+    Set the expires_at of an Expiration object.
+
+    JSON request body:
+    {
+        id: int,
+        timestamp: int,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    try:
+        body = json.loads(request.read().decode('utf-8'))
+        exp_id, tstamp = body['id'], body['timestamp']
+        controller = vimma.expiry.get_controller(exp_id)
+        if not controller.can_set_expiry_date(tstamp, request.user.id):
+            return get_http_json_err('You may not set this Expiration ' +
+                    'object to this value', status.HTTP_403_FORBIDDEN)
+
+        naive = datetime.datetime.utcfromtimestamp(tstamp)
+        aware = pytz.utc.localize(naive)
+        # used for logging, if applicable
+        vm_id = None
+
+        def call():
+            nonlocal vm_id
+            with transaction.atomic():
+                exp = Expiration.objects.get(id=exp_id)
+                exp.expires_at = aware
+                if exp.vmexpiration:
+                    vm_id = exp.vmexpiration.vm.id
+                exp.save()
+        retry_transaction(call)
+
+        aud.info('Changed expiration id {} to {}'.format(exp_id, aware),
+                user_id=request.user.id, vm_id=vm_id)
+
+        return HttpResponse()
+    except Expiration.DoesNotExist as e:
+        return get_http_json_err('{}'.format(e),
+                status.HTTP_404_NOT_FOUND)
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)

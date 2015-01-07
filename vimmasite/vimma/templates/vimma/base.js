@@ -30,6 +30,10 @@ var indexUrl = '{% url "index" %}',
     vimmaApiVMConfigList = '{% url "vmconfig-list" %}',
     vimmaApiAuditList = '{% url "audit-list" %}',
     vimmaApiPowerLogList = '{% url "powerlog-list" %}',
+    vimmaApiVMExpirationDetailRoot = apiDetailRootUrl(
+            '{% url "vmexpiration-detail" 0 %}'),
+    vimmaApiExpirationDetailRoot = apiDetailRootUrl(
+            '{% url "expiration-detail" 0 %}'),
 
     vimmaEndpointCreateVM = '{% url "createVM" %}',
     vimmaEndpointPowerOnVM = '{% url "powerOnVM" %}',
@@ -38,6 +42,7 @@ var indexUrl = '{% url "index" %}',
     vimmaEndpointDestroyVM = '{% url "destroyVM" %}',
     vimmaEndpointOverrideSchedule = '{% url "overrideSchedule" %}',
     vimmaEndpointChangeVMSchedule = '{% url "changeVMSchedule" %}',
+    vimmaEndpointSetExpiration = '{% url "setExpiration" %}',
 
     vimmaUserId = {{ user.id }},
 

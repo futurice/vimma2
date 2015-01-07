@@ -370,3 +370,24 @@ class PowerLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     # True → ON, False → OFF. Can't be None, so the value must be explicit.
     powered_on = models.BooleanField(default=None)
+
+
+class Expiration(models.Model):
+    """
+    An item that expires. Holds data common for all “subclasses”.
+
+    At certain intervals (before and after the expiration date) notifications
+    are sent. It stores when the latest one was sent.
+    There is a grace period after the expiration date, then a ‘grace end’
+    action is performed. It stores whether this ran.
+    ExpirationController implements the features.
+    """
+    expires_at = models.DateTimeField()
+    # when the most recent notification was sent
+    last_notification = models.DateTimeField(blank=True, null=True)
+    grace_end_action_performed = models.BooleanField(default=False)
+
+
+class VMExpiration(models.Model):
+    expiration = models.OneToOneField(Expiration, on_delete=models.CASCADE)
+    vm = models.OneToOneField(VM, on_delete=models.CASCADE)

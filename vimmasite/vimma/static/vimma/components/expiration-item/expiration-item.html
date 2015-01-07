@@ -1,0 +1,52 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/core-elements/core-elements.html">
+<link rel="import" href="../bower_components/paper-elements/paper-elements.html">
+
+<link rel="import" href="../error-display/error-display.html">
+<link rel="import" href="../local-date/local-date.html">
+
+<polymer-element name="expiration-item" attributes="expid">
+  <template>
+    <link rel="stylesheet" type="text/css" href="/static/vimma/components/bower_components/bootstrap/dist/css/bootstrap.min.css">
+
+    <ajax-state id="ajax"></ajax-state>
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{loadingSucceeded}}">
+        <template bind ref="main"></template>
+      </template>
+    </template>
+
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <error-display text={{$.ajax.errorText}}></error-display>
+    </template>
+
+    <template id="main">
+      Expires on
+      <local-date date="{{expiration.expires_at}}" alwaysshowdate hidemillis>
+      </local-date>
+      <button type="button" class="btn btn-default" on-click="{{toggleDialog}}">
+        <span class="glyphicon glyphicon-calendar"></span>
+        Extend
+      </button>
+      <template bind ref="dialog-tmpl"></template>
+    </template>
+
+    <template id="dialog-tmpl">
+      <paper-dialog id="dialog" backdrop transition="core-transition-center">
+        <h1>Set expiration</h1>
+        <div>
+          <input type="date" value="{{newExpDateStr}}">
+          <input type="time" value="{{newExpTimeStr}}">
+        </div>
+        <button type="button" core-overlay-toggle on-click="{{setExpiration}}">Set</button>
+      </paper-dialog>
+    </template>
+  </template>
+
+  <script src="expiration-item.js"></script>
+</polymer-element>
