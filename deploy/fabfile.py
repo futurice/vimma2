@@ -52,13 +52,13 @@ def make_env():
             sudo('pip install -r ' + repo_dir + '/req.txt')
 
 
-def run_tests():
+def run_tests_and_migrate():
     with settings(cd(home_dir), sudo_user=vimma_user):
         with prefix('source ' + env_dir + '/bin/activate'):
             with shell_env(PYTHONPATH=config_dir):
-                sudo(repo_dir + '/vimmasite/manage.py migrate')
                 sudo(repo_dir + '/vimmasite/manage.py test vimma ' +
                         '--settings=test_settings --noinput')
+                sudo(repo_dir + '/vimmasite/manage.py migrate')
                 sudo(repo_dir + '/vimmasite/manage.py create_vimma_permissions')
 
 
@@ -90,6 +90,6 @@ def deploy():
     clone_repository()
     make_env()
     prepare_repository()
-    run_tests()
+    run_tests_and_migrate()
     move_symlinks()
     start_services()
