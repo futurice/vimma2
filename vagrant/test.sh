@@ -9,4 +9,8 @@ set +u
 . /home/vagrant/env/bin/activate
 set -u
 # --noinput destroys old test DB if it exists (else prompts the user and fails)
-PYTHONPATH=/vagrant/config  /vagrant/vimmasite/manage.py test vimma --settings=test_settings --noinput
+# Ubuntu 14.04's chromium-chromedriver needs the PATH and LD_LIBRARY_PATH
+PATH=$PATH:/usr/lib/chromium-browser \
+	LD_LIBRARY_PATH=/usr/lib/chromium-browser/libs \
+	PYTHONPATH=/vagrant/config \
+	xvfb-run /vagrant/vimmasite/manage.py test vimma --settings=test_settings --noinput

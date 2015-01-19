@@ -12,8 +12,13 @@ addons:
   postgresql: "9.3"
 
 install:
+  # Jan 2015: travis-ci runs Ubuntu 12.04 64bit which doesn't have chromedriver
+  - wget -P /tmp http://chromedriver.storage.googleapis.com/2.12/chromedriver_linux64.zip
+  - sudo unzip /tmp/chromedriver_linux64.zip -d /usr/bin
+  - sudo chmod +rx /usr/bin/chromedriver
+
   - cp config/local_settings.py.travis config/local_settings.py
   - pip install -r req.txt
   - psql -c 'create database vimma;' -U postgres
 
-script: ./vimmasite/manage.py test vimma --settings=test_settings --noinput
+script: xvfb-run ./vimmasite/manage.py test vimma --settings=test_settings --noinput

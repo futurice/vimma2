@@ -1,6 +1,6 @@
 import datetime
 from fabric.api import task, env
-from fabric.context_managers import cd, prefix, settings, shell_env
+from fabric.context_managers import cd, prefix, settings, shell_env, path
 from fabric.operations import sudo
 import os, os.path
 
@@ -55,9 +55,15 @@ def make_env():
 def run_tests_and_migrate():
     with settings(cd(home_dir), sudo_user=vimma_user):
         with prefix('source ' + env_dir + '/bin/activate'):
-            with shell_env(PYTHONPATH=config_dir):
-                sudo(repo_dir + '/vimmasite/manage.py test vimma ' +
-                        '--settings=test_settings --noinput')
+            # HOME needed by firefox (or it hangs, trying to write into the
+            # ssh user's home dir); LD_LIBRARY_PATH needed by chromedriver.
+            with shell_env(PYTHONPATH=config_dir, HOME=home_dir,
+                    LD_LIBRARY_PATH='/usr/lib/chromium-browser/libs'):
+                # additional path needed by chromedriver
+                with path('/usr/lib/chromium-browser'):
+                    sudo('xvfb-run ' + repo_dir + '/vimmasite/manage.py test vimma ' +
+                            '--settings=test_settings --noinput')
+
                 sudo(repo_dir + '/vimmasite/manage.py migrate')
                 sudo(repo_dir + '/vimmasite/manage.py create_vimma_permissions')
 

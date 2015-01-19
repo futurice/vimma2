@@ -14,8 +14,8 @@ if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; t
 	"$ROOT_DIR"/../scripts/bower-reset.py
 fi
 
-"$ROOT_DIR"/test.sh
 "$ROOT_DIR"/collectstatic.sh
+"$ROOT_DIR"/test.sh
 "$ROOT_DIR"/migrate.sh
 
 sudo service supervisor start

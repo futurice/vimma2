@@ -336,7 +336,8 @@ def base_js(request):
     }, content_type='application/javascript; charset=utf-8')
 
 
-@login_required_or_forbidden
+# Allow unauthenticated access in order to easily test with browser automation
+#@login_required_or_forbidden
 def test(request):
     """
     JavaScript Unit Tests.

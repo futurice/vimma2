@@ -6,3 +6,4 @@ django-filter
 pytz
 celery
 boto
+selenium

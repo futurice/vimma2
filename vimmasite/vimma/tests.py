@@ -691,7 +691,7 @@ class WebViewsPermissionTests(TestCase):
         You must be logged in to access the webpage views.
         """
         util.create_vimma_user('a', 'a@example.com', 'pass')
-        def check(viewname):
+        def check_login_required(viewname):
             url = reverse(viewname)
             self.client.logout()
             response = self.client.get(url)
@@ -701,8 +701,18 @@ class WebViewsPermissionTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        for viewname in ('index', 'base_js', 'test'):
-            check(viewname)
+        def check_public(viewname):
+            url = reverse(viewname)
+            self.client.logout()
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for viewname in ('index', 'base_js'):
+            check_login_required(viewname)
+
+        # allow unauthenticated access to 'test' for easy browser automation
+        for viewname in ('test',):
+            check_public(viewname)
 
 
 class ProviderTests(APITestCase):

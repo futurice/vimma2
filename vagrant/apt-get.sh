@@ -15,5 +15,6 @@ apt-get install -y \
 	apache2 libapache2-mod-auth-pubtkt libapache2-mod-wsgi-py3 \
 	rabbitmq-server python3 python3-pip python-virtualenv \
 	supervisor postgresql libpq-dev python-dev \
-	npm git
+	npm git \
+	xvfb chromium-browser chromium-chromedriver firefox
 # Use python3-virtualenv instead, in distributions that have it
