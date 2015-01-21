@@ -71,7 +71,8 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
 
         expire_dt = now + datetime.timedelta(
                 seconds=settings.DEFAULT_VM_EXPIRY_SECS)
-        expiration = Expiration.objects.create(expires_at=expire_dt)
+        expiration = Expiration.objects.create(type=Expiration.TYPE_VM,
+                expires_at=expire_dt)
         expiration.full_clean()
         VMExpiration.objects.create(expiration=expiration, vm=vm).full_clean()
 

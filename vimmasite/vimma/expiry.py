@@ -38,12 +38,12 @@ def get_controller(expiration_id):
     def call():
         with transaction.atomic():
             e = Expiration.objects.get(id=expiration_id)
-            vme = e.vmexpiration
-            if vme:
-                return VMExpirationController(vme.id)
+            if e.type == Expiration.TYPE_VM:
+                return VMExpirationController(expiration_id)
             else:
                 raise Exception("Can't find Controller " +
-                        "for Expiration object " + str(expiration_id))
+                        "for Expiration object " + str(expiration_id) +
+                        " of type " + e.type)
 
     return retry_transaction(call)
 
@@ -162,12 +162,7 @@ class ExpirationController:
 
 class VMExpirationController(ExpirationController):
 
-    def __init__(self, vmexpiration_id):
-        def read():
-            with transaction.atomic():
-                vme = VMExpiration.objects.get(id=vmexpiration_id)
-                return vme.expiration.id
-        exp_id = retry_transaction(read)
+    def __init__(self, exp_id):
         super().__init__(exp_id)
 
     def get_notification_intervals(self):

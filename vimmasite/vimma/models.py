@@ -382,6 +382,14 @@ class Expiration(models.Model):
     action is performed. It stores whether this ran.
     ExpirationController implements the features.
     """
+    TYPE_VM = 'vm'
+    TYPE_FIREWALL_RULE = 'firewall-rule'
+    TYPE_CHOICES = (
+        (TYPE_VM, 'VM'),
+        (TYPE_FIREWALL_RULE, 'Firewall Rule'),
+    )
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+
     expires_at = models.DateTimeField()
     # when the most recent notification was sent
     last_notification = models.DateTimeField(blank=True, null=True)

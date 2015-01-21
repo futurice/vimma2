@@ -2376,7 +2376,8 @@ class SetExpirationTests(TestCase):
         future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
         future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
         past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
-        exp = Expiration.objects.create(expires_at=now)
+        exp = Expiration.objects.create(type=Expiration.TYPE_VM,
+                expires_at=now)
         vm_exp = VMExpiration.objects.create(expiration=exp, vm=vm)
 
         url = reverse('setExpiration')
@@ -2889,17 +2890,13 @@ class ExpirationTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
-        # an expiration object without a linked ‘subclass’ (it doesn't
-        # represent a VM or anything else). No API calls below return it.
-        # This tests that we always check the Expiration object's type, then
-        # apply visibility rules for that type.
-        expNothing = Expiration.objects.create(expires_at=now)
-
-        expD = Expiration.objects.create(expires_at=now)
+        expD = Expiration.objects.create(type=Expiration.TYPE_VM,
+                expires_at=now)
         expD.full_clean()
         vm_expD = VMExpiration.objects.create(expiration=expD, vm=vmD)
         vm_expD.full_clean()
-        expS = Expiration.objects.create(expires_at=now)
+        expS = Expiration.objects.create(type=Expiration.TYPE_VM,
+                expires_at=now)
         expS.full_clean()
         vm_expS = VMExpiration.objects.create(expiration=expS, vm=vmS)
         vm_expS.full_clean()

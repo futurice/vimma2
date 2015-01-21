@@ -287,11 +287,11 @@ class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 
         # VM expirations
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return Expiration.objects.filter(vmexpiration__isnull=False)
+            return Expiration.objects.filter(type=Expiration.TYPE_VM)
 
         projects = user.profile.projects.all()
         prj_ids = [p.id for p in projects]
-        return Expiration.objects.filter(
+        return Expiration.objects.filter(type=Expiration.TYPE_VM,
                 vmexpiration__vm__project__id__in=prj_ids)
 
         # as we add other Expiration object types, we'll extend the queryset
@@ -771,7 +771,7 @@ def set_expiration(request):
             with transaction.atomic():
                 exp = Expiration.objects.get(id=exp_id)
                 exp.expires_at = aware
-                if exp.vmexpiration:
+                if exp.type == Expiration.TYPE_VM:
                     vm_id = exp.vmexpiration.vm.id
                 exp.save()
         retry_transaction(call)
