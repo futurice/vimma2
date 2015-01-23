@@ -6,7 +6,7 @@ Vimma is distributed under the BSD 3-clause license, see the file `COPYING`.
 
 ```
 The deploy/DEPLOY file describes deploying to a production server.
-The CONFIG file describes adding VM Providers and Configurations.
+The CONFIGURATION file describes adding VM Providers and Configurations.
 The DOC file has some explanations about the structure & features.
 ```
 
