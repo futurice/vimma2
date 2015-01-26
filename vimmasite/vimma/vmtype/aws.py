@@ -3,6 +3,7 @@ import boto.ec2
 import boto.route53
 import celery.exceptions
 import datetime
+from django.conf import settings
 from django.db import transaction
 from django.utils.timezone import utc
 import sys
@@ -13,6 +14,8 @@ from vimma.celery import app
 from vimma.models import (
     VM,
     AWSVMConfig, AWSVM,
+    FirewallRule, AWSFirewallRule,
+    Expiration, FirewallRuleExpiration,
 )
 from vimma.util import retry_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
@@ -432,3 +435,74 @@ def mark_vm_destroyed_if_needed(awsvm):
         vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
         vm.full_clean()
         vm.save()
+
+
+def create_firewall_rule(vm_id, data, user_id=None):
+    """
+    data: {
+        ip_protocol: string,
+        from_port: int,
+        to_port: int,
+        cidr_ip: string,
+    }
+    """
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with transaction.atomic():
+            vm = VM.objects.get(id=vm_id)
+            base_fw_rule = FirewallRule.objects.create(vm=vm)
+            base_fw_rule.full_clean()
+
+            ip_protocol = data['ip_protocol']
+            from_port, to_port = data['from_port'], data['to_port']
+            cidr_ip = data['cidr_ip']
+            aws_fw_rule = AWSFirewallRule.objects.create(
+                    firewallrule=base_fw_rule,
+                    ip_protocol=ip_protocol,
+                    from_port=from_port,
+                    to_port=to_port,
+                    cidr_ip=cidr_ip)
+            aws_fw_rule.full_clean()
+
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            expire_dt = now + datetime.timedelta(
+                    seconds=settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS
+                    if not aws_fw_rule.is_special()
+                    else settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
+            expiration = Expiration.objects.create(
+                    type=Expiration.TYPE_FIREWALL_RULE, expires_at=expire_dt)
+            expiration.full_clean()
+            FirewallRuleExpiration.objects.create(
+                    expiration=expiration,
+                    firewallrule=base_fw_rule).full_clean()
+
+            awsvm = vm.awsvm
+            conn = ec2_connect_to_aws_vm_region(awsvm.id)
+            conn.authorize_security_group(group_id=awsvm.security_group_id,
+                    ip_protocol=ip_protocol,
+                    from_port=from_port,
+                    to_port=to_port,
+                    cidr_ip=cidr_ip)
+
+        aud.info('Created a firewall rule', vm_id=vm_id, user_id=user_id)
+
+
+def delete_firewall_rule(fw_rule_id, user_id=None):
+    def get_vm_id():
+        with transaction.atomic():
+            fw_rule = FirewallRule.objects.get(id=fw_rule_id)
+            return fw_rule.vm.id
+    vm_id = retry_transaction(get_vm_id)
+
+    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        fw_rule = FirewallRule.objects.get(id=fw_rule_id)
+        afr = fw_rule.awsfirewallrule
+        awsvm = fw_rule.vm.awsvm
+        conn = ec2_connect_to_aws_vm_region(awsvm.id)
+        conn.revoke_security_group(group_id=awsvm.security_group_id,
+                ip_protocol=afr.ip_protocol,
+                from_port=afr.from_port,
+                to_port=afr.to_port,
+                cidr_ip=afr.cidr_ip)
+        fw_rule.delete()
+
+    aud.info('Deleted a firewall rule', vm_id=vm_id, user_id=user_id)

@@ -24,7 +24,8 @@ from vimma.models import (
     Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit, PowerLog, Expiration, VMExpiration,
+    Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
+    FirewallRule, AWSFirewallRule,
 )
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
@@ -282,19 +283,35 @@ class ExpirationSerializer(serializers.ModelSerializer):
 class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ExpirationSerializer
 
-    def get_queryset(self):
+    def get_vm_Q(self):
+        """
+        Return the queryfilter for Expirations of type vm.
+        """
         user = self.request.user
-
-        # VM expirations
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return Expiration.objects.filter(type=Expiration.TYPE_VM)
+            return Q(type=Expiration.TYPE_VM)
 
         projects = user.profile.projects.all()
         prj_ids = [p.id for p in projects]
-        return Expiration.objects.filter(type=Expiration.TYPE_VM,
+        return Q(type=Expiration.TYPE_VM,
                 vmexpiration__vm__project__id__in=prj_ids)
 
-        # as we add other Expiration object types, we'll extend the queryset
+    def get_firewallrule_Q(self):
+        """
+        Return the queryfilter for Expirations of type vm.
+        """
+        user = self.request.user
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return Q(type=Expiration.TYPE_FIREWALL_RULE)
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return Q(type=Expiration.TYPE_FIREWALL_RULE,
+                firewallruleexpiration__firewallrule__vm__project__id__in=prj_ids)
+
+    def get_queryset(self):
+        return Expiration.objects.filter(self.get_vm_Q() |
+                self.get_firewallrule_Q())
 
 
 class VMExpirationSerializer(serializers.ModelSerializer):
@@ -317,6 +334,70 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
 
 
+class FirewallRuleExpirationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FirewallRuleExpiration
+
+class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = FirewallRuleExpirationSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('firewallrule',)
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return FirewallRuleExpiration.objects.filter()
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return FirewallRuleExpiration.objects.filter(
+                firewallrule__vm__project__id__in=prj_ids)
+
+
+class FirewallRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FirewallRule
+
+class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = FirewallRuleSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vm',)
+
+    def get_queryset(self):
+        user = self.request.user
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return FirewallRule.objects.filter()
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return FirewallRule.objects.filter(vm__project__id__in=prj_ids)
+
+
+class AWSFirewallRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSFirewallRule
+
+class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AWSFirewallRuleSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('firewallrule',)
+
+    def get_queryset(self):
+        user = self.request.user
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return AWSFirewallRule.objects.filter()
+
+        projects = user.profile.projects.all()
+        prj_ids = [p.id for p in projects]
+        return AWSFirewallRule.objects.filter(
+                firewallrule__vm__project__id__in=prj_ids)
+
+aws_firewall_rule_protocol_choices_json = json.dumps([
+    {'value': c[0], 'label': c[1]}
+    for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
+
+
 @login_required_or_forbidden
 def index(request):
     """
@@ -333,6 +414,8 @@ def base_js(request):
     return render(request, 'vimma/base.js', {
         'settings': settings,
         'audit_level_choices_json': audit_levels_json,
+        'aws_firewall_rule_protocol_choices_json':
+        aws_firewall_rule_protocol_choices_json,
     }, content_type='application/javascript; charset=utf-8')
 
 
@@ -781,6 +864,89 @@ def set_expiration(request):
 
         return HttpResponse()
     except Expiration.DoesNotExist as e:
+        return get_http_json_err('{}'.format(e),
+                status.HTTP_404_NOT_FOUND)
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def create_firewall_rule(request):
+    """
+    Create a new firewall rule.
+
+    JSON request body:
+    {
+        vmid: int,
+        data: provider-specific,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    try:
+        body = json.loads(request.read().decode('utf-8'))
+        vm_id, data = body['vmid'], body['data']
+        controller = vmutil.get_vm_controller(vm_id)
+        if not controller.can_change_firewall_rules(request.user.id):
+            return get_http_json_err('You may not change firewall rules ' +
+                    'for this VM', status.HTTP_403_FORBIDDEN)
+
+        if request.META['SERVER_NAME'] == "testserver":
+            # Don't create the firewall rule when running tests
+            return HttpResponse()
+
+        controller.create_firewall_rule(data, user_id=request.user.id)
+        return HttpResponse()
+    except VM.DoesNotExist as e:
+        return get_http_json_err('{}'.format(e),
+                status.HTTP_404_NOT_FOUND)
+    except:
+        lines = traceback.format_exception_only(*sys.exc_info()[:2])
+        msg = ''.join(lines)
+        aud.error(msg, user_id=request.user.id)
+        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@login_required_or_forbidden
+def delete_firewall_rule(request):
+    """
+    Delete a firewall rule.
+
+    JSON request body:
+    {
+        id: int,
+    }
+    """
+    if request.method != 'POST':
+        return get_http_json_err('Method “' + request.method +
+            '” not allowed. Use POST instead.',
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    try:
+        body = json.loads(request.read().decode('utf-8'))
+        rule_id = body['id']
+        def call():
+            with transaction.atomic():
+                return FirewallRule.objects.get(id=rule_id).vm.id
+        vm_id = retry_transaction(call)
+        controller = vmutil.get_vm_controller(vm_id)
+        if not controller.can_change_firewall_rules(request.user.id):
+            return get_http_json_err('You may not change firewall rules ' +
+                    'for this VM', status.HTTP_403_FORBIDDEN)
+
+        if request.META['SERVER_NAME'] == "testserver":
+            # Don't delete the firewall rule when running tests
+            return HttpResponse()
+
+        controller.delete_firewall_rule(rule_id, user_id=request.user.id)
+        return HttpResponse()
+    except FirewallRule.DoesNotExist as e:
         return get_http_json_err('{}'.format(e),
                 status.HTTP_404_NOT_FOUND)
     except:

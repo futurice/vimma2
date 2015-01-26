@@ -136,6 +136,9 @@ DEFAULT_VM_EXPIRY_SECS = secs_in_day*30*3
 VM_NOTIFICATION_INTERVALS = [x*secs_in_day for x in
         [-14, -7, -3, -2, -1, 1, 2]]
 VM_GRACE_INTERVAL = secs_in_day*7
+
+NORMAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 3
+SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day
 del secs_in_day
 
 

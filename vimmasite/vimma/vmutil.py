@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.timezone import utc
 
+from vimma.actions import Actions
 from vimma.audit import Auditor
 from vimma.celery import app
 import vimma.expiry
@@ -11,9 +12,10 @@ from vimma.models import (
     Provider, VM,
     Expiration, VMExpiration,
     PowerLog,
+    FirewallRule,
 )
 from vimma.util import (
-    retry_transaction,
+    can_do, retry_transaction,
     vm_at_now, discard_expired_schedule_override,
 )
 import vimma.vmtype.dummy, vimma.vmtype.aws
@@ -142,6 +144,23 @@ class VMController():
         """
         raise NotImplementedError()
 
+    def can_change_firewall_rules(self, user_id):
+        def call():
+            with transaction.atomic():
+                user = User.objects.get(id=user_id)
+                vm = VM.objects.get(id=self.vm_id)
+                return can_do(user, Actions.CREATE_VM_IN_PROJECT, vm.project)
+        return retry_transaction(call)
+
+    def create_firewall_rule(self, data, user_id=None):
+        """
+        Create a firewall rule with data specific to the vm type.
+        """
+        raise NotImplementedError()
+
+    def delete_firewall_rule(self, fw_rule_id, user_id=None):
+        raise NotImplementedError()
+
 
 class DummyVMController(VMController):
     """
@@ -183,6 +202,13 @@ class AWSVMController(VMController):
 
     def update_status(self):
         vimma.vmtype.aws.update_vm_status.delay(self.vm_id)
+
+    def create_firewall_rule(self, data, user_id=None):
+        vimma.vmtype.aws.create_firewall_rule(self.vm_id, data,
+                user_id=user_id)
+
+    def delete_firewall_rule(self, fw_rule_id, user_id=None):
+        vimma.vmtype.aws.delete_firewall_rule(fw_rule_id, user_id=user_id)
 
 
 @app.task
@@ -351,3 +377,13 @@ def dispatch_expiration_grace_end_action(exp_id):
         c = vimma.expiry.get_controller(exp_id)
         if c.needs_grace_end_action():
             c.perform_grace_end_action()
+
+
+def delete_firewall_rule(fw_rule_id, user_id=None):
+    def get_vm_id():
+        with transaction.atomic():
+            fw_rule = FirewallRule.objects.get(id=fw_rule_id)
+            return fw_rule.vm.id
+    vm_id = retry_transaction(get_vm_id)
+
+    get_vm_controller(vm_id).delete_firewall_rule(fw_rule_id, user_id=user_id)

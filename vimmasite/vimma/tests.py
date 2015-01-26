@@ -21,7 +21,8 @@ from vimma.models import (
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
     VM, DummyVM, AWSVM,
-    Audit, PowerLog, Expiration, VMExpiration,
+    Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
+    FirewallRule, AWSFirewallRule,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -2437,6 +2438,211 @@ class SetExpirationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         checkExpiration(exp.id, future2_ts)
 
+    def test_FirewallRule_perms_and_not_found(self):
+        """
+        Test user permissions and ‘not found’ for FirewallRule Expirations.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_AWS)
+        prov.full_clean()
+        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm.full_clean()
+        fw_rule = FirewallRule.objects.create(vm=vm)
+        fw_rule.full_clean()
+        AWSFirewallRule.objects.create(firewallrule=fw_rule,
+                ip_protocol=AWSFirewallRule.PROTO_TCP,
+                from_port=80, to_port=80, cidr_ip='1.2.3.4/32').full_clean()
+
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        now_ts = int(now.timestamp())
+        future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
+        future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
+        past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
+        exp = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
+                expires_at=now)
+        fw_exp = FirewallRuleExpiration.objects.create(expiration=exp,
+                firewallrule=fw_rule)
+
+        url = reverse('setExpiration')
+
+        def checkExpiration(exp_id, timestamp):
+            """
+            Check that exp_id expires at timestamp.
+            """
+            self.assertEqual(
+                int(Expiration.objects.get(id=exp_id).expires_at.timestamp()),
+                timestamp)
+
+        checkExpiration(exp.id, now_ts)
+
+        # non-existent Expiration ID
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': -100, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code,
+                status.HTTP_404_NOT_FOUND)
+        checkExpiration(exp.id, now_ts)
+
+        # can't change vm expiration outside own projects
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, now_ts)
+
+        # ok in own projects
+        u.profile.projects.add(prj)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, future_ts)
+
+        # can't set in the past
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': past_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, future_ts)
+
+        # also ok if user has the required permission
+        u.profile.projects.remove(prj)
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='your God')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({'id': exp.id, 'timestamp': future2_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, future2_ts)
+
+        # can't set beyond a certain limit
+        max_secs = max(settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS,
+                settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
+        bad_ts = int((now + datetime.timedelta(
+            seconds=max_secs+60*60)).timestamp())
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': bad_ts}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        checkExpiration(exp.id, future2_ts)
+
+
+class CreateDeleteFirewallRuleTests(TestCase):
+    """
+    Test the create- and delete- firewall rule endpoints.
+    """
+
+    def test_login_required(self):
+        """
+        The user must be logged in.
+        """
+        for view_name in ('createFirewallRule', 'deleteFirewallRule'):
+            response = self.client.get(reverse(view_name))
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unsupported_methods(self):
+        """
+        Only POST is supported (e.g. GET, PUT, DELETE are not).
+        """
+        util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        for view_name in ('createFirewallRule', 'deleteFirewallRule'):
+            url = reverse(view_name)
+            for meth in self.client.get, self.client.put, self.client.delete:
+                response = meth(url)
+                self.assertEqual(response.status_code,
+                        status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_perms_and_not_found(self):
+        """
+        Test user permissions and ‘not found’ (for VMs when creating,
+        for rules when deleting).
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        prj.full_clean()
+
+        prov = Provider.objects.create(name='My Provider',
+                type=Provider.TYPE_AWS)
+        prov.full_clean()
+        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv.full_clean()
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [False]]))
+        s.full_clean()
+
+        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm.full_clean()
+
+        create_url, delete_url = map(reverse,
+                ('createFirewallRule', 'deleteFirewallRule'))
+
+        # non-existent vm ID (create) or firewall rule id (delete)
+        response = self.client.post(create_url,
+                content_type='application/json',
+                data=json.dumps({'vmid': -100, 'data': None}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.post(delete_url,
+                content_type='application/json', data=json.dumps({'id': -100}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # can't change firewall rules outside own projects
+        response = self.client.post(create_url,
+                content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'data': None}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        fw_rule = FirewallRule.objects.create(vm=vm)
+        fw_rule.full_clean()
+        response = self.client.post(delete_url,
+                content_type='application/json',
+                data=json.dumps({'id': fw_rule.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # ok in own projects
+        u.profile.projects.add(prj)
+        response = self.client.post(create_url,
+                content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'data': None}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(delete_url,
+                content_type='application/json',
+                data=json.dumps({'id': fw_rule.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # also ok if user has the required permission
+        u.profile.projects.remove(prj)
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        role = Role.objects.create(name='all powerful')
+        role.permissions.add(perm)
+        u.profile.roles.add(role)
+
+        u.profile.projects.add(prj)
+        response = self.client.post(create_url,
+                content_type='application/json',
+                data=json.dumps({'vmid': vm.id, 'data': None}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(delete_url,
+                content_type='application/json',
+                data=json.dumps({'id': fw_rule.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
 
 class CanDoTests(TestCase):
 
@@ -2866,7 +3072,7 @@ class ExpirationTests(TestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         s.full_clean()
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
         prv.full_clean()
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
         pD.full_clean()
@@ -2890,35 +3096,60 @@ class ExpirationTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
-        expD = Expiration.objects.create(type=Expiration.TYPE_VM,
+        exp_vmD = Expiration.objects.create(type=Expiration.TYPE_VM,
                 expires_at=now)
-        expD.full_clean()
-        vm_expD = VMExpiration.objects.create(expiration=expD, vm=vmD)
+        exp_vmD.full_clean()
+        vm_expD = VMExpiration.objects.create(expiration=exp_vmD, vm=vmD)
         vm_expD.full_clean()
-        expS = Expiration.objects.create(type=Expiration.TYPE_VM,
+        exp_vmS = Expiration.objects.create(type=Expiration.TYPE_VM,
                 expires_at=now)
-        expS.full_clean()
-        vm_expS = VMExpiration.objects.create(expiration=expS, vm=vmS)
+        exp_vmS.full_clean()
+        vm_expS = VMExpiration.objects.create(expiration=exp_vmS, vm=vmS)
         vm_expS.full_clean()
 
-        def check_user_sees(username, exp_id_set, vm_exp_id_set):
+        fw_rule_D = FirewallRule.objects.create(vm=vmD)
+        fw_rule_D.full_clean()
+        fw_rule_S = FirewallRule.objects.create(vm=vmS)
+        fw_rule_S.full_clean()
+
+        exp_fwD = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
+                expires_at=now)
+        exp_fwD.full_clean()
+        fw_expD = FirewallRuleExpiration.objects.create(
+                expiration=exp_fwD, firewallrule=fw_rule_D)
+        fw_expD.full_clean()
+        exp_fwS = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
+                expires_at=now)
+        exp_fwS.full_clean()
+        fw_expS = FirewallRuleExpiration.objects.create(
+                expiration=exp_fwS, firewallrule=fw_rule_S)
+        fw_expS.full_clean()
+
+        def check_user_sees(username, exp_id_set, vm_exp_id_set,
+                fw_rule_exp_id_set):
             """
-            Check that username sees all expirations and vm expirations
-            in the sets and nothing else.
+            Check that username sees all expirations, vm expirations
+            and firewall rule expirations in the sets and nothing else.
             """
             self.assertTrue(self.client.login(username=username, password='-'))
             for (view_name, id_set) in (
                     ('expiration-list', exp_id_set),
                     ('vmexpiration-list', vm_exp_id_set),
+                    ('firewallruleexpiration-list', fw_rule_exp_id_set),
                     ):
                 response = self.client.get(reverse(view_name))
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 items = response.data['results']
                 self.assertEqual({x['id'] for x in items}, id_set)
 
-        check_user_sees('Fry', {expD.id}, {vm_expD.id})
-        check_user_sees('Hubert', {expD.id, expS.id}, {vm_expD.id, vm_expS.id})
-        check_user_sees('Bender', {expD.id, expS.id}, {vm_expD.id, vm_expS.id})
+        check_user_sees('Fry', {exp_vmD.id, exp_fwD.id}, {vm_expD.id},
+                {fw_expD.id})
+        check_user_sees('Hubert',
+                {exp_vmD.id, exp_fwD.id, exp_vmS.id, exp_fwS.id},
+                {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
+        check_user_sees('Bender',
+                {exp_vmD.id, exp_fwD.id, exp_vmS.id, exp_fwS.id},
+                {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
 
         # Test Filtering
 
@@ -2937,12 +3168,28 @@ class ExpirationTests(TestCase):
         items = response.data['results']
         self.assertEqual({x['id'] for x in items}, {vm_expS.id})
 
+        # filter FirewallRuleExpiration by .firewallrule field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('firewallruleexpiration-list') +
+                '?firewallrule=' + str(fw_rule_S.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, set())
+
+        self.assertTrue(self.client.login(username='Hubert', password='-'))
+        response = self.client.get(reverse('firewallruleexpiration-list') +
+                '?firewallrule=' + str(fw_rule_S.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, {fw_expS.id})
+
         # test write operations
 
         self.assertTrue(self.client.login(username='Fry', password='-'))
         for (view_root, arg) in (
-                ('expiration', expD.id),
+                ('expiration', exp_vmD.id),
                 ('vmexpiration', vm_expD.id),
+                ('firewallruleexpiration', fw_expD.id),
                 ):
             response = self.client.get(reverse(view_root + '-detail',
                 args=[arg]))
@@ -2968,3 +3215,156 @@ class ExpirationTests(TestCase):
                     format='json')
             self.assertEqual(response.status_code,
                     status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class FirewallRule_AWSFirewallRule_Tests(TestCase):
+
+    def test_api_permissions(self):
+        """
+        Users can read FirewallRule and AWSFirewallRule objects
+        for VMs in one of their projects.
+        The API is read-only.
+        """
+        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
+        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
+        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        tz.full_clean()
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+        s.full_clean()
+
+        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv.full_clean()
+        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
+        pD.full_clean()
+        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
+        pS.full_clean()
+
+        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
+        vmD.full_clean()
+        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
+        vmS.full_clean()
+
+        fw_ruleD = FirewallRule.objects.create(vm=vmD)
+        fw_ruleD.full_clean()
+        aws_fw_ruleD = AWSFirewallRule.objects.create(firewallrule=fw_ruleD,
+                ip_protocol=AWSFirewallRule.PROTO_TCP,
+                from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
+        aws_fw_ruleD.full_clean()
+        fw_ruleS = FirewallRule.objects.create(vm=vmS)
+        fw_ruleS.full_clean()
+        aws_fw_ruleS = AWSFirewallRule.objects.create(firewallrule=fw_ruleS,
+                ip_protocol=AWSFirewallRule.PROTO_TCP,
+                from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
+        aws_fw_ruleS.full_clean()
+
+        uF.profile.projects.add(pD)
+        uH.profile.projects.add(pD, pS)
+
+        perm = Permission.objects.create(name=Perms.OMNIPOTENT)
+        perm.full_clean()
+        role = Role.objects.create(name='all powerful')
+        role.full_clean()
+        role.permissions.add(perm)
+        uB.profile.roles.add(role)
+
+        def check_user_sees(username, fw_id_set, aws_fw_id_set):
+            """
+            Check that username sees all FirewallRule and AWSFirewallRule
+            in the sets and nothing else.
+            """
+            self.assertTrue(self.client.login(username=username, password='-'))
+            for view_root, id_set in (
+                    ('firewallrule', fw_id_set),
+                    ('awsfirewallrule', aws_fw_id_set),
+                    ):
+                response = self.client.get(reverse(view_root + '-list'))
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                items = response.data['results']
+                self.assertEqual({x['id'] for x in items}, id_set)
+
+        check_user_sees('Fry', {fw_ruleD.id}, {aws_fw_ruleD.id})
+        check_user_sees('Hubert', {fw_ruleD.id, fw_ruleS.id},
+                {aws_fw_ruleD.id, aws_fw_ruleS.id})
+        check_user_sees('Bender', {fw_ruleD.id, fw_ruleS.id},
+                {aws_fw_ruleD.id, aws_fw_ruleS.id})
+
+        # Test Filtering
+
+        # filter FirewallRule by .vm field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('firewallrule-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, set())
+
+        self.assertTrue(self.client.login(username='Hubert', password='-'))
+        response = self.client.get(reverse('firewallrule-list') +
+                '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, {fw_ruleS.id})
+
+        # filter AWSFirewallRule by .firewallrule field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('awsfirewallrule-list') +
+                '?firewallrule=' + str(fw_ruleS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, set())
+
+        self.assertTrue(self.client.login(username='Hubert', password='-'))
+        response = self.client.get(reverse('awsfirewallrule-list') +
+                '?firewallrule=' + str(fw_ruleS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['id'] for x in items}, {aws_fw_ruleS.id})
+
+        # test write operations
+
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('firewallrule-detail',
+            args=[fw_ruleD.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        fw_item = response.data
+
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('awsfirewallrule-detail',
+            args=[aws_fw_ruleD.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        aws_fw_item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('firewallrule-detail',
+            args=[fw_ruleD.id]), fw_item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+        response = self.client.put(reverse('awsfirewallrule-detail',
+            args=[aws_fw_ruleD.id]), aws_fw_item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('firewallrule-detail',
+            args=[fw_ruleD.id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+        response = self.client.delete(reverse('awsfirewallrule-detail',
+            args=[aws_fw_ruleD.id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del fw_item['id']
+        response = self.client.post(reverse('firewallrule-list'), fw_item,
+                format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+        del aws_fw_item['id']
+        response = self.client.post(reverse('awsfirewallrule-list'),
+                aws_fw_item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)

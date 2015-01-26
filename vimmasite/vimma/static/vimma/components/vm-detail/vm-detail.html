@@ -11,6 +11,7 @@
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../user-display/user-display.html">
 <link rel="import" href="../power-log/power-log.html">
+<link rel="import" href="../firewall-rules/firewall-rules.html">
 <link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../error-display/error-display.html">
 <link rel="import" href="../ajax-state/ajax-state.html">
@@ -169,6 +170,7 @@
       </div>
       <template bind ref="schedule-override"></template>
       <template bind ref="recent-errors-verbose"></template>
+      <template bind ref="firewall-rules"></template>
       <template bind ref="audit"></template>
       <template bind ref="power-log"></template>
     </template>
@@ -217,6 +219,21 @@
         <button on-click="{{overrideSet}}" disabled?="{{$.ajax.inProgress}}">
           Set override
         </button>
+      </div>
+    </template>
+
+    <template id="firewall-rules">
+      <div id="firewall-rules">
+        <strong id="toggle-fw-rules" on-click="{{toggleShowFirewallRules}}"
+            title="{{showFirewallRules ? 'Hide firewall rules' : 'Show firewall rules'}}">
+          <template if="{{!showFirewallRules}}">▹ Firewall Rules</template>
+          <template if="{{showFirewallRules}}">▾ Firewall Rules</template>
+        </strong>
+        <template if="{{showFirewallRules}}">
+          <div id="firewall-rules-display">
+            <firewall-rules vmid="{{vmid}}"></firewall-rules>
+          </div>
+        </template>
       </div>
     </template>
 

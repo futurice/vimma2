@@ -20,6 +20,7 @@ Polymer('vm-detail', {
 
     overrideSchedMins: 10,
     overrideSchedStateIdx: 0,
+    showFirewallRules: true,
     showLogs: true,
     showPowerLog: true,
     initiallyExpanded: false,
@@ -44,7 +45,7 @@ Polymer('vm-detail', {
         this.provider = null;
         this.project = null;
         this.vmExpiration = null;
-        // keep this.expanded, this.showLogs and this.showPowerLog
+        // keep this.expanded, this.showFirewallRules, this.showLogs and this.showPowerLog
         this.loadVM();
     },
     loadFail: function(errorText) {
@@ -147,6 +148,10 @@ Polymer('vm-detail', {
     },
     overrideClear: function() {
         this.ajaxOverrideSchedule({vmid: this.vm.id, state: null});
+    },
+
+    toggleShowFirewallRules: function() {
+        this.showFirewallRules = !this.showFirewallRules;
     },
 
     toggleShowLogs: function() {

@@ -40,6 +40,8 @@ def get_controller(expiration_id):
             e = Expiration.objects.get(id=expiration_id)
             if e.type == Expiration.TYPE_VM:
                 return VMExpirationController(expiration_id)
+            elif e.type == Expiration.TYPE_FIREWALL_RULE:
+                return FirewallRuleExpirationController(expiration_id)
             else:
                 raise Exception("Can't find Controller " +
                         "for Expiration object " + str(expiration_id) +
@@ -202,3 +204,47 @@ class VMExpirationController(ExpirationController):
                 return exp.vmexpiration.vm.id
         vm_id = retry_transaction(read)
         vimma.vmutil.expiration_grace_action.delay(vm_id)
+
+
+class FirewallRuleExpirationController(ExpirationController):
+
+    def __init__(self, exp_id):
+        super().__init__(exp_id)
+
+    def get_notification_intervals(self):
+        return []
+
+    def can_set_expiry_date(self, tstamp, user_id):
+        now_tstamp = int(
+                datetime.datetime.utcnow().replace(tzinfo=utc).timestamp())
+        if tstamp < now_tstamp:
+            return False
+
+        def call():
+            with transaction.atomic():
+                user = User.objects.get(id=user_id)
+                exp = Expiration.objects.get(id=self.exp_id)
+                fw_rule = exp.firewallruleexpiration.firewallrule
+                prj = fw_rule.vm.project
+                if not can_do(user, Actions.CREATE_VM_IN_PROJECT, prj):
+                    return False
+
+                max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
+                        if fw_rule.is_special()
+                        else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
+                if tstamp - now_tstamp > max_duration:
+                    return False
+
+                return True
+        return retry_transaction(call)
+
+    def get_grace_interval(self):
+        return 0
+
+    def _do_perform_grace_action(self):
+        def get_fw_id():
+            with transaction.atomic():
+                exp = Expiration.objects.get(id=self.exp_id)
+                return exp.firewallruleexpiration.firewallrule.id
+        rule_id = retry_transaction(get_fw_id)
+        vimma.vmutil.delete_firewall_rule(rule_id)

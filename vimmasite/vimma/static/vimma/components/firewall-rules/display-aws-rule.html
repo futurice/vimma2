@@ -1,0 +1,29 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../ajax-state/ajax-state.html">
+
+<polymer-element name="display-aws-rule" attributes="ruleid">
+  <template>
+    <ajax-state id="ajax"></ajax-state>
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{loadingSucceeded}}">
+        <template bind ref="main"></template>
+      </template>
+    </template>
+
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <error-display text={{$.ajax.errorText}}></error-display>
+    </template>
+
+    <template id="main">
+      {{aws_fw_rule.ip_protocol}},
+      port range: {{aws_fw_rule.from_port}}→{{aws_fw_rule.to_port}},
+      CIDR IP: {{aws_fw_rule.cidr_ip}}
+    </template>
+  </template>
+
+  <script src="display-aws-rule.js"></script>
+</polymer-element>

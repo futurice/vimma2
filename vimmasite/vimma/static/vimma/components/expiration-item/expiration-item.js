@@ -56,6 +56,7 @@ Polymer('expiration-item', {
                 this.newExpiration.setHours(12);
                 this.newExpiration.setMinutes(0);
             } else {
+                // TODO (Mihai): add the 'firewall rule' type and use the durations from settings.py
                 console.log('Unknown expiration type');
                 this.newExpiration = new Date(new Date().valueOf() + 1000*60*60*24);
             }

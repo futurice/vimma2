@@ -323,6 +323,59 @@ class AWSVM(models.Model):
     security_group_deleted = models.BooleanField(default=False)
 
 
+class FirewallRule(models.Model):
+    """
+    The base model for all firewall rules, with type-specific submodels.
+    """
+    vm = models.ForeignKey(VM, on_delete=models.CASCADE)
+
+    def is_special(self):
+        """
+        Whether this rule is special (i.e. not regular).
+
+        This method should be called inside a transaction (for ACID behavior).
+        """
+        t = self.vm.provider.type
+        if t == Provider.TYPE_AWS:
+            return self.awsfirewallrule.is_special()
+        else:
+            # unknown provider type
+            return True
+
+
+class AWSFirewallRule(models.Model):
+    """
+    AWS Firewall Rule.
+    """
+    firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE)
+
+    # ip_protocol, from_port, to_port and cidr_ip correspond to
+    # AWS call params.
+
+    PROTO_TCP = 'tcp'
+    PROTO_UDP = 'udp'
+    PROTO_ICMP = 'icmp'
+    IP_PROTOCOL_CHOICES = (
+        (PROTO_TCP, 'TCP'),
+        (PROTO_UDP, 'UDP'),
+        (PROTO_ICMP, 'ICMP'),
+    )
+    ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
+
+    from_port = models.PositiveIntegerField()
+    to_port = models.PositiveIntegerField()
+    cidr_ip = models.CharField(max_length=50)
+
+    def is_special(self):
+        """
+        Same as FirewallRule.is_special.
+        """
+        if self.from_port != self.to_port:
+            return True
+        # one of the models or the settings could define the set of safe ports
+        return self.from_port not in {80, 443, 8000, 8080}
+
+
 class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -399,3 +452,8 @@ class Expiration(models.Model):
 class VMExpiration(models.Model):
     expiration = models.OneToOneField(Expiration, on_delete=models.CASCADE)
     vm = models.OneToOneField(VM, on_delete=models.CASCADE)
+
+
+class FirewallRuleExpiration(models.Model):
+    expiration = models.OneToOneField(Expiration, on_delete=models.CASCADE)
+    firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE)

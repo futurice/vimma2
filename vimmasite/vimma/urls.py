@@ -7,10 +7,13 @@ from vimma.views import (
     ProviderViewSet, DummyProviderViewSet, AWSProviderViewSet,
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
+    FirewallRuleViewSet, AWSFirewallRuleViewSet,
     AuditViewSet, PowerLogViewSet, ExpirationViewSet, VMExpirationViewSet,
+    FirewallRuleExpirationViewSet,
     index, base_js, test,
     create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
     override_schedule, change_vm_schedule, set_expiration,
+    create_firewall_rule, delete_firewall_rule,
 )
 
 
@@ -33,6 +36,10 @@ router.register(r'audit', AuditViewSet, 'audit')
 router.register(r'powerlog', PowerLogViewSet, 'powerlog')
 router.register(r'expiration', ExpirationViewSet, 'expiration')
 router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')
+router.register(r'firewallruleexpiration', FirewallRuleExpirationViewSet,
+        'firewallruleexpiration')
+router.register(r'firewallrule', FirewallRuleViewSet, 'firewallrule')
+router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
 
 urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
@@ -50,4 +57,8 @@ urlpatterns = patterns('',
     url(r'^override-schedule$', override_schedule, name='overrideSchedule'),
     url(r'^change-vm-schedule$', change_vm_schedule, name='changeVMSchedule'),
     url(r'^set-expiration$', set_expiration, name='setExpiration'),
+    url(r'^create-firewall-rule$', create_firewall_rule,
+        name='createFirewallRule'),
+    url(r'^delete-firewall-rule$', delete_firewall_rule,
+        name='deleteFirewallRule'),
 )

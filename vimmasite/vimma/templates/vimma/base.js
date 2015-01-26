@@ -32,8 +32,15 @@ var indexUrl = '{% url "index" %}',
     vimmaApiPowerLogList = '{% url "powerlog-list" %}',
     vimmaApiVMExpirationDetailRoot = apiDetailRootUrl(
             '{% url "vmexpiration-detail" 0 %}'),
+    vimmaApiFirewallRuleExpirationList =
+        '{% url "firewallruleexpiration-list" %}',
+    vimmaApiExpirationList = '{% url "expiration-list" %}',
     vimmaApiExpirationDetailRoot = apiDetailRootUrl(
             '{% url "expiration-detail" 0 %}'),
+    vimmaApiFirewallRuleList = '{% url "firewallrule-list" %}',
+    vimmaApiAWSFirewallRuleList = '{% url "awsfirewallrule-list" %}',
+    vimmaApiAWSFirewallRuleDetailRoot = apiDetailRootUrl(
+            '{% url "awsfirewallrule-detail" 0 %}'),
 
     vimmaEndpointCreateVM = '{% url "createVM" %}',
     vimmaEndpointPowerOnVM = '{% url "powerOnVM" %}',
@@ -43,6 +50,8 @@ var indexUrl = '{% url "index" %}',
     vimmaEndpointOverrideSchedule = '{% url "overrideSchedule" %}',
     vimmaEndpointChangeVMSchedule = '{% url "changeVMSchedule" %}',
     vimmaEndpointSetExpiration = '{% url "setExpiration" %}',
+    vimmaEndpointCreateFirewallRule = '{% url "createFirewallRule" %}',
+    vimmaEndpointDeleteFirewallRule = '{% url "deleteFirewallRule" %}',
 
     vimmaUserId = {{ user.id }},
 
@@ -59,5 +68,9 @@ var indexUrl = '{% url "index" %}',
         });
         return result;
     })(),
+
+    // [{value: …, label: …}, …]
+    awsFirewallRuleProtocolChoices = JSON.parse(
+            '{{aws_firewall_rule_protocol_choices_json|escapejs}}'),
 
     _dummy_end;
