@@ -55,7 +55,8 @@
         <template if="{{!showComposer}}">
           <button type="button" on-click="{{toggleComposer}}"
             class="btn btn-primary" disabled?="{{$.ajax.inProgress}}">
-            + Add Rule
+            <span class="glyphicon glyphicon-plus"></span>
+            Add Rule
           </button>
         </template>
 

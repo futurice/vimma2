@@ -29,6 +29,11 @@ Polymer('index-elem', {
     },
 
     navClicked: function(ev, detail, sender) {
+        if (ev.button != 0) {
+            // The main button wasn't pressed, bypass this handler.
+            // E.g. the user middle-clicked to open in a new tab: so do that.
+            return;
+        }
         ev.preventDefault();
         this.frag = ev.target.templateInstance.model.tab.key;
     }
