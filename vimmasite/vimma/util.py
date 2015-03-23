@@ -145,20 +145,19 @@ def discard_expired_schedule_override(vm_id):
         Returns True if an expired override was discarded, else False.
         """
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            if vm.sched_override_state == None:
-                return False
-            if vm.sched_override_tstamp >= now:
-                return False
+        vm = VM.objects.get(id=vm_id)
+        if vm.sched_override_state == None:
+            return False
+        if vm.sched_override_tstamp >= now:
+            return False
 
-            vm.sched_override_state = None
-            vm.sched_override_tstamp = None
-            vm.save()
-            vm.full_clean()
-            return True
+        vm.sched_override_state = None
+        vm.sched_override_tstamp = None
+        vm.save()
+        vm.full_clean()
+        return True
 
-    if retry_transaction(call):
+    if retry_in_transaction(call):
         aud.debug('Discarded expired schedule override', vm_id=vm_id)
 
 
@@ -170,13 +169,12 @@ def vm_at_now(vm_id):
     """
     def call():
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            if (vm.sched_override_state != None and
-                    vm.sched_override_tstamp >= now):
-                return vm.sched_override_state
-            return schedule_at_tstamp(vm.schedule, now)
-    return retry_transaction(call)
+        vm = VM.objects.get(id=vm_id)
+        if (vm.sched_override_state != None and
+                vm.sched_override_tstamp >= now):
+            return vm.sched_override_state
+        return schedule_at_tstamp(vm.schedule, now)
+    return retry_in_transaction(call)
 
 
 def set_vm_status_updated_at_now(vm_id):
@@ -187,29 +185,32 @@ def set_vm_status_updated_at_now(vm_id):
     """
     def call():
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            vm.status_updated_at = now
-            vm.full_clean()
-            vm.save()
-    retry_transaction(call)
+        vm = VM.objects.get(id=vm_id)
+        vm.status_updated_at = now
+        vm.full_clean()
+        vm.save()
+    retry_in_transaction(call)
 
 
-def retry_transaction(call, max_retries=5, start_delay_millis=100):
+def retry_in_transaction(call, max_retries=5, start_delay_millis=100):
     """
-    Call ‘call’ and return its return values.
+    Call ‘call’ inside a transaction and return its result.
 
     If it raises an OperationalError, retry up to max_retries with exponential
     backoff.
-    Wait random(0, start_delay_millis*2**i) before retry i, 0≤i<max_retries.
+    Wait random(start_delay_millis*2**(i-2), start_delay_millis*2**(i-1))
+    before retry i, 1≤i≤max_retries.
     """
     while True:
         try:
-            return call()
+            with transaction.atomic():
+                return call()
         except OperationalError:
             if max_retries > 0:
                 max_retries -= 1
-                time.sleep(random.randint(0, start_delay_millis) / 1000)
+                wait_millis = random.randint(start_delay_millis // 2,
+                        start_delay_millis)
+                time.sleep(wait_millis / 1000)
                 start_delay_millis *= 2
             else:
                 raise

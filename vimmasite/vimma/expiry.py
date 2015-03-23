@@ -1,13 +1,12 @@
 import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import transaction
 from django.utils.timezone import utc
 import pytz
 
 from vimma.actions import Actions
 from vimma.audit import Auditor
-from vimma.util import retry_transaction, can_do
+from vimma.util import retry_in_transaction, can_do
 from vimma.models import Expiration, VMExpiration
 import vimma.vmutil
 
@@ -36,18 +35,17 @@ def needs_notification(expires_at, last_notification, notif_intervals):
 
 def get_controller(expiration_id):
     def call():
-        with transaction.atomic():
-            e = Expiration.objects.get(id=expiration_id)
-            if e.type == Expiration.TYPE_VM:
-                return VMExpirationController(expiration_id)
-            elif e.type == Expiration.TYPE_FIREWALL_RULE:
-                return FirewallRuleExpirationController(expiration_id)
-            else:
-                raise Exception("Can't find Controller " +
-                        "for Expiration object " + str(expiration_id) +
-                        " of type " + e.type)
+        e = Expiration.objects.get(id=expiration_id)
+        if e.type == Expiration.TYPE_VM:
+            return VMExpirationController(expiration_id)
+        elif e.type == Expiration.TYPE_FIREWALL_RULE:
+            return FirewallRuleExpirationController(expiration_id)
+        else:
+            raise Exception("Can't find Controller " +
+                    "for Expiration object " + str(expiration_id) +
+                    " of type " + e.type)
 
-    return retry_transaction(call)
+    return retry_in_transaction(call)
 
 
 class ExpirationController:
@@ -76,12 +74,11 @@ class ExpirationController:
 
     def needs_notification(self):
         def read():
-            with transaction.atomic():
-                e = Expiration.objects.get(id=self.exp_id)
-                return (e.expires_at, e.last_notification,
-                        self.get_notification_intervals())
+            e = Expiration.objects.get(id=self.exp_id)
+            return (e.expires_at, e.last_notification,
+                    self.get_notification_intervals())
 
-        exp_at, last_notif, notif_intervals = retry_transaction(read)
+        exp_at, last_notif, notif_intervals = retry_in_transaction(read)
         return needs_notification(exp_at, last_notif, notif_intervals)
 
     def notify(self):
@@ -89,12 +86,11 @@ class ExpirationController:
         Mark the last notification time as now and call _do_notify.
         """
         def write():
-            with transaction.atomic():
-                e = Expiration.objects.get(id=self.exp_id)
-                now = datetime.datetime.utcnow().replace(tzinfo=utc)
-                e.last_notification = now
-                e.save()
-        retry_transaction(write)
+            e = Expiration.objects.get(id=self.exp_id)
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            e.last_notification = now
+            e.save()
+        retry_in_transaction(write)
 
         self._do_notify()
 
@@ -111,11 +107,10 @@ class ExpirationController:
         naive = datetime.datetime.utcfromtimestamp(tstamp)
         aware = pytz.utc.localize(naive)
         def write():
-            with transaction.atomic():
-                e = Expiration.objects.get(id=self.exp_id)
-                e.expires_at = aware
-                e.save()
-        retry_transaction(write)
+            e = Expiration.objects.get(id=self.exp_id)
+            e.expires_at = aware
+            e.save()
+        retry_in_transaction(write)
 
     def can_set_expiry_date(self, tstamp, user_id):
         raise NotImplementedError()
@@ -131,13 +126,12 @@ class ExpirationController:
         Check if the grace-end action hasn't been performed and it's due.
         """
         def read():
-            with transaction.atomic():
-                e = Expiration.objects.get(id=self.exp_id)
-                if e.grace_end_action_performed:
-                    return True, None
-                ts = e.expires_at.timestamp() + self.get_grace_interval()
-                return False, ts
-        already_performed, grace_end_tstamp = retry_transaction(read)
+            e = Expiration.objects.get(id=self.exp_id)
+            if e.grace_end_action_performed:
+                return True, None
+            ts = e.expires_at.timestamp() + self.get_grace_interval()
+            return False, ts
+        already_performed, grace_end_tstamp = retry_in_transaction(read)
 
         if already_performed:
             return False
@@ -150,11 +144,10 @@ class ExpirationController:
         Set grace_end_action_performed and call _do_perform_grace_action.
         """
         def write():
-            with transaction.atomic():
-                e = Expiration.objects.get(id=self.exp_id)
-                e.grace_end_action_performed = True
-                e.save()
-        retry_transaction(write)
+            e = Expiration.objects.get(id=self.exp_id)
+            e.grace_end_action_performed = True
+            e.save()
+        retry_in_transaction(write)
 
         self._do_perform_grace_action()
 
@@ -172,10 +165,9 @@ class VMExpirationController(ExpirationController):
 
     def _do_notify(self):
         def read():
-            with transaction.atomic():
-                exp = Expiration.objects.get(id=self.exp_id)
-                return exp.vmexpiration.vm.id
-        vm_id = retry_transaction(read)
+            exp = Expiration.objects.get(id=self.exp_id)
+            return exp.vmexpiration.vm.id
+        vm_id = retry_in_transaction(read)
         vimma.vmutil.expiration_notify.delay(vm_id)
 
     def can_set_expiry_date(self, tstamp, user_id):
@@ -187,22 +179,20 @@ class VMExpirationController(ExpirationController):
             return False
 
         def call():
-            with transaction.atomic():
-                user = User.objects.get(id=user_id)
-                exp = Expiration.objects.get(id=self.exp_id)
-                prj = exp.vmexpiration.vm.project
-                return can_do(user, Actions.CREATE_VM_IN_PROJECT, prj)
-        return retry_transaction(call)
+            user = User.objects.get(id=user_id)
+            exp = Expiration.objects.get(id=self.exp_id)
+            prj = exp.vmexpiration.vm.project
+            return can_do(user, Actions.CREATE_VM_IN_PROJECT, prj)
+        return retry_in_transaction(call)
 
     def get_grace_interval(self):
         return settings.VM_GRACE_INTERVAL
 
     def _do_perform_grace_action(self):
         def read():
-            with transaction.atomic():
-                exp = Expiration.objects.get(id=self.exp_id)
-                return exp.vmexpiration.vm.id
-        vm_id = retry_transaction(read)
+            exp = Expiration.objects.get(id=self.exp_id)
+            return exp.vmexpiration.vm.id
+        vm_id = retry_in_transaction(read)
         vimma.vmutil.expiration_grace_action.delay(vm_id)
 
 
@@ -221,30 +211,28 @@ class FirewallRuleExpirationController(ExpirationController):
             return False
 
         def call():
-            with transaction.atomic():
-                user = User.objects.get(id=user_id)
-                exp = Expiration.objects.get(id=self.exp_id)
-                fw_rule = exp.firewallruleexpiration.firewallrule
-                prj = fw_rule.vm.project
-                if not can_do(user, Actions.CREATE_VM_IN_PROJECT, prj):
-                    return False
+            user = User.objects.get(id=user_id)
+            exp = Expiration.objects.get(id=self.exp_id)
+            fw_rule = exp.firewallruleexpiration.firewallrule
+            prj = fw_rule.vm.project
+            if not can_do(user, Actions.CREATE_VM_IN_PROJECT, prj):
+                return False
 
-                max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
-                        if fw_rule.is_special()
-                        else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
-                if tstamp - now_tstamp > max_duration:
-                    return False
+            max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
+                    if fw_rule.is_special()
+                    else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
+            if tstamp - now_tstamp > max_duration:
+                return False
 
-                return True
-        return retry_transaction(call)
+            return True
+        return retry_in_transaction(call)
 
     def get_grace_interval(self):
         return 0
 
     def _do_perform_grace_action(self):
         def get_fw_id():
-            with transaction.atomic():
-                exp = Expiration.objects.get(id=self.exp_id)
-                return exp.firewallruleexpiration.firewallrule.id
-        rule_id = retry_transaction(get_fw_id)
+            exp = Expiration.objects.get(id=self.exp_id)
+            return exp.firewallruleexpiration.firewallrule.id
+        rule_id = retry_in_transaction(get_fw_id)
         vimma.vmutil.delete_firewall_rule(rule_id)

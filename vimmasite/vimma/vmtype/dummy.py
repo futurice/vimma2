@@ -1,5 +1,4 @@
 import datetime
-from django.db import transaction
 from django.utils.timezone import utc
 
 from vimma.audit import Auditor
@@ -8,7 +7,7 @@ from vimma.models import (
     VM,
     DummyVM,
 )
-from vimma.util import retry_transaction, set_vm_status_updated_at_now
+from vimma.util import retry_in_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
 
 
@@ -45,80 +44,76 @@ def create_vm(vm, data, user_id):
 @app.task
 def power_on_vm(vm_id, user_id=None):
     def call():
-        with transaction.atomic():
-            dvm = VM.objects.get(id=vm_id).dummyvm
-            # imagine this logic happens remotely, in an API call to Provider
-            if dvm.destroyed or dvm.poweredon:
-                aud.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
-                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
-                    ).format(dvm), user_id=user_id, vm_id=vm_id)
-                return
-            dvm.poweredon = True
-            dvm.save()
+        dvm = VM.objects.get(id=vm_id).dummyvm
+        # imagine this logic happens remotely, in an API call to Provider
+        if dvm.destroyed or dvm.poweredon:
+            aud.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
+                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                ).format(dvm), user_id=user_id, vm_id=vm_id)
+            return
+        dvm.poweredon = True
+        dvm.save()
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        retry_transaction(call)
+        retry_in_transaction(call)
         aud.info('Power ON', user_id=user_id, vm_id=vm_id)
 
 
 @app.task
 def power_off_vm(vm_id, user_id=None):
     def call():
-        with transaction.atomic():
-            dvm = VM.objects.get(id=vm_id).dummyvm
-            if dvm.destroyed or not dvm.poweredon:
-                aud.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
-                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
-                    ).format(dvm), user_id=user_id, vm_id=vm_id)
-                return
-            dvm.poweredon = False
-            dvm.save()
+        dvm = VM.objects.get(id=vm_id).dummyvm
+        if dvm.destroyed or not dvm.poweredon:
+            aud.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
+                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                ).format(dvm), user_id=user_id, vm_id=vm_id)
+            return
+        dvm.poweredon = False
+        dvm.save()
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        retry_transaction(call)
+        retry_in_transaction(call)
         aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
 
 
 @app.task
 def reboot_vm(vm_id, user_id=None):
     def call():
-        with transaction.atomic():
-            dvm = VM.objects.get(id=vm_id).dummyvm
-            if dvm.destroyed:
-                aud.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
-                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
-                    ).format(dvm), user_id=user_id, vm_id=vm_id)
-                return
-            dvm.poweredon = True
-            dvm.save()
+        dvm = VM.objects.get(id=vm_id).dummyvm
+        if dvm.destroyed:
+            aud.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
+                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                ).format(dvm), user_id=user_id, vm_id=vm_id)
+            return
+        dvm.poweredon = True
+        dvm.save()
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        retry_transaction(call)
+        retry_in_transaction(call)
         aud.info('Reboot', user_id=user_id, vm_id=vm_id)
 
 
 @app.task
 def destroy_vm(vm_id, user_id=None):
     def call():
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            dvm = vm.dummyvm
-            if dvm.destroyed:
-                aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
-                    'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
-                    ).format(dvm), user_id=user_id, vm_id=vm_id)
-                return
-            dvm.poweredon = False
-            dvm.destroyed = True
-            dvm.full_clean()
-            dvm.save()
+        vm = VM.objects.get(id=vm_id)
+        dvm = vm.dummyvm
+        if dvm.destroyed:
+            aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
+                'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
+                ).format(dvm), user_id=user_id, vm_id=vm_id)
+            return
+        dvm.poweredon = False
+        dvm.destroyed = True
+        dvm.full_clean()
+        dvm.save()
 
-            vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
-            vm.full_clean()
-            vm.save()
+        vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
+        vm.full_clean()
+        vm.save()
 
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        retry_transaction(call)
+        retry_in_transaction(call)
         aud.info('Destroy', user_id=user_id, vm_id=vm_id)
 
 
@@ -128,19 +123,18 @@ def update_vm_status(vm_id):
         """
         Returns the fields destroyed, poweredon from the model.
         """
-        with transaction.atomic():
-            dvm = VM.objects.get(id=vm_id).dummyvm
-            if dvm.destroyed:
-                new_status = 'destroyed'
-            else:
-                new_status = 'powered ' + ('on' if dvm.poweredon else 'off')
-            dvm.status = new_status
-            dvm.save()
-            aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
-            return dvm.destroyed, dvm.poweredon
+        dvm = VM.objects.get(id=vm_id).dummyvm
+        if dvm.destroyed:
+            new_status = 'destroyed'
+        else:
+            new_status = 'powered ' + ('on' if dvm.poweredon else 'off')
+        dvm.status = new_status
+        dvm.save()
+        aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
+        return dvm.destroyed, dvm.poweredon
 
     with aud.ctx_mgr(vm_id=vm_id):
-        destroyed, poweredon = retry_transaction(call)
+        destroyed, poweredon = retry_in_transaction(call)
         if destroyed:
             poweredon = False
 

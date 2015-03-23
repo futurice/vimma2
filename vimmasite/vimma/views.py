@@ -2,7 +2,6 @@ import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -29,7 +28,7 @@ from vimma.models import (
 )
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
-        retry_transaction,
+        retry_in_transaction,
 )
 
 
@@ -636,26 +635,25 @@ def destroy_vm(request):
     vm_id = body['vmid']
 
     def check_err():
-        with transaction.atomic():
-            try:
-                vm = VM.objects.get(id=vm_id)
-            except ObjectDoesNotExist as e:
-                return get_http_json_err('{}'.format(e),
-                        status.HTTP_404_NOT_FOUND)
+        try:
+            vm = VM.objects.get(id=vm_id)
+        except ObjectDoesNotExist as e:
+            return get_http_json_err('{}'.format(e),
+                    status.HTTP_404_NOT_FOUND)
 
-            if not can_do(request.user,
-                    Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT,
-                    vm.project):
-                return get_http_json_err(
-                        'You may not destroy VMs in this project',
-                        status.HTTP_403_FORBIDDEN)
+        if not can_do(request.user,
+                Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT,
+                vm.project):
+            return get_http_json_err(
+                    'You may not destroy VMs in this project',
+                    status.HTTP_403_FORBIDDEN)
 
-            now = datetime.datetime.utcnow().replace(tzinfo=utc)
-            vm.destroy_request_at = now
-            vm.destroy_request_by = request.user
-            vm.full_clean()
-            vm.save()
-    err = retry_transaction(check_err)
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        vm.destroy_request_at = now
+        vm.destroy_request_by = request.user
+        vm.full_clean()
+        vm.save()
+    err = retry_in_transaction(check_err)
     if err:
         return err
 
@@ -712,17 +710,16 @@ def override_schedule(request):
                     seconds, max_secs), status.HTTP_400_BAD_REQUEST)
 
         def call():
-            with transaction.atomic():
-                vm = VM.objects.get(id=body['vmid'])
-                vm.sched_override_state = state
-                if state == None:
-                    vm.sched_override_tstamp = None
-                else:
-                    now = datetime.datetime.utcnow().replace(tzinfo=utc)
-                    vm.sched_override_tstamp = now.timestamp() + seconds
-                vm.save()
-                vm.full_clean()
-        retry_transaction(call)
+            vm = VM.objects.get(id=body['vmid'])
+            vm.sched_override_state = state
+            if state == None:
+                vm.sched_override_tstamp = None
+            else:
+                now = datetime.datetime.utcnow().replace(tzinfo=utc)
+                vm.sched_override_tstamp = now.timestamp() + seconds
+            vm.save()
+            vm.full_clean()
+        retry_in_transaction(call)
 
         if state is None:
             msg = 'Cleared scheduling override'
@@ -774,37 +771,36 @@ def change_vm_schedule(request):
 
     def call():
         """
-        Do the work, return response and an optional callable.
+        Do the work, return the response and an optional callable.
 
-        This function is safe to retry via retry_transaction(…).
+        This function is safe to retry via retry_in_transaction(…).
         """
-        with transaction.atomic():
-            try:
-                vm = VM.objects.get(id=vm_id)
-                schedule_id = body['scheduleid']
-                schedule = Schedule.objects.get(id=schedule_id)
-            except ObjectDoesNotExist as e:
-                return get_http_json_err('{}'.format(e),
-                        status.HTTP_404_NOT_FOUND), None
+        try:
+            vm = VM.objects.get(id=vm_id)
+            schedule_id = body['scheduleid']
+            schedule = Schedule.objects.get(id=schedule_id)
+        except ObjectDoesNotExist as e:
+            return get_http_json_err('{}'.format(e),
+                    status.HTTP_404_NOT_FOUND), None
 
-            if not can_do(request.user, Actions.CHANGE_VM_SCHEDULE,
-                    {'vm': vm, 'schedule': schedule}):
-                return get_http_json_err('You may not set this VM ' +
-                        'to this schedule', status.HTTP_403_FORBIDDEN), None
+        if not can_do(request.user, Actions.CHANGE_VM_SCHEDULE,
+                {'vm': vm, 'schedule': schedule}):
+            return get_http_json_err('You may not set this VM ' +
+                    'to this schedule', status.HTTP_403_FORBIDDEN), None
 
-            vm.schedule = schedule
-            vm.save()
-            vm.full_clean()
+        vm.schedule = schedule
+        vm.save()
+        vm.full_clean()
 
         aud.info('Changed schedule to {}'.format(schedule_id),
                 user_id=request.user.id, vm_id=vm_id)
-        # Just in case this lambda could cause the retry_transaction(…) helper
+        # Just in case this lambda could cause retry_in_transaction(…)
         # to re-execute this function, don't run the lambda here but return it
         # to our caller.
         return HttpResponse(), lambda: vmutil.update_vm_status.delay(vm_id)
 
     try:
-        response, callback = retry_transaction(call)
+        response, callback = retry_in_transaction(call)
 
         if request.META['SERVER_NAME'] == "testserver":
             # Don't perform other actions when running tests
@@ -851,13 +847,12 @@ def set_expiration(request):
 
         def call():
             nonlocal vm_id
-            with transaction.atomic():
-                exp = Expiration.objects.get(id=exp_id)
-                exp.expires_at = aware
-                if exp.type == Expiration.TYPE_VM:
-                    vm_id = exp.vmexpiration.vm.id
-                exp.save()
-        retry_transaction(call)
+            exp = Expiration.objects.get(id=exp_id)
+            exp.expires_at = aware
+            if exp.type == Expiration.TYPE_VM:
+                vm_id = exp.vmexpiration.vm.id
+            exp.save()
+        retry_in_transaction(call)
 
         aud.info('Changed expiration id {} to {}'.format(exp_id, aware),
                 user_id=request.user.id, vm_id=vm_id)
@@ -932,9 +927,8 @@ def delete_firewall_rule(request):
         body = json.loads(request.read().decode('utf-8'))
         rule_id = body['id']
         def call():
-            with transaction.atomic():
-                return FirewallRule.objects.get(id=rule_id).vm.id
-        vm_id = retry_transaction(call)
+            return FirewallRule.objects.get(id=rule_id).vm.id
+        vm_id = retry_in_transaction(call)
         controller = vmutil.get_vm_controller(vm_id)
         if not controller.can_change_firewall_rules(request.user.id):
             return get_http_json_err('You may not change firewall rules ' +

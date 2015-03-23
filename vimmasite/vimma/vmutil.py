@@ -15,7 +15,7 @@ from vimma.models import (
     FirewallRule,
 )
 from vimma.util import (
-    can_do, retry_transaction,
+    can_do, retry_in_transaction,
     vm_at_now, discard_expired_schedule_override,
 )
 import vimma.vmtype.dummy, vimma.vmtype.aws
@@ -97,9 +97,8 @@ def get_vm_controller(vm_id):
     Return an instace of a VMController subclass, specific to the vm_id.
     """
     def get_prov_type():
-        with transaction.atomic():
-            return VM.objects.get(id=vm_id).provider.type
-    t = retry_transaction(get_prov_type)
+        return VM.objects.get(id=vm_id).provider.type
+    t = retry_in_transaction(get_prov_type)
     if t == Provider.TYPE_DUMMY:
         return DummyVMController(vm_id)
     elif t == Provider.TYPE_AWS:
@@ -146,11 +145,10 @@ class VMController():
 
     def can_change_firewall_rules(self, user_id):
         def call():
-            with transaction.atomic():
-                user = User.objects.get(id=user_id)
-                vm = VM.objects.get(id=self.vm_id)
-                return can_do(user, Actions.CREATE_VM_IN_PROJECT, vm.project)
-        return retry_transaction(call)
+            user = User.objects.get(id=user_id)
+            vm = VM.objects.get(id=self.vm_id)
+            return can_do(user, Actions.CREATE_VM_IN_PROJECT, vm.project)
+        return retry_in_transaction(call)
 
     def create_firewall_rule(self, data, user_id=None):
         """
@@ -245,16 +243,15 @@ def power_log(vm_id, powered_on):
     PowerLog the current vm state (ON/OFF).
     """
     def do_log():
-        with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
-            PowerLog.objects.create(vm=vm, powered_on=powered_on)
+        vm = VM.objects.get(id=vm_id)
+        PowerLog.objects.create(vm=vm, powered_on=powered_on)
 
     with aud.ctx_mgr(vm_id=vm_id):
         if type(powered_on) is not bool:
             raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
                 powered_on, type(powered_on), bool))
 
-        retry_transaction(do_log)
+        retry_in_transaction(do_log)
 
 
 def switch_on_off(vm_id, powered_on):
@@ -291,10 +288,9 @@ def expiration_notify(vm_id):
     """
     with aud.ctx_mgr(vm_id=vm_id):
         def read():
-            with transaction.atomic():
-                vm = VM.objects.get(id=vm_id)
-                return vm.vmexpiration.expiration.expires_at
-        exp_date = retry_transaction(read)
+            vm = VM.objects.get(id=vm_id)
+            return vm.vmexpiration.expiration.expires_at
+        exp_date = retry_in_transaction(read)
         aud.warning('Notify of VM expiration on ' + str(exp_date),
                 vm_id=vm_id)
 
@@ -306,10 +302,9 @@ def expiration_grace_action(vm_id):
     """
     with aud.ctx_mgr(vm_id=vm_id):
         def read():
-            with transaction.atomic():
-                vm = VM.objects.get(id=vm_id)
-                return vm.vmexpiration.expiration.expires_at
-        exp_date = retry_transaction(read)
+            vm = VM.objects.get(id=vm_id)
+            return vm.vmexpiration.expiration.expires_at
+        exp_date = retry_in_transaction(read)
         aud.warning('Perform action at the end of grace period for VM ' +
                 'which expired on ' + str(exp_date),
                 vm_id=vm_id)
@@ -323,10 +318,9 @@ def dispatch_all_expiration_notifications():
     aud.debug('Check which Expiration items need a notification')
     with aud.ctx_mgr():
         def read():
-            with transaction.atomic():
-                return list(map(lambda e: e.id, Expiration.objects.filter(
-                    grace_end_action_performed=False)))
-        ids = retry_transaction(read)
+            return list(map(lambda e: e.id, Expiration.objects.filter(
+                grace_end_action_performed=False)))
+        ids = retry_in_transaction(read)
         for x in ids:
             # don't allow a single item to break the loop (in some corner case).
             # Make a separate task for each instead of handling
@@ -355,10 +349,9 @@ def dispatch_all_expiration_grace_end_actions():
     aud.debug('Check which Expiration items need a grace-end action')
     with aud.ctx_mgr():
         def read():
-            with transaction.atomic():
-                return list(map(lambda e: e.id, Expiration.objects.filter(
-                    grace_end_action_performed=False)))
-        ids = retry_transaction(read)
+            return list(map(lambda e: e.id, Expiration.objects.filter(
+                grace_end_action_performed=False)))
+        ids = retry_in_transaction(read)
         for x in ids:
             # don't allow a single item to break the loop (in some corner case).
             # Make a separate task for each instead of handling
@@ -381,9 +374,8 @@ def dispatch_expiration_grace_end_action(exp_id):
 
 def delete_firewall_rule(fw_rule_id, user_id=None):
     def get_vm_id():
-        with transaction.atomic():
-            fw_rule = FirewallRule.objects.get(id=fw_rule_id)
-            return fw_rule.vm.id
-    vm_id = retry_transaction(get_vm_id)
+        fw_rule = FirewallRule.objects.get(id=fw_rule_id)
+        return fw_rule.vm.id
+    vm_id = retry_in_transaction(get_vm_id)
 
     get_vm_controller(vm_id).delete_firewall_rule(fw_rule_id, user_id=user_id)
