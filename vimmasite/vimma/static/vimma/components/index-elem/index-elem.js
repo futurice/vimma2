@@ -29,9 +29,9 @@ Polymer('index-elem', {
     },
 
     navClicked: function(ev, detail, sender) {
-        if (ev.button != 0) {
-            // The main button wasn't pressed, bypass this handler.
-            // E.g. the user middle-clicked to open in a new tab: so do that.
+        // Only run this handler if the main mouse button was pressed with no
+        // modifier keys. Otherwise (e.g. middle-click; ctrl+click) bypass it.
+        if (ev.button != 0 || ev.altKey || ev.ctrlKey || ev.shiftKey) {
             return;
         }
         ev.preventDefault();
