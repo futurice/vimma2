@@ -1,4 +1,17 @@
+div#navigation {
+	display: flex;
+}
+
+span#nav-expand {
+	flex-grow: 1;
+	text-align: center;
+}
+
+span#reload-glyph {
+	color: green;
+}
+
 div#container {
 	width: 100%;
-	height: 100px;
+	height: 7em;
 }

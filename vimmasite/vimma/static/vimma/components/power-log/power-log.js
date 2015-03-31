@@ -1,8 +1,17 @@
 Polymer('power-log', {
-    loading: true,
-    loadingSucceeded: false,
+    vmid: -1,
+    showOnlyTransitions: false,
+    // the results as they came from the API
+    apiPage: null,
 
-    powerLogs: null,
+    computed: {
+        // for HighCharts series.data
+        chartData: 'computeChartData(apiPage, showOnlyTransitions)'
+    },
+
+    chartDataChanged: function() {
+        this.drawChart();
+    },
 
     ready: function() {
         this.reload();
@@ -10,44 +19,76 @@ Polymer('power-log', {
 
     reload: function() {
         this.$.ajax.fire('start');
-        this.loading = true;
-
-        this.powerLogs = null;
-
-        this.loadPowerLogs();
+        this.apiPage = null;
+        this.loadAPIPage(this.getAPIStartURL());
     },
     loadFail: function(errorText) {
         this.$.ajax.fire('end', {success: false, errorText: errorText});
-
-        this.loading = false;
-        this.loadingSucceeded = false;
     },
     loadSuccess: function() {
         this.$.ajax.fire('end', {success: true});
-
-        this.loading = false;
-        this.loadingSucceeded = true;
     },
 
-    loadPowerLogs: function() {
+    getAPIStartURL: function() {
+        return vimmaApiPowerLogList + '?vm=' + encodeURIComponent(this.vmid);
+    },
+
+    loadAPIPage: function(url) {
         var ok = (function(resultArr) {
-            this.powerLogs = resultArr[0].results;
-            this.async(this.drawChart);
+            this.apiPage = resultArr[0];
             this.loadSuccess();
         }).bind(this);
-        apiGet([vimmaApiPowerLogList + '?vm=' + this.vmid],
-                ok, this.loadFail.bind(this));
+        apiGet([url], ok, this.loadFail.bind(this));
+    },
+    loadOlder: function() {
+        this.$.ajax.fire('start');
+        this.loadAPIPage(this.apiPage.next);
+    },
+    loadNewer: function() {
+        this.$.ajax.fire('start');
+        this.loadAPIPage(this.apiPage.previous);
     },
 
-    drawChart: function() {
+    computeChartData: function(apiPage, showOnlyTransitions) {
+        if (apiPage == null) {
+            return null;
+        }
+
         var dataPoints = [];
-        this.powerLogs.forEach(function(pl) {
+        apiPage.results.forEach(function(pl) {
             var x = new Date(pl.timestamp).valueOf(),
                 y = pl.powered_on ? 1 : 0;
             dataPoints.push([x, y]);
         });
-        dataPoints.reverse();
 
+        if (showOnlyTransitions) {
+            dataPoints = (function() {
+                // remove a data point if it has the same y value as both its
+                // left and right neighbours.
+                var idxToRemove = {}, i, crtV, leftV, rightV;
+                for (i = 1; i < dataPoints.length - 1; i++) {
+                    crtV = dataPoints[i][1];
+                    leftV = dataPoints[i-1][1];
+                    rightV = dataPoints[i+1][1];
+                    if (crtV == leftV && crtV == rightV) {
+                        idxToRemove[i] = null;
+                    }
+                }
+
+                var result = [];
+                for (i = 0; i < dataPoints.length; i++) {
+                    if (!(i in idxToRemove)) {
+                        result.push(dataPoints[i]);
+                    }
+                }
+                return result;
+            })();
+        }
+
+        return dataPoints.reverse();
+    },
+
+    drawChart: function() {
         $(this.shadowRoot.getElementById('container')).highcharts({
             title: {
                 text: ''
@@ -71,7 +112,7 @@ Polymer('power-log', {
             series: [{
                 name: 'Power',
                 showInLegend: false,
-                data: dataPoints
+                data: this.chartData
             }]
         });
     }
