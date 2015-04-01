@@ -113,7 +113,12 @@ Polymer('power-log', {
                 name: 'Power',
                 showInLegend: false,
                 data: this.chartData
-            }]
+            }],
+            plotOptions: {
+                series: {
+                    animation: false
+                }
+            }
         });
     }
 });
