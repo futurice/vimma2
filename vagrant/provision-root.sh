@@ -14,4 +14,3 @@ ROOT_DIR=/vagrant/vagrant
 "$ROOT_DIR"/apache-config.sh
 "$ROOT_DIR"/supervisor.sh
 "$ROOT_DIR"/postgresql.sh
-"$ROOT_DIR"/bower.sh

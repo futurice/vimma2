@@ -18,3 +18,6 @@ apt-get install -y \
 	npm git \
 	xvfb chromium-browser chromium-chromedriver firefox
 # Use python3-virtualenv instead, in distributions that have it
+
+# bower complains (on usage) '/usr/bin/env: node: No such file or directory'
+ln -s /usr/bin/nodejs /usr/bin/node

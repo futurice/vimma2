@@ -11,7 +11,8 @@ ROOT_DIR=/vagrant/vagrant
 
 # only do ‘bower install’ if missing
 if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; then
-	"$ROOT_DIR"/../scripts/bower-reset.py
+	PATH=$PATH:/usr/local/lib/node_modules/vimma2/node_modules/.bin \
+		"$ROOT_DIR"/../scripts/bower-reset.py
 fi
 
 "$ROOT_DIR"/collectstatic.sh

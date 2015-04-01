@@ -43,7 +43,8 @@ virtualenv -p python3 env
 . env/bin/activate
 pip install -r req.txt
 
-./scripts/bower-reset.py	# bower install
+npm install
+PATH=`pwd`/node_modules/.bin:$PATH ./scripts/bower-reset.py	# bower install
 
 mkdir -p vimmasite/static
 PYTHONPATH=config ./vimmasite/manage.py collectstatic --noinput --clear --link

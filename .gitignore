@@ -1,5 +1,6 @@
 /env/
 __pycache__/
+/node_modules/
 /vimmasite/vimma/static/vimma/components/bower_components/
 
 /config/local_settings.py

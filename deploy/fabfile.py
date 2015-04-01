@@ -19,6 +19,8 @@ repo_link = os.path.join(home_dir, 'vimma2')
 env_link = os.path.join(home_dir, 'env')
 repo_dir = os.path.join(home_dir, 'vimma2-' + stamp)
 env_dir = os.path.join(home_dir, 'env-' + stamp)
+node_modules_dir = os.path.join(repo_dir, 'node_modules')
+node_bin_dir = os.path.join(node_modules_dir, '.bin')
 
 git_clone_url = 'https://github.com/futurice/vimma2.git'
 
@@ -52,6 +54,13 @@ def make_env():
             sudo('pip install -r ' + repo_dir + '/req.txt')
 
 
+def npm_install():
+    with settings(cd(repo_dir), sudo_user=vimma_user):
+        # HOME needed by npm or it tries to write into the ssh user's ~/.npm
+        with shell_env(HOME=home_dir):
+            sudo('npm install')
+
+
 def run_tests_and_migrate():
     with settings(cd(home_dir), sudo_user=vimma_user):
         with prefix('source ' + env_dir + '/bin/activate'):
@@ -75,7 +84,8 @@ def prepare_repository():
     with settings(cd(home_dir), sudo_user=vimma_user):
         # otherwise bower tries to access ~/.config for the original SSH user
         with shell_env(HOME=home_dir):
-            sudo(repo_dir + '/scripts/bower-reset.py')
+            with path(node_bin_dir):
+                sudo(repo_dir + '/scripts/bower-reset.py')
         with prefix('source ' + env_dir + '/bin/activate'):
             with shell_env(PYTHONPATH=config_dir):
                 sudo('mkdir -p ' + repo_dir + '/vimmasite/static')
@@ -95,6 +105,7 @@ def deploy():
     stop_services()
     clone_repository()
     make_env()
+    npm_install()
     prepare_repository()
     run_tests_and_migrate()
     move_symlinks()

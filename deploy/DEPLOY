@@ -26,7 +26,6 @@ sudo apt-get --yes install \
         npm git \
         xvfb chromium-browser chromium-chromedriver firefox
 sudo ln -s /usr/bin/nodejs /usr/bin/node
-sudo npm install -g bower
 
 
 put the SSL certificate in:
