@@ -70,8 +70,11 @@ def run_tests_and_migrate():
                     LD_LIBRARY_PATH='/usr/lib/chromium-browser/libs'):
                 # additional path needed by chromedriver
                 with path('/usr/lib/chromium-browser'):
-                    sudo('xvfb-run ' + repo_dir + '/vimmasite/manage.py test vimma ' +
-                            '--settings=test_settings --noinput')
+                    sudo('xvfb-run ' + repo_dir + '/vimmasite/manage.py ' +
+                            'test vimma --settings=test_settings --noinput')
+                with cd(repo_dir), path(node_bin_dir):
+                    sudo('xvfb-run wct ' +
+                            'vimmasite/vimma/static/vimma/components/test/')
 
                 sudo(repo_dir + '/vimmasite/manage.py migrate')
                 sudo(repo_dir + '/vimmasite/manage.py create_vimma_permissions')

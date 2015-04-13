@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>show-count</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../show-count.html">
+  </head>
+
+  <body>
+    <show-count id="one" n="1" name="apple"></show-count>
+    <show-count id="zero" n="0" name="train"></show-count>
+    <show-count id="two" n="2" name="t-shirt"></show-count>
+
+    <script>
+      var e1 = document.getElementById('one'),
+          e0 = document.getElementById('zero'),
+          e2 = document.getElementById('two');
+
+      suite('<show-count>', function() {
+        test('n=1 uses singular', function() {
+          assert.equal(e1.shadowRoot.textContent, '1 apple');
+        });
+        test('n=0 uses plural', function() {
+          assert.equal(e0.shadowRoot.textContent, '0 trains');
+        });
+        test('n=2 uses plural', function() {
+          assert.equal(e2.shadowRoot.textContent, '2 t-shirts');
+        });
+      });
+    </script>
+  </body>
+</html>

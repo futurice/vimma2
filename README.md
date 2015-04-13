@@ -50,6 +50,7 @@ mkdir -p vimmasite/static
 PYTHONPATH=config ./vimmasite/manage.py collectstatic --noinput --clear --link
 
 PYTHONPATH=config ./vimmasite/manage.py test vimma --settings=test_settings --noinput
+PATH=`pwd`/node_modules/.bin:$PATH wct vimmasite/vimma/static/vimma/components/test/
 
 # reset DB, create all permissions and dummy data
 PYTHONPATH=config ./scripts/dev-db-reset.py

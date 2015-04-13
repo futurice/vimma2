@@ -14,3 +14,7 @@ PATH=$PATH:/usr/lib/chromium-browser \
 	LD_LIBRARY_PATH=/usr/lib/chromium-browser/libs \
 	PYTHONPATH=/vagrant/config \
 	xvfb-run /vagrant/vimmasite/manage.py test vimma --settings=test_settings --noinput
+
+cd /vagrant
+PATH=$PATH:/usr/local/lib/node_modules/vimma2/node_modules/.bin \
+	xvfb-run wct vimmasite/vimma/static/vimma/components/test/

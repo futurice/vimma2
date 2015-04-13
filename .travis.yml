@@ -21,4 +21,10 @@ install:
   - pip install -r req.txt
   - psql -c 'create database vimma;' -U postgres
 
-script: xvfb-run ./vimmasite/manage.py test vimma --settings=test_settings --noinput
+  - npm install
+  - PATH=`pwd`/node_modules/.bin:$PATH
+  - ./scripts/bower-reset.py
+
+script:
+  - xvfb-run ./vimmasite/manage.py test vimma --settings=test_settings --noinput
+  - xvfb-run wct vimmasite/vimma/static/vimma/components/test/

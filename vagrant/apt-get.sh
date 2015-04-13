@@ -16,8 +16,10 @@ apt-get install -y \
 	rabbitmq-server python3 python3-pip python-virtualenv \
 	supervisor postgresql libpq-dev python-dev \
 	npm git \
-	xvfb chromium-browser chromium-chromedriver firefox
+	xvfb chromium-browser chromium-chromedriver firefox \
+	default-jre
 # Use python3-virtualenv instead, in distributions that have it
+# default-jre is added because ‘wct’ uses Java
 
 # bower complains (on usage) '/usr/bin/env: node: No such file or directory'
 ln -s /usr/bin/nodejs /usr/bin/node

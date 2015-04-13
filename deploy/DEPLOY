@@ -24,7 +24,8 @@ sudo apt-get --yes install \
         rabbitmq-server python3 python3-pip python-virtualenv \
         supervisor postgresql libpq-dev python-dev \
         npm git \
-        xvfb chromium-browser chromium-chromedriver firefox
+        xvfb chromium-browser chromium-chromedriver firefox \
+        default-jre
 sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 
