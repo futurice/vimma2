@@ -24,8 +24,8 @@
         future: null,
 
         pageSize: 5,
-        // can't refer to ‘restMaxPaginateBy’ in the template disabled?= binding
-        maxPageSize: restMaxPaginateBy,
+        // can't refer to ‘restMaxPageSize’ in the template disabled?= binding
+        maxPageSize: restMaxPageSize,
 
         ready: function() {
             this.reload();
@@ -60,7 +60,7 @@
             if (this.userid != -1) {
                 params.push('user=' + this.userid);
             }
-            params.push(restPaginateByParam + '=' + this.pageSize);
+            params.push(restPageSizeQueryParam + '=' + this.pageSize);
             if (params.length) {
                 url += '?' + params.join('&');
             }

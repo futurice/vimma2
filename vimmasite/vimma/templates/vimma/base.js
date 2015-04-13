@@ -55,8 +55,8 @@ var indexUrl = '{% url "index" %}',
 
     vimmaUserId = {{ user.id }},
 
-    restPaginateByParam = '{{settings.REST_FRAMEWORK.PAGINATE_BY_PARAM|escapejs}}',
-    restMaxPaginateBy = {{settings.REST_FRAMEWORK.MAX_PAGINATE_BY}},
+    restPageSizeQueryParam = '{{pagination.page_size_query_param|escapejs}}',
+    restMaxPageSize = {{pagination.max_page_size}},
 
     // [{id: …, name: …}, …]
     auditLevels = JSON.parse('{{audit_level_choices_json|escapejs}}'),

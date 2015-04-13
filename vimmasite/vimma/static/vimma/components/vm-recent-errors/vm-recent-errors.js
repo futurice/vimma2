@@ -45,7 +45,7 @@ Polymer('vm-recent-errors', {
             params.push('min_level=' +
                     encodeURIComponent(auditLevels[auditLevels.length-1].id));
             params.push('vm=' + encodeURIComponent(this.vmid));
-            params.push(restPaginateByParam + '=' + this.pageSize);
+            params.push(restPageSizeQueryParam + '=' + this.pageSize);
             if (params.length) {
                 url += '?' + params.join('&');
             }

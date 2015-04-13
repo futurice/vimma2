@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from rest_framework import routers
 
 from vimma.views import (
@@ -41,7 +41,7 @@ router.register(r'firewallruleexpiration', FirewallRuleExpirationViewSet,
 router.register(r'firewallrule', FirewallRuleViewSet, 'firewallrule')
 router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^api/', include(router.urls)),
 
     url(r'^$', index, name='index'),
@@ -61,4 +61,4 @@ urlpatterns = patterns('',
         name='createFirewallRule'),
     url(r'^delete-firewall-rule$', delete_firewall_rule,
         name='deleteFirewallRule'),
-)
+]

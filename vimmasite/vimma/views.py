@@ -1,5 +1,4 @@
 import datetime
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -30,6 +29,7 @@ from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
         retry_in_transaction,
 )
+from vimmasite.pagination import VimmaPagination
 
 
 aud = Auditor(__name__)
@@ -411,7 +411,7 @@ def base_js(request):
     base.js, included by the html template(s).
     """
     return render(request, 'vimma/base.js', {
-        'settings': settings,
+        'pagination': VimmaPagination,
         'audit_level_choices_json': audit_levels_json,
         'aws_firewall_rule_protocol_choices_json':
         aws_firewall_rule_protocol_choices_json,

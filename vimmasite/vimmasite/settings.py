@@ -82,10 +82,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # http://www.django-rest-framework.org/api-guide/pagination#pagination-in-the-generic-views
-    'PAGINATE_BY': 100,
-    'PAGINATE_BY_PARAM': 'page_size',
-    'MAX_PAGINATE_BY': 100,
+    # http://www.django-rest-framework.org/api-guide/pagination/#pagenumberpagination
+    'DEFAULT_PAGINATION_CLASS': 'vimmasite.pagination.VimmaPagination',
+    'PAGE_SIZE': 100,
 }
 
 

@@ -668,7 +668,7 @@ class ApiTests(TestCase):
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         matrix = 7*[16*[True, True, False]]
-        page_size = settings.REST_FRAMEWORK['PAGINATE_BY']
+        page_size = settings.REST_FRAMEWORK['PAGE_SIZE']
         for i in range(page_size+1):
             Schedule.objects.create(name=str(i), timezone=tz, matrix=matrix)
 
