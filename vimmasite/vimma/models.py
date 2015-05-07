@@ -220,16 +220,17 @@ class AWSVMConfig(models.Model):
     vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
 
     regions = sorted([
-        'us-west-2',
-        'ap-southeast-1',
-        'us-gov-west-1',
         'ap-northeast-1',
-        'sa-east-1',
-        'cn-north-1',
+        'ap-southeast-1',
         'ap-southeast-2',
-        'us-east-1',
+        'cn-north-1',
+        'eu-central-1',
         'eu-west-1',
+        'sa-east-1',
+        'us-east-1',
+        'us-gov-west-1',
         'us-west-1'
+        'us-west-2',
     ])
     REGION_CHOICES = ((r, r) for r in regions)
     region = models.CharField(max_length=20, choices=REGION_CHOICES)
