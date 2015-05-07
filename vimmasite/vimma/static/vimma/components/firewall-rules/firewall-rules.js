@@ -112,7 +112,7 @@ Polymer('firewall-rules', {
                 'X-CSRFToken': $.cookie('csrftoken')
             },
             data: JSON.stringify({
-                id: ev.target.templateInstance.model.id
+                id: ev.target.templateInstance.model.rule.id
             }),
             success: (function(data) {
                 this.$.ajax.fire('end', {success: true});

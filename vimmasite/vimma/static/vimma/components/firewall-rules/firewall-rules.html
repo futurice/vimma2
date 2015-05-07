@@ -30,10 +30,15 @@
       <template bind ref="compose"></template>
       <table>
         <tbody>
-          <template repeat="{{firewallRules}}">
+          <template repeat="{{rule in firewallRules}}">
             <tr>
               <td>
-                <display-aws-rule ruleid="{{id}}"></display-aws-rule>
+                <template if="{{vmProvider.type == 'aws'}}">
+                  <display-aws-rule ruleid="{{rule.id}}"></display-aws-rule>
+                </template>
+                <template if="{{vmProvider.type != 'aws'}}">
+                  Unknown provider type {{vmProvider.type}}.
+                </template>
               </td>
               <td>
                 <button type="button" on-click="{{deleteRule}}"
@@ -42,7 +47,7 @@
                 </button>
               </td>
               <td>
-                <expiration-item expid="{{extra_expiration}}"></expiration-item>
+                <expiration-item expid="{{rule.extra_expiration}}"></expiration-item>
               </td>
             </tr>
           </template>
