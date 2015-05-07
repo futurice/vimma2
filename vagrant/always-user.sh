@@ -8,10 +8,11 @@ trap "echo $0 failed because a command in the script failed" ERR
 ROOT_DIR=/vagrant/vagrant
 
 "$ROOT_DIR"/virtualenv.sh
+"$ROOT_DIR"/npm.sh
 
 # only do ‘bower install’ if missing
 if [ ! -e /vagrant/vimmasite/vimma/static/vimma/components/bower_components ]; then
-	PATH=$PATH:/usr/local/lib/node_modules/vimma2/node_modules/.bin \
+	PATH=$PATH:/home/vagrant/node_modules/vimma2/node_modules/.bin \
 		"$ROOT_DIR"/../scripts/bower-reset.py
 fi
 
