@@ -206,7 +206,6 @@ def power_off_vm(vm_id, user_id=None):
         conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         conn.stop_instances(instance_ids=[inst_id])
         aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
-        route53_delete.delay(vm_id, user_id=user_id)
 
 
 @app.task
