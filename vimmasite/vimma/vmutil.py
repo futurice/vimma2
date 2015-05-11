@@ -305,9 +305,10 @@ def expiration_grace_action(vm_id):
             vm = VM.objects.get(id=vm_id)
             return vm.vmexpiration.expiration.expires_at
         exp_date = retry_in_transaction(read)
-        aud.warning('Perform action at the end of grace period for VM ' +
+        aud.warning('Performing action at the end of grace period for VM ' +
                 'which expired on ' + str(exp_date),
                 vm_id=vm_id)
+        get_vm_controller(vm_id).destroy()
 
 
 @app.task

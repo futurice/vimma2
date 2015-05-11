@@ -20,9 +20,13 @@ def needs_notification(expires_at, last_notification, notif_intervals):
 
     expires_at - datetime
     last_notification - datetime or None
-    notif_intervals - sorted list of ints, seconds (before or after
+    notif_intervals - sorted list of distinct ints, seconds (before or after
         expiration date)
     """
+    for a, b in zip(notif_intervals, notif_intervals[1:]):
+        if a >= b:
+            raise ValueError
+
     if last_notification:
         last_secs = (last_notification - expires_at).total_seconds()
         notif_intervals = [x for x in notif_intervals if x > last_secs]
@@ -67,7 +71,7 @@ class ExpirationController:
         """
         Return a sorted list of integers representing seconds.
 
-        [-60*60*24*7, -60*60*3] means 2 intervals: 7 days and 3 hours, both
+        [-60*60*24*7, -60*60*3] means 2 intervals: [-7 days, -3 hours], both
         before the expiration date.
         """
         raise NotImplementedError()

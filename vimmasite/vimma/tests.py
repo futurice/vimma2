@@ -3040,6 +3040,17 @@ class ExpirationTests(TestCase):
         Test the expiry.needs_notification function.
         """
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
+
+        # Pass ‘notif_intervals’ which is not sorted in ascending order or has
+        # duplicates.
+        for ints in (
+                [-1, -2],
+                [5, 0, 2],
+                [3, 4, 4],
+                ):
+            with self.assertRaises(ValueError):
+                expiry.needs_notification(now, None, ints)
+
         for exp, last_notif, ints in (
             (now, None, [-10]),
             (now-datetime.timedelta(seconds=10), None, [5]),
