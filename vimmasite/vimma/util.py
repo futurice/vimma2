@@ -165,11 +165,16 @@ def vm_at_now(vm_id):
     """
     Return True/False if vm should be powered ON/OFF now.
 
-    Computed from the vm's schedule and a possible override.
+    If the VM has expired → OFF. Else if there's a schedule override, use that.
+    Else computed from the vm's schedule.
     """
     def call():
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
         vm = VM.objects.get(id=vm_id)
+
+        if now > vm.vmexpiration.expiration.expires_at.timestamp():
+            return False
+
         if (vm.sched_override_state != None and
                 vm.sched_override_tstamp >= now):
             return vm.sched_override_state

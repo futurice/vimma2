@@ -2194,11 +2194,33 @@ class OverrideScheduleTests(TestCase):
         vm = VM.objects.create(provider=prov, project=prj, schedule=s_off)
         vm.full_clean()
 
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        expire_dt = now + datetime.timedelta(minutes=1)
+        exp = Expiration.objects.create(type=Expiration.TYPE_VM,
+                expires_at=expire_dt)
+        exp.full_clean()
+        VMExpiration.objects.create(expiration=exp, vm=vm).full_clean()
+        del now
+
         def check_overrides():
             old_state = vm.sched_override_state
             old_tstamp = vm.sched_override_tstamp
+            old_vm_at_now = util.vm_at_now(vm.id)
 
             now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            # if the override expired already, it has no effect
+            end = now + datetime.timedelta(minutes=-1)
+            vm.sched_override_tstamp = end.timestamp()
+            vm.save()
+            vm.full_clean()
+
+            for new_state in (True, False):
+                vm.sched_override_state = new_state
+                vm.save()
+                vm.full_clean()
+                self.assertIs(util.vm_at_now(vm.id), old_vm_at_now)
+
+            # if the override hasn't expired yet, it's used
             end = now + datetime.timedelta(minutes=1)
             vm.sched_override_tstamp = end.timestamp()
             vm.save()
@@ -2212,6 +2234,8 @@ class OverrideScheduleTests(TestCase):
 
             vm.sched_override_state = old_state
             vm.sched_override_tstamp = old_tstamp
+            vm.save()
+            vm.full_clean()
 
         self.assertFalse(util.vm_at_now(vm.id))
         check_overrides()
@@ -2221,6 +2245,22 @@ class OverrideScheduleTests(TestCase):
         vm.full_clean()
         self.assertTrue(util.vm_at_now(vm.id))
         check_overrides()
+
+        # if the VM has expired, it's OFF, regardles of schedule and overrides
+
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        expire_dt = now - datetime.timedelta(minutes=1)
+        exp.expires_at = expire_dt
+        exp.save()
+        exp.full_clean()
+        self.assertFalse(util.vm_at_now(vm.id))
+
+        end = now + datetime.timedelta(minutes=1)
+        vm.sched_override_tstamp = end.timestamp()
+        vm.sched_override_state = True
+        vm.save()
+        vm.full_clean()
+        self.assertFalse(util.vm_at_now(vm.id))
 
 
 class ChangeVMScheduleTests(TestCase):
