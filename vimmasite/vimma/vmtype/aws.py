@@ -1,11 +1,11 @@
 import base64
-import boto.ec2
-import boto.route53
+import boto.ec2, boto.route53, boto.vpc
 import celery.exceptions
 import datetime
 from django.conf import settings
 from django.db import transaction
 from django.utils.timezone import utc
+import random
 import sys
 import traceback
 
@@ -58,6 +58,23 @@ def route53_connect_to_aws_vm_region(aws_vm_id):
             aws_secret_access_key=access_key_secret)
 
 
+def vpc_connect_to_aws_vm_region(aws_vm_id):
+    """
+    Return a boto VPCConnection to the given AWS VM's region.
+    """
+    def read_data():
+        aws_vm = AWSVM.objects.get(id=aws_vm_id)
+        aws_prov = aws_vm.vm.provider.awsprovider
+
+        return (aws_prov.access_key_id, aws_prov.access_key_secret,
+                aws_vm.region)
+    access_key_id, access_key_secret, region = retry_in_transaction(read_data)
+
+    return boto.vpc.connect_to_region(region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=access_key_secret)
+
+
 def create_vm(vmconfig, vm, data, user_id):
     """
     Create an AWS VM from vmconfig & data, linking to parent ‘vm’.
@@ -100,12 +117,12 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
     # Make the API calls only once. Retrying failed DB transactions must only
     # include idempotent code, not the AWS API calls which create more VMs.
 
-    ssh_key_name, default_security_group_id = None, None
+    ssh_key_name, default_security_group_id, vpc_id = None, None, None
     aws_vm_id, name = None, None
     ami_id, instance_type, user_data = None, None, None
 
     def read_vars():
-        nonlocal ssh_key_name, default_security_group_id
+        nonlocal ssh_key_name, default_security_group_id, vpc_id
         nonlocal aws_vm_id, name
         nonlocal ami_id, instance_type, user_data
         aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
@@ -115,6 +132,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
 
         ssh_key_name = aws_prov.ssh_key_name
         default_security_group_id = aws_prov.default_security_group_id
+        vpc_id = aws_prov.vpc_id
 
         aws_vm_id = aws_vm.id
         name = aws_vm.name
@@ -128,7 +146,7 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
     ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
 
     security_group = ec2_conn.create_security_group(
-            '{}-{}'.format(name, vm_id), 'Vimma-generated')
+            '{}-{}'.format(name, vm_id), 'Vimma-generated', vpc_id=vpc_id)
     sec_grp_id = security_group.id
 
     def write_sec_grp():
@@ -140,9 +158,15 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
     security_group_ids = [sec_grp_id]
     if default_security_group_id:
         security_group_ids.append(default_security_group_id)
+
+    vpc_conn = vpc_connect_to_aws_vm_region(aws_vm_id)
+    subnets = vpc_conn.get_all_subnets(filters={'vpcId': [vpc_id]})
+    subnet_id = random.choice(subnets).id
+
     reservation = ec2_conn.run_instances(ami_id,
             instance_type=instance_type,
             security_group_ids=security_group_ids,
+            subnet_id=subnet_id,
             key_name=ssh_key_name or None,
             user_data=user_data or None)
 

@@ -75,7 +75,8 @@ AWSProvider.objects.create(provider=prov3,
         access_key_secret=dev_secrets.AWS_ACCESS_KEY_SECRET,
         ssh_key_name=dev_secrets.AWS_SSH_KEY_NAME,
         route_53_zone=dev_secrets.AWS_ROUTE_53_NAME,
-        default_security_group_id=dev_secrets.AWS_DEFAULT_SECURITY_GROUP_ID)
+        default_security_group_id=dev_secrets.AWS_DEFAULT_SECURITY_GROUP_ID,
+        vpc_id=dev_secrets.AWS_VPC_ID)
 
 
 vmc1A = VMConfig.objects.create(provider=prov1, name='Config A',
@@ -88,4 +89,11 @@ DummyVMConfig.objects.create(vmconfig=vmc1B)
 vmc3A = VMConfig.objects.create(provider=prov3, name='Amazon Linux, t2.micro',
         default_schedule=s1)
 AWSVMConfig.objects.create(vmconfig=vmc3A,
-        ami_id='ami-748e2903', instance_type='t2.micro', region='eu-west-1')
+        ami_id='ami-748e2903', instance_type='t2.micro',
+        region='eu-west-1').full_clean()
+
+vmc3B = VMConfig.objects.create(provider=prov3,
+        name='Futu-Vimma Image, t2.micro', default_schedule=s1, default=True)
+AWSVMConfig.objects.create(vmconfig=vmc3B,
+        ami_id=dev_secrets.AWS_AMI_ID, instance_type='t2.micro',
+        region='eu-west-1').full_clean()

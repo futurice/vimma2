@@ -156,6 +156,9 @@ class AWSProvider(models.Model):
     # Optional security group added to every vm, in addition to the vm's
     # individual security group.
     default_security_group_id = models.CharField(max_length=50, blank=True)
+    # The ID of the VPC in which to create VMs. A random subnet will be chosen
+    # at VM creation time.
+    vpc_id = models.CharField(max_length=50)
     # User data (e.g. a script) provided to the AWS Instances. Python Template
     # https://docs.python.org/3/library/string.html#format-string-syntax
     # given the ‘vm’ keyword argument. E.g.:

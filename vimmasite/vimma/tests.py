@@ -893,14 +893,14 @@ class AWSProviderTests(APITestCase):
         AWSProvider requires non-null Provider.
         """
         with self.assertRaises(IntegrityError):
-            AWSProvider.objects.create()
+            AWSProvider.objects.create(vpc_id='dummy')
 
     def test_protect_provider_delete(self):
         """
         Can't delete a Provider still used by a AWSProvider.
         """
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        a = AWSProvider.objects.create(provider=p)
+        a = AWSProvider.objects.create(provider=p, vpc_id='dummy')
         with self.assertRaises(ProtectedError):
             p.delete()
         a.delete()
@@ -922,7 +922,7 @@ class AWSProviderTests(APITestCase):
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_AWS)
         prov.full_clean()
-        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
         awsProv.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))
@@ -2490,7 +2490,7 @@ class SetExpirationTests(TestCase):
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_AWS)
         prov.full_clean()
-        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
         awsProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
@@ -2616,7 +2616,7 @@ class CreateDeleteFirewallRuleTests(TestCase):
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_AWS)
         prov.full_clean()
-        awsProv = AWSProvider.objects.create(provider=prov)
+        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
         awsProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
