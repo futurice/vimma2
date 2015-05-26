@@ -82,25 +82,44 @@ def create_vm(vmconfig, vm, data, user_id):
     Returns (aws_vm, callables).
     data = {
         name: string,
+        root_device_size: int,
+        root_device_volume_type: string,
     }
 
     This function must be called inside a transaction. The caller must execute
     the returned callables only after committing.
     """
+    root_device_size = data['root_device_size']
+    if type(root_device_size) != int:
+        raise ValueError('root_device_size must be int')
+    if (root_device_size < settings.AWS_ROOT_DEVICE_MIN_SIZE or
+            root_device_size > settings.AWS_ROOT_DEVICE_MAX_SIZE):
+        raise ValueError('root_device_size must be between {} and {}'.format(
+            settings.AWS_ROOT_DEVICE_MIN_SIZE,
+            settings.AWS_ROOT_DEVICE_MAX_SIZE))
+
+    root_device_volume_type = data['root_device_volume_type']
+    if (root_device_volume_type not in
+            [c[0] for c in AWSVMConfig.VOLUME_TYPE_CHOICES]):
+        raise ValueError('Invalid root_device_volume_type value')
+
     aws_vm_config = vmconfig.awsvmconfig
 
     aws_vm = AWSVM.objects.create(vm=vm, name=data['name'],
             region=aws_vm_config.region)
     aws_vm.full_clean()
 
-    callables = [lambda: do_create_vm.delay(aws_vm_config.id, vm.id, user_id)]
+    callables = [lambda: do_create_vm.delay(aws_vm_config.id, root_device_size,
+        root_device_volume_type, vm.id, user_id)]
     return aws_vm, callables
 
 
 @app.task
-def do_create_vm(aws_vm_config_id, vm_id, user_id):
+def do_create_vm(aws_vm_config_id, root_device_size, root_device_volume_type,
+        vm_id, user_id):
     try:
-        do_create_vm_impl(aws_vm_config_id, vm_id, user_id)
+        do_create_vm_impl(aws_vm_config_id, root_device_size,
+                root_device_volume_type, vm_id, user_id)
     except:
         msg = ''.join(traceback.format_exc())
         aud.error(msg, vm_id=vm_id, user_id=user_id)
@@ -108,7 +127,8 @@ def do_create_vm(aws_vm_config_id, vm_id, user_id):
         raise
 
 
-def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
+def do_create_vm_impl(aws_vm_config_id, root_device_size,
+        root_device_volume_type, vm_id, user_id):
     """
     The implementation for the similarly named task.
 
@@ -163,10 +183,22 @@ def do_create_vm_impl(aws_vm_config_id, vm_id, user_id):
     subnets = vpc_conn.get_all_subnets(filters={'vpcId': [vpc_id]})
     subnet_id = random.choice(subnets).id
 
+    img = ec2_conn.get_image(ami_id)
+    bdm = img.block_device_mapping
+    # Passing the image's BDM to run_instances raises:
+    # ‘Parameter encrypted is invalid. You cannot specify the encrypted flag if
+    # specifying a snapshot id in a block device mapping’.
+    # Un-set the offending flag(s): encrypted.
+    bdm[img.root_device_name].size = root_device_size
+    bdm[img.root_device_name].volume_type = root_device_volume_type
+    for k in bdm:
+        bdm[k].encrypted = None
+
     reservation = ec2_conn.run_instances(ami_id,
             instance_type=instance_type,
             security_group_ids=security_group_ids,
             subnet_id=subnet_id,
+            block_device_map=bdm,
             key_name=ssh_key_name or None,
             user_data=user_data or None)
 

@@ -83,8 +83,7 @@ Polymer('create-vm', {
             this.newVMType = null;
             return;
         }
-        var vmc = this.shownConfs[this.shownConfsIdx],
-            prov = this.providers[this.provIdx];
+        var prov = this.providers[this.provIdx];
         this.newVMType = prov.type;
     },
     newVMType: null,

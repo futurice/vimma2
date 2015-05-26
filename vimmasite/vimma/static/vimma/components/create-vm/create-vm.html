@@ -96,7 +96,8 @@
       </template>
 
       <template if="{{newVMType == 'aws'}}">
-        <create-vm-aws-data data="{{newVMData}}">
+        <create-vm-aws-data vmconf_id="{{shownConfs[shownConfsIdx].id}}"
+          data="{{newVMData}}">
         </create-vm-aws-data>
       </template>
 

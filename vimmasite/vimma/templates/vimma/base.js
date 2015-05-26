@@ -28,6 +28,9 @@ var indexUrl = '{% url "index" %}',
     vimmaApiAWSProviderDetailRoot = apiDetailRootUrl(
             '{% url "awsprovider-detail" 0 %}'),
     vimmaApiVMConfigList = '{% url "vmconfig-list" %}',
+    vimmaApiAWSVMConfigList = '{% url "awsvmconfig-list" %}',
+    vimmaApiAWSVMConfigDetailRoot = apiDetailRootUrl(
+            '{% url "awsvmconfig-detail" 0 %}'),
     vimmaApiAuditList = '{% url "audit-list" %}',
     vimmaApiPowerLogList = '{% url "powerlog-list" %}',
     vimmaApiVMExpirationDetailRoot = apiDetailRootUrl(
@@ -72,5 +75,10 @@ var indexUrl = '{% url "index" %}',
     // [{value: …, label: …}, …]
     awsFirewallRuleProtocolChoices = JSON.parse(
             '{{aws_firewall_rule_protocol_choices_json|escapejs}}'),
+    aws_volume_type_choices_json = JSON.parse(
+            '{{aws_volume_type_choices_json|escapejs}}'),
+
+    AWS_ROOT_DEVICE_MIN_SIZE = {{AWS_ROOT_DEVICE_MIN_SIZE}},
+    AWS_ROOT_DEVICE_MAX_SIZE = {{AWS_ROOT_DEVICE_MAX_SIZE}},
 
     _dummy_end;

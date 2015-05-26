@@ -1,0 +1,4 @@
+#hdd-size-holder {
+	/* disable the default 100% width, the same way <paper-input> does */
+	display: inline-block;
+}

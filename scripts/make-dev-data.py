@@ -89,11 +89,12 @@ DummyVMConfig.objects.create(vmconfig=vmc1B)
 vmc3A = VMConfig.objects.create(provider=prov3, name='Amazon Linux, t2.micro',
         default_schedule=s1)
 AWSVMConfig.objects.create(vmconfig=vmc3A,
-        ami_id='ami-748e2903', instance_type='t2.micro',
-        region='eu-west-1').full_clean()
+        ami_id='ami-748e2903', instance_type='t2.micro', region='eu-west-1',
+        root_device_size=8, root_device_volume_type='standard').full_clean()
 
 vmc3B = VMConfig.objects.create(provider=prov3,
         name='Futu-Vimma Image, t2.micro', default_schedule=s1, default=True)
 AWSVMConfig.objects.create(vmconfig=vmc3B,
         ami_id=dev_secrets.AWS_AMI_ID, instance_type='t2.micro',
-        region='eu-west-1').full_clean()
+        region='eu-west-1',
+        root_device_size=12, root_device_volume_type='gp2').full_clean()

@@ -242,6 +242,18 @@ class AWSVMConfig(models.Model):
     ami_id = models.CharField(max_length=50, blank=True)
     instance_type = models.CharField(max_length=50, blank=True)
 
+    # The default root device size in GB for VMs made from this config.
+    root_device_size = models.IntegerField()
+
+    # Not including ‘io1’ for now because ‘The parameter iops must be specified
+    # for io1 volumes’.
+    VOLUME_TYPE_CHOICES = (
+        ('standard', 'Magnetic'),
+        ('gp2', 'SSD'),
+    )
+    root_device_volume_type = models.CharField(max_length=20,
+            choices=VOLUME_TYPE_CHOICES, default=VOLUME_TYPE_CHOICES[0][0])
+
     def __str__(self):
         return '{}, {} ({})'.format(self.ami_id, self.instance_type,
                 self.vmconfig.name)

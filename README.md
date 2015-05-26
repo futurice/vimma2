@@ -38,6 +38,7 @@ https://dev.futurice.com:8081/vimma/
 ## Running on your machine:
 
 Create a Python3 virtual enviroment and use it for most commands.
+
 ```bash
 virtualenv -p python3 env
 . env/bin/activate
@@ -59,6 +60,6 @@ rabbitmq-server
 PYTHONPATH=config ./scripts/worker.py	# start celery worker
 PYTHONPATH=config ./scripts/beat.py	# start celery beat (periodic task scheduler)
 REMOTE_USER=u2 PYTHONPATH=config ./vimmasite/manage.py runserver
+```
 
 http://localhost:8000/vimma/
-```

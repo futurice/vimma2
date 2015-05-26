@@ -1218,8 +1218,10 @@ class AWSVMConfigTests(APITestCase):
         AWSVMConfig requires vmconfig.
         """
         region = AWSVMConfig.regions[0]
+        vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
         with self.assertRaises(ValidationError):
-            AWSVMConfig(region=region).full_clean()
+            AWSVMConfig(region=region, root_device_size=10,
+                    root_device_volume_type=vol_type).full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         tz.full_clean()
@@ -1231,7 +1233,8 @@ class AWSVMConfigTests(APITestCase):
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
         vmc.full_clean()
-        AWSVMConfig.objects.create(region=region, vmconfig=vmc).full_clean()
+        AWSVMConfig.objects.create(region=region, root_device_size=10,
+                root_device_volume_type=vol_type, vmconfig=vmc).full_clean()
 
     def test_protected(self):
         """
@@ -1248,7 +1251,9 @@ class AWSVMConfigTests(APITestCase):
                 provider=p)
         vmc.full_clean()
         region = AWSVMConfig.regions[0]
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region)
+        vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
+                root_device_size=10, root_device_volume_type=vol_type)
         awsc.full_clean()
 
         with self.assertRaises(ProtectedError):
@@ -1277,7 +1282,9 @@ class AWSVMConfigTests(APITestCase):
                 provider=p)
         vmc.full_clean()
         region = AWSVMConfig.regions[0]
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region)
+        vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
+        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
+                root_device_size=10, root_device_volume_type=vol_type)
         awsc.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))

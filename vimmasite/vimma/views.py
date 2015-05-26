@@ -1,4 +1,5 @@
 import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -159,6 +160,8 @@ class AWSVMConfigSerializer(serializers.ModelSerializer):
 class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSVMConfigSerializer
     queryset = AWSVMConfig.objects.all()
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('vmconfig',)
 
 
 class VMSerializer(serializers.ModelSerializer):
@@ -395,6 +398,9 @@ class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
 aws_firewall_rule_protocol_choices_json = json.dumps([
     {'value': c[0], 'label': c[1]}
     for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
+aws_volume_type_choices_json = json.dumps([
+    {'value': c[0], 'label': c[1]}
+    for c in AWSVMConfig.VOLUME_TYPE_CHOICES])
 
 
 @login_required_or_forbidden
@@ -415,6 +421,9 @@ def base_js(request):
         'audit_level_choices_json': audit_levels_json,
         'aws_firewall_rule_protocol_choices_json':
         aws_firewall_rule_protocol_choices_json,
+        'aws_volume_type_choices_json': aws_volume_type_choices_json,
+        'AWS_ROOT_DEVICE_MIN_SIZE': settings.AWS_ROOT_DEVICE_MIN_SIZE,
+        'AWS_ROOT_DEVICE_MAX_SIZE': settings.AWS_ROOT_DEVICE_MAX_SIZE,
     }, content_type='application/javascript; charset=utf-8')
 
 

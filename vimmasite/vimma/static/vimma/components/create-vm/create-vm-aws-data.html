@@ -2,10 +2,53 @@
 <link rel="import" href="../bower_components/core-elements/core-elements.html">
 <link rel="import" href="../bower_components/paper-elements/paper-elements.html">
 
-<polymer-element name="create-vm-aws-data" attributes="data">
+<link rel="import" href="../ajax-state/ajax-state.html">
+
+<polymer-element name="create-vm-aws-data" attributes="vmconf_id data">
   <template>
-    <paper-input label="Name" floatingLabel="true" value="{{data.name}}">
-    </paper-input>
+    <link rel="stylesheet" type="text/css" href="create-vm-aws-data.css">
+
+    <ajax-state id="ajax"></ajax-state>
+
+    <template if="{{loading}}">
+      Loading…
+    </template>
+
+    <template if="{{!loading}}">
+      <template if="{{loadingSucceeded}}">
+        <template bind ref="main"></template>
+      </template>
+    </template>
+
+    <template if="{{!$.ajax.inProgress && !$.ajax.success}}">
+      <div>
+        <error-display text={{$.ajax.errorText}}></error-display>
+      </div>
+    </template>
+
+    <template id="main">
+      <paper-input label="Name" floatingLabel="true" value="{{data.name}}">
+      </paper-input>
+
+      <div id="hdd-size-holder">
+        <paper-input-decorator label="Disk Size (GB)" floatingLabel="{{true}}"
+          error="Must be an int between {{minHddSize}} and {{maxHddSize}}"
+          isInvalid="{{hddSizeInvalid}}">
+          <input is="core-input" value="{{data.root_device_size}}">
+        </paper-input-decorator>
+      </div>
+
+      <label for="hdd-type">Disk Type:</label>
+      <paper-dropdown-menu id="hdd-type">
+        <paper-dropdown class="dropdown">
+          <core-menu class="menu" selected="{{hddTypeIdx}}">
+            <template repeat="{{c in hddTypeChoices}}">
+              <paper-item>{{c.label}}</paper-item>
+            </template>
+          </core-menu>
+        </paper-dropdown>
+      </paper-dropdown-menu>
+    </template>
   </template>
 
   <script src="create-vm-aws-data.js"></script>
