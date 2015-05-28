@@ -9,6 +9,10 @@ trap "echo $0 failed because a command in the script failed" ERR
 
 sed -e 's/archive.ubuntu.com/de.archive.ubuntu.com/g' -i /etc/apt/sources.list
 
+# Install Google Chrome: web-component-tester doesn't detect Chromium
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+echo "deb http://dl.google.com/linux/chrome/deb/ stable main " > /etc/apt/sources.list.d/google.list
+
 apt-get update
 apt-get install -y \
 	build-essential vim htop \
@@ -17,9 +21,10 @@ apt-get install -y \
 	supervisor postgresql libpq-dev python-dev \
 	npm git \
 	xvfb chromium-browser chromium-chromedriver firefox \
-	default-jre
+	default-jre google-chrome-stable
 # Use python3-virtualenv instead, in distributions that have it
 # default-jre is added because ‘wct’ uses Java
+# google-chrome-stable because web-component-tester doesn't detect Chromium
 
 # bower complains (on usage) '/usr/bin/env: node: No such file or directory'
 ln -s /usr/bin/nodejs /usr/bin/node
