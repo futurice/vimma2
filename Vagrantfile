@@ -8,6 +8,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "ubuntu/trusty64"
 
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 1024
+    vb.cpus = 4
+  end
+
   config.vm.provision "shell", path: "vagrant/provision-root.sh"
   config.vm.provision "shell", privileged: false,
     path: "vagrant/provision-user.sh"

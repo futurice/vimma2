@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>ajax-state</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../ajax-state.html">
+  </head>
+
+  <body>
+    <ajax-state id="ajax"></ajax-state>
+
+    <script>
+      var ajax = document.getElementById('ajax');
+
+      suite('<ajax-state>', function() {
+        test('start and end change the state', function() {
+          assert.strictEqual(ajax.inProgress, false);
+
+          ajax.fire('start');
+          assert.strictEqual(ajax.inProgress, true);
+
+          ajax.fire('end', {success: false, errorText: 'bad data'});
+          assert.strictEqual(ajax.inProgress, false);
+          assert.strictEqual(ajax.success, false);
+          assert.equal(ajax.errorText, 'bad data');
+
+          ajax.fire('start');
+          assert.strictEqual(ajax.inProgress, true);
+
+          ajax.fire('end', {success: true});
+          assert.strictEqual(ajax.inProgress, false);
+          assert.strictEqual(ajax.success, true);
+          assert.equal(ajax.errorText, '');
+        });
+
+        test('start, not end, replaces the token with a new one', function() {
+          var tok = ajax.token;
+
+          ajax.fire('start');
+          assert.notStrictEqual(ajax.token, tok);
+          tok = ajax.token;
+
+          ajax.fire('end', {success: false, errorText: 'canceled'});
+          assert.strictEqual(ajax.token, tok);
+
+          ajax.fire('start');
+          assert.notStrictEqual(ajax.token, tok);
+          tok = ajax.token;
+
+          ajax.fire('end', {success: true});
+          assert.strictEqual(ajax.token, tok);
+        });
+
+        /*
+           Can't test that nested 'start's or 'end's throw exceptions because:
+           https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent
+           “““
+           Exceptions thrown by event handlers are reported as uncaught
+           exceptions; the event handlers run on a nested callstack: they block
+           the caller until they complete, but exceptions do not propagate
+           to the caller.
+           ”””
+         */
+      });
+    </script>
+  </body>
+</html>

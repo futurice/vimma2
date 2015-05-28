@@ -7,9 +7,18 @@ After all have completed:
 .fire('end', {success: true})
 or
 .fire('end', {success: false, errorText: string})
+
+At every .fire('start'), .token is set to a new Object.
+Example:
+.fire('start')
+save a copy of the token and make an asynchronous call
+.fire('end', {success: false, errorText: 'canceled'})
+.fire('start')
+the asynchronous call runs and sees that its copy of the token is outdated
 */
 Polymer('ajax-state', {
     inProgress: false,
+    token: new Object(),
     success: true,
     errorText: '',
 
@@ -19,6 +28,7 @@ Polymer('ajax-state', {
             throw 'start fired while inProgress';
         }
         this.inProgress = true;
+        this.token = new Object();
     },
 
     onEnd: function(ev, detail, sender) {
