@@ -173,6 +173,11 @@
         },
 
         getLastItemNr: function() {
+            // loading is in progress, return some dummy value
+            if (!this.apiResult) {
+                return 0;
+            }
+
             return this.firstItemNr +
                 Math.max(0, this.apiResult.results.length-1);
         },
