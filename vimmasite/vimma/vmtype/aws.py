@@ -396,6 +396,12 @@ def _update_vm_status_impl(vm_id):
 
 @app.task(bind=True, max_retries=12, default_retry_delay=10)
 def route53_add(self, vm_id, user_id=None):
+    """
+    Write a CNAME in the Public DNS Zone and an A record in the Private Zone.
+
+    This task does 2 things (CNAME and A). If any fails, the entire task is
+    retried.
+    """
     def read_vars():
         vm = VM.objects.get(id=vm_id)
         aws_vm = vm.awsvm
@@ -411,6 +417,7 @@ def route53_add(self, vm_id, user_id=None):
     with aud.celery_retry_ctx_mgr(self, 'add route53 cname', **aud_kw):
         aws_vm_id, name, inst_id, route_53_zone = retry_in_transaction(
                 read_vars)
+        vm_cname = (name + '.' + route_53_zone).lower()
 
         ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
         instances = ec2_conn.get_only_instances(instance_ids=[inst_id])
@@ -418,26 +425,63 @@ def route53_add(self, vm_id, user_id=None):
             aud.warning('AWS returned {} instances, expected 1'.format(
                 len(instances)), **aud_kw)
             self.retry()
-        pub_dns_name = instances[0].public_dns_name
-        if not pub_dns_name:
-            aud.warning('No public DNS name for instance {}'.format(inst_id),
-                    **aud_kw)
-            self.retry()
+        instance = instances[0]
 
         r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
-        r53_z = r53_conn.get_zone(route_53_zone)
+        priv_zone, pub_zone = None, None
+        for z in r53_conn.get_zones():
+            if z.name != route_53_zone:
+                continue
+            if z.config['PrivateZone'] == 'true':
+                priv_zone = z
+            elif z.config['PrivateZone'] == 'false':
+                pub_zone = z
 
-        vm_cname = (name + '.' + route_53_zone).lower()
-        if r53_z.get_cname(vm_cname, all=True):
-            r53_z.delete_cname(vm_cname, all=True)
-            aud.info('Removed existing DNS cname ‘{}’'.format(vm_cname),
+        if pub_zone:
+            pub_dns_name = instance.public_dns_name
+            if not pub_dns_name:
+                aud.warning('No public DNS name for instance {}'.format(
+                    inst_id), **aud_kw)
+                self.retry()
+
+            if pub_zone.get_cname(vm_cname, all=True):
+                pub_zone.delete_cname(vm_cname, all=True)
+                aud.info('Removed existing DNS cname ‘{}’'.format(vm_cname),
+                        **aud_kw)
+            pub_zone.add_cname(vm_cname, pub_dns_name,
+                    comment='Vimma-generated')
+            aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+        else:
+            aud.warning('No public DNS zone named ‘{}’'.format(route_53_zone),
                     **aud_kw)
-        r53_z.add_cname(vm_cname, pub_dns_name, comment='Vimma-generated')
-        aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+
+        if priv_zone:
+            priv_ip = instance.private_ip_address
+            if not priv_ip:
+                aud.warning('No private IP address for instance{}'.format(
+                    inst_id), **aud_kw)
+                self.retry()
+
+            if priv_zone.get_a(vm_cname, all=True):
+                priv_zone.delete_a(vm_cname, all=True)
+                aud.info('Removed existing A record ‘{}’'.format(vm_cname),
+                        **aud_kw)
+            priv_zone.add_a(vm_cname, priv_ip, comment='Vimma-generated')
+            aud.info('Created A record ‘{}’ {}'.format(vm_cname, priv_ip),
+                    **aud_kw)
+        else:
+            aud.warning('No private DNS zone named ‘{}’'.format(route_53_zone),
+                    **aud_kw)
 
 
 @app.task(bind=True, max_retries=24, default_retry_delay=5)
 def route53_delete(self, vm_id, user_id=None):
+    """
+    Delete a CNAME in the Public DNS Zone and an A record in the Private Zone.
+
+    This task does 2 things (CNAME and A). If any fails, the entire task is
+    retried.
+    """
     def read_vars():
         vm = VM.objects.get(id=vm_id)
         aws_vm = vm.awsvm
@@ -451,16 +495,38 @@ def route53_delete(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete route53 cname', **aud_kw):
         aws_vm_id, name, route_53_zone = retry_in_transaction(read_vars)
+        vm_cname = (name + '.' + route_53_zone).lower()
 
         r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
-        r53_z = r53_conn.get_zone(route_53_zone)
+        priv_zone, pub_zone = None, None
+        for z in r53_conn.get_zones():
+            if z.name != route_53_zone:
+                continue
+            if z.config['PrivateZone'] == 'true':
+                priv_zone = z
+            elif z.config['PrivateZone'] == 'false':
+                pub_zone = z
 
-        vm_cname = (name + '.' + route_53_zone).lower()
-        if r53_z.get_cname(vm_cname, all=True):
-            r53_z.delete_cname(vm_cname, all=True)
-            aud.info('Removed DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+        if pub_zone:
+            if pub_zone.get_cname(vm_cname, all=True):
+                pub_zone.delete_cname(vm_cname, all=True)
+                aud.info('Removed DNS cname ‘{}’'.format(vm_cname), **aud_kw)
+            else:
+                aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
+                        **aud_kw)
         else:
-            aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
+            aud.warning('No public DNS zone named ‘{}’'.format(route_53_zone),
+                    **aud_kw)
+
+        if priv_zone:
+            if priv_zone.get_a(vm_cname, all=True):
+                priv_zone.delete_a(vm_cname, all=True)
+                aud.info('Removed A record ‘{}’'.format(vm_cname), **aud_kw)
+            else:
+                aud.warning('DNS A record ‘{}’ does not exist'.format(
+                    vm_cname), **aud_kw)
+        else:
+            aud.warning('No private DNS zone named ‘{}’'.format(route_53_zone),
                     **aud_kw)
 
 
