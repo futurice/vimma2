@@ -4,30 +4,15 @@
     <meta charset="utf-8">
     <title>Tests</title>
 
-    <script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+    <script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
     <script src="../bower_components/web-component-tester/browser.js"></script>
   </head>
 
   <body>
     <script>
       var suites = [
-          '../ajax-state/test/index.html',
-          '../plain-text/test/index.html',
-          '../show-count/test/index.html'
+          //'../show-count/test/index.html'
       ];
-
-      if (navigator.userAgent.indexOf(' Firefox/') != -1) {
-        /*
-           Firefox bug: events called ‘end’ won't fire, e.g. on <ajax-state>:
-           https://github.com/RubaXa/Sortable/issues/349
-           https://bugzilla.mozilla.org/show_bug.cgi?id=1153603
-         */
-        [
-          '../ajax-state/test/index.html',
-        ].forEach(function(x) {
-          suites.splice(suites.indexOf(x), 1);
-        });
-      }
 
       WCT.loadSuites(suites);
     </script>
