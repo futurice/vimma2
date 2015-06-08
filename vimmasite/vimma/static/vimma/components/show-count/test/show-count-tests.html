@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tests</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../show-count.html">
+  </head>
+
+  <body>
+    <show-count id="one" n="1" one="apple"></show-count>
+    <show-count id="zero" n="0" one="train"></show-count>
+    <show-count id="two" n="2" one="t-shirt"></show-count>
+    <show-count id="plural" n="3" one="man" many="men"></show-count>
+    <show-count id="plural-one" n="1" one="car" many="autos"></show-count>
+
+    <script>
+      function getText(id) {
+        return Polymer.dom(document.getElementById(id).root).textContent;
+      }
+
+      suite('<show-count>', function() {
+        test('n=1 uses singular', function() {
+          assert.equal(getText('one'), '1 apple');
+        });
+        test('n=0 uses plural', function() {
+          assert.equal(getText('zero'), '0 trains');
+        });
+        test('n=2 uses plural', function() {
+          assert.equal(getText('two'), '2 t-shirts');
+        });
+        test('custom plural is used if present', function() {
+          assert.equal(getText('plural'), '3 men');
+        });
+        test('custom plural is ignored for n=1', function() {
+          assert.equal(getText('plural-one'), '1 car');
+        });
+      });
+    </script>
+  </body>
+</html>
