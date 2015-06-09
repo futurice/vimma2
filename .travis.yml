@@ -17,21 +17,22 @@ install:
   - sudo unzip /tmp/chromedriver_linux64.zip -d /usr/bin
   - sudo chmod +rx /usr/bin/chromedriver
 
-  # Install Google Chrome: web-component-tester doesn't detect Chromium
-  - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-  - sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main " > /etc/apt/sources.list.d/google.list'
-  - sudo apt-get update
-  - sudo apt-get install -y google-chrome-stable
-  # On Travis-CI, Chromium and Google Chrome can't run without ‘--no-sandbox’.
-  # We can't tell web-component-tester to add this flag, so force it instead:
-  - mkdir travis-bin
-  - echo -e '#!/usr/bin/env bash\n'`which google-chrome`' --no-sandbox "$@"' >travis-bin/google-chrome
-  - cat travis-bin/google-chrome
-  - chmod +x travis-bin/google-chrome
-  - echo -e '#!/usr/bin/env bash\n'`which google-chrome-stable`' --no-sandbox "$@"' >travis-bin/google-chrome-stable
-  - cat travis-bin/google-chrome-stable
-  - chmod +x travis-bin/google-chrome-stable
-  - PATH=`pwd`/travis-bin:$PATH
+  # Jun 2014: Google Chrome hangs when run by ‘wct’ with ‘--no-sandbox’.
+  ## Install Google Chrome: web-component-tester doesn't detect Chromium
+  #- wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+  #- sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main " > /etc/apt/sources.list.d/google.list'
+  #- sudo apt-get update
+  #- sudo apt-get install -y google-chrome-stable
+  ## On Travis-CI, Chromium and Google Chrome can't run without ‘--no-sandbox’.
+  ## We can't tell web-component-tester to add this flag, so force it instead:
+  #- mkdir travis-bin
+  #- echo -e '#!/usr/bin/env bash\n'`which google-chrome`' --no-sandbox "$@"' >travis-bin/google-chrome
+  #- cat travis-bin/google-chrome
+  #- chmod +x travis-bin/google-chrome
+  #- echo -e '#!/usr/bin/env bash\n'`which google-chrome-stable`' --no-sandbox "$@"' >travis-bin/google-chrome-stable
+  #- cat travis-bin/google-chrome-stable
+  #- chmod +x travis-bin/google-chrome-stable
+  #- PATH=`pwd`/travis-bin:$PATH
 
   - cp config/local_settings.py.travis config/local_settings.py
   - pip install -r req.txt
