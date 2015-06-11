@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tests</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="multi-comp.html">
+    <link rel="import" href="../../frag-util/frag-util.html">
+  </head>
+
+  <body>
+    <multi-comp id="mc"></multi-comp>
+
+    <script>
+      var e = document.getElementById('mc'),
+          fu = document.createElement('frag-util');
+
+      // check that the top-level ‘frag’ is correctly distributed among elems.
+      function chk(frag) {
+        // check an individual <frag-split> element.
+        function chkFS(fs, frag) {
+          assert.equal(fs.frag, frag);
+          assert.equal(fs.head, fu.fragHead(frag));
+          assert.equal(fs.tail, fu.fragTail(frag));
+        }
+
+        chkFS(e.$.top, frag);
+        chkFS(e.$.mid, fu.fragTail(frag));
+        chkFS(e.$.bot, fu.fragTail(fu.fragTail(frag)));
+      }
+
+      suite('<frag-split> multi', function() {
+        test('initial state', function() {
+          chk('');
+        });
+
+        test('down propagation', function() {
+          ['a', 'a/b', '1/11/111', 'hello/world/x/y', '9/88/7/66/5'
+          ].forEach(function(f) {
+            e.$.top.frag = f;
+            chk(f);
+          });
+        });
+
+        test('up propagation', function() {
+          e.$.top.frag = 'a/b/c';
+          chk('a/b/c');
+
+          e.$.bot.tail = 'd';
+          chk('a/b/c/d');
+
+          e.$.bot.frag = '0/1/2';
+          chk('a/b/0/1/2');
+
+          e.$.bot.head = 'c';
+          chk('a/b/c/1/2');
+        });
+
+        test('propagate from middle', function() {
+          e.$.top.frag = 'm/n/o/p';
+          chk('m/n/o/p');
+
+          e.$.mid.head = 'N';
+          chk('m/N/o/p');
+
+          e.$.mid.tail = 'a/b/c/d';
+          chk('m/N/a/b/c/d');
+
+          e.$.mid.tail = 'x';
+          chk('m/N/x');
+
+          e.$.mid.frag = '1/2/3';
+          chk('m/1/2/3');
+
+          e.$.mid.frag = '00';
+          chk('m/00');
+
+          e.$.mid.frag = '';
+          chk('m');
+        });
+      });
+    </script>
+  </body>
+</html>

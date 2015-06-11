@@ -9,9 +9,16 @@
 
   <body>
     <script>
-      WCT.loadSuites([
-          '../show-count/test/index.html'
-      ]);
+      var elems = [
+        'frag-split',
+        'frag-util',
+        'show-count'
+      ];
+      var suites = elems.map(function(e) {
+        return '../' + e + '/test/index.html';
+      });
+
+      WCT.loadSuites(suites);
     </script>
   </body>
 </html>

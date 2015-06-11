@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tests</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../frag-util.html">
+  </head>
+
+  <body>
+    <script>
+      var fu = document.createElement('frag-util');
+      suite('<frag-util>', function() {
+        test('frag prefix and separator', function() {
+          assert.equal(fu.getFragPrefix(), '#!');
+          assert.equal(fu.getFragSep(), '/');
+        });
+
+        test('fragHead', function() {
+          var fragHead = fu.fragHead;
+          assert.equal(fragHead(""), "");
+          assert.equal(fragHead("/"), "");
+          assert.equal(fragHead("/a"), "");
+          assert.equal(fragHead("/a/"), "");
+          assert.equal(fragHead("/a/b"), "");
+          assert.equal(fragHead("/a/b/"), "");
+
+          assert.equal(fragHead("abc"), "abc");
+          assert.equal(fragHead("abc/"), "abc");
+          assert.equal(fragHead("abc/123"), "abc");
+          assert.equal(fragHead("abc/123/x"), "abc");
+        });
+
+        test('fragTail', function() {
+          var fragTail = fu.fragTail;
+          assert.equal(fragTail(""), "");
+          assert.equal(fragTail("abc"), "");
+          assert.equal(fragTail("abc/"), "");
+          assert.equal(fragTail("abc/123"), "123");
+          assert.equal(fragTail("abc/123/x"), "123/x");
+
+          assert.equal(fragTail("/"), "");
+          assert.equal(fragTail("/a"), "a");
+          assert.equal(fragTail("/a/"), "a/");
+          assert.equal(fragTail("/a/b"), "a/b");
+          assert.equal(fragTail("/a/b/"), "a/b/");
+        });
+
+        test('fragJoin', function() {
+          var fragJoin = fu.fragJoin;
+          assert.equal(fragJoin("", ""), "");
+          assert.equal(fragJoin("a", ""), "a");
+          assert.equal(fragJoin("", "b/c/d"), "b/c/d");
+
+          assert.equal(fragJoin("a", "b"), "a/b");
+          assert.equal(fragJoin("a", "b/c"), "a/b/c");
+        });
+      });
+    </script>
+  </body>
+</html>
