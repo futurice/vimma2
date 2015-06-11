@@ -12,7 +12,11 @@
 
   <body>
     <script>
-      var fu = document.createElement('frag-util');
+      var fu;
+      window.addEventListener('WebComponentsReady', function() {
+        fu = document.createElement('frag-util');
+      });
+
       suite('<frag-util>', function() {
         test('frag prefix and separator', function() {
           assert.equal(fu.getFragPrefix(), '#!');

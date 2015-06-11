@@ -15,8 +15,11 @@
     <multi-comp id="mc"></multi-comp>
 
     <script>
-      var e = document.getElementById('mc'),
-          fu = document.createElement('frag-util');
+      var e, fu;
+      window.addEventListener('WebComponentsReady', function() {
+        e = document.getElementById('mc');
+        fu = document.createElement('frag-util');
+      });
 
       // check that the top-level ‘frag’ is correctly distributed among elems.
       function chk(frag) {

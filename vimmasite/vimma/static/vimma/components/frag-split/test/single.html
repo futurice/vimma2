@@ -20,7 +20,11 @@
     <frag-split id="tail-single" tail="hello"></frag-split>
 
     <script>
-      var fu = document.createElement('frag-util');
+      var fu;
+      window.addEventListener('WebComponentsReady', function() {
+        fu = document.createElement('frag-util');
+      });
+
       function chk(id, frag) {
         var e = document.getElementById(id);
         assert.equal(e.frag, frag);
