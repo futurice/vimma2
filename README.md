@@ -30,7 +30,7 @@ cp config/dev_secrets.py.example config/dev_secrets.py
 
 ```bash
 vagrant up
-# Add ‘127.0.0.1	dev.futurice.com’ to /etc/resolv.conf
+# Add ‘127.0.0.1	dev.futurice.com’ to /etc/hosts
 ```
 https://dev.futurice.com:8081/vimma/
 
