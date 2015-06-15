@@ -12,11 +12,10 @@
         },
 
         setFrag: function(frag) {
-            // doesn't trigger 'hashchange' event listeners
-            history.pushState(null, '', fragPrefix + frag);
+            location.hash = fragPrefix + frag;
         },
         getFrag: function() {
-            var f = window.location.hash;
+            var f = location.hash;
             if (f.slice(0, fragPrefix.length) == fragPrefix) {
                 return f.slice(fragPrefix.length);
             }

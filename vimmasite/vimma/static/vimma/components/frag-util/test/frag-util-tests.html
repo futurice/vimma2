@@ -17,7 +17,7 @@
         fu = document.createElement('frag-util');
       });
 
-      suite('<frag-util>', function() {
+      suite('<frag-util> split & join', function() {
         test('frag prefix and separator', function() {
           assert.equal(fu.getFragPrefix(), '#!');
           assert.equal(fu.getFragSep(), '/');
@@ -61,6 +61,24 @@
 
           assert.equal(fragJoin("a", "b"), "a/b");
           assert.equal(fragJoin("a", "b/c"), "a/b/c");
+        });
+      });
+
+      // If this interferes with the testing framework, because it changes the
+      // browser history, comment it out.
+      suite('<frag-util> history (changes Browser History)', function() {
+        test('set & get frag with history', function() {
+          ['my-abc', 'x-frag?util=1', '#test / 2', ''].forEach(function(frag) {
+            // Can't check that history.length increases: it's capped at 50,
+            // so with many tests (or by refreshing the same test page) we'll
+            // hit the limit.
+            // We're not checking previous vs current history item either,
+            // because history.back() is asynchronous in Chromium (complicates
+            // our tests + would have to properly understand asynchronous tests
+            // with the framework).
+            fu.setFrag(frag);
+            assert.equal(fu.getFrag(), frag);
+          });
         });
       });
     </script>
