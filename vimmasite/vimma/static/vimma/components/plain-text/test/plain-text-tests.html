@@ -15,6 +15,7 @@
                 text="1234567890abcdefghijABCDEFGHIJzyxw"></plain-text>
     <plain-text id="full" text="¡Hola!" size="10"></plain-text>
     <plain-text id="trimmed" text="Hello World" size="8"></plain-text>
+    <plain-text id="react"></plain-text>
 
     <script>
       function ptText(id) {
@@ -43,6 +44,50 @@
           assert.equal(ptText(id), 'Hello World');
           el.click();
           assert.equal(ptText(id), 'Hello W…');
+        });
+
+        test('‘toggles’ class present iff trimming happens', function() {
+          assert.isFalse(
+              document.getElementById('full').classList.contains('toggles'));
+          assert.isTrue(
+              document.getElementById('trimmed').classList.contains('toggles'));
+        });
+
+        test('textContent and CSS class react to property changes', function() {
+          var id = 'react',
+              e = document.getElementById(id);
+
+          e.text = 'ABCD';
+          e.size = 3;
+          assert.equal(ptText(id), 'AB…');
+          assert.isTrue(e.classList.contains('toggles'));
+          e.text = 'WXYZ';
+          assert.equal(ptText(id), 'WX…');
+          e.size = 2;
+          assert.equal(ptText(id), 'W…');
+          assert.isTrue(e.classList.contains('toggles'));
+
+          e.text = 'Q';
+          assert.equal(ptText(id), 'Q');
+          assert.isFalse(e.classList.contains('toggles'));
+          e.text = 'ABCDEF';
+          assert.equal(ptText(id), 'A…');
+          assert.isTrue(e.classList.contains('toggles'));
+          e.size = 8;
+          assert.equal(ptText(id), 'ABCDEF');
+          assert.isFalse(e.classList.contains('toggles'));
+
+          e.size = 5;
+          assert.equal(ptText(id), 'ABCD…');
+          e.click();
+          assert.equal(ptText(id), 'ABCDEF');
+          assert.isTrue(e.classList.contains('toggles'));
+          e.text = '1234567';
+          assert.equal(ptText(id), '1234567');
+          assert.isTrue(e.classList.contains('toggles'));
+          e.click();
+          assert.equal(ptText(id), '1234…');
+          assert.isTrue(e.classList.contains('toggles'));
         });
       });
     </script>

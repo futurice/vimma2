@@ -10,7 +10,12 @@ Polymer({
             type: Number,
             value: 30
         },
-        _collapse: {
+        toggles: {
+            type: Boolean,
+            computed: 'computeToggles(text, size)',
+            observer: 'togglesChanged'
+        },
+        _collapsed: {
             type: Boolean,
             value: true,
             readOnly: true
@@ -22,11 +27,15 @@ Polymer({
         'tap': 'toggle'
     },
 
-    getText: function(text, size, collapse) {
-        if (size < 1) {
-            size = 1;
-        }
-        if (!collapse || text.length <= size) {
+    computeToggles: function(text, size) {
+        return text.length > size;
+    },
+    togglesChanged: function(newV, oldV) {
+        this.toggleClass('toggles', newV);
+    },
+
+    getText: function(text, size, toggles, collapsed) {
+        if (!toggles || !collapsed) {
             return text;
         }
         return text.substr(0, size - 1) + '…';
@@ -37,6 +46,6 @@ Polymer({
     },
 
     toggle: function() {
-        this._set_collapse(!this._collapse);
+        this._set_collapsed(!this._collapsed);
     }
 });

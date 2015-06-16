@@ -3,10 +3,37 @@
 <!--
   Show ‘text’ as plain-text and toggle between preview/full on click
   if it's longer than ‘size’.
+
+  If ‘text’ is longer than ‘size’ the element has the ‘toggles’ CSS class.
+
+  Style this element by styling ‘plain-text’, e.g.:
+
+  plain-text {
+    color: green;
+  }
+
+  plain-text.toggles:hover {
+    background-color: pink;
+  }
 -->
 
 <dom-module id="plain-text">
-  <template>[[getText(text, size, _collapse)]]</template>
+  <template>[[getText(text, size, toggles, _collapsed)]]</template>
+
+  <style>
+    :host {
+      font-family: monospace;
+      white-space: pre-wrap;
+      display: inline-block;
+      padding: 1ex;
+      background-color: WhiteSmoke;
+    }
+
+    :host(.toggles:hover) {
+      cursor: pointer;
+      background-color: LightGray;
+    }
+  </style>
 </dom-module>
 
 <script src="plain-text.js"></script>
