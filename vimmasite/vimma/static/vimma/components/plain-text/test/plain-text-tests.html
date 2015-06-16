@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tests</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../plain-text.html">
+  </head>
+
+  <body>
+    <plain-text id="implicit-size"
+                text="1234567890abcdefghijABCDEFGHIJzyxw"></plain-text>
+    <plain-text id="full" text="¡Hola!" size="10"></plain-text>
+    <plain-text id="trimmed" text="Hello World" size="8"></plain-text>
+
+    <script>
+      function ptText(id) {
+        return Polymer.dom(document.getElementById(id).root).textContent;
+      }
+
+      suite('<plain-text> tests', function() {
+        test('implicit size trims long text', function() {
+          assert.equal(ptText('implicit-size'),
+              '1234567890abcdefghijABCDEFGHI…');
+        });
+
+        test('short text is fully shown', function() {
+          assert.equal(ptText('full'), '¡Hola!');
+        });
+
+        test('long text is trimmed', function() {
+          assert.equal(ptText('trimmed'), 'Hello W…');
+        });
+
+        test('clicking toggles full/trimmed text', function() {
+          var id = 'trimmed',
+              el = document.getElementById(id);
+          assert.equal(ptText(id), 'Hello W…');
+          el.click();
+          assert.equal(ptText(id), 'Hello World');
+          el.click();
+          assert.equal(ptText(id), 'Hello W…');
+        });
+      });
+    </script>
+  </body>
+</html>
