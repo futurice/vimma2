@@ -32,7 +32,7 @@ cp config/dev_secrets.py.example config/dev_secrets.py
 vagrant up
 # Add ‘127.0.0.1	dev.futurice.com’ to /etc/hosts
 ```
-https://dev.futurice.com:8081/vimma/
+https://dev.futurice.com:8081/vimma/?dom=shadow
 
 
 ## Running on your machine:
@@ -62,4 +62,4 @@ PYTHONPATH=config ./scripts/beat.py	# start celery beat (periodic task scheduler
 REMOTE_USER=u2 PYTHONPATH=config ./vimmasite/manage.py runserver
 ```
 
-http://localhost:8000/vimma/
+http://localhost:8000/vimma/?dom=shadow
