@@ -1,4 +1,3 @@
-import base64
 import boto.ec2, boto.route53, boto.vpc
 import celery.exceptions
 import datetime
@@ -159,8 +158,7 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
         ami_id = aws_vm_config.ami_id
         instance_type = aws_vm_config.instance_type
 
-        user_data = base64.b64encode(
-                aws_prov.user_data.format(vm=vm).encode('utf-8'))
+        user_data = aws_prov.user_data.format(vm=vm).encode('utf-8')
     retry_in_transaction(read_vars)
 
     ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
