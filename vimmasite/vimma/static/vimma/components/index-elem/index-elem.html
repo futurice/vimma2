@@ -1,8 +1,22 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../frag-history/frag-history.html">
+<link rel="import" href="../frag-split/frag-split.html">
+
 <dom-module id="index-elem">
+  <link rel="import" type="css" href="index-elem.css">
+
   <template>
-    Hello, World!
+    <frag-history frag="{{_frag}}"></frag-history>
+    <frag-split frag="{{_frag}}" head="{{_fragHead}}"></frag-split>
+
+    <paper-tabs selected="{{_selected}}">
+      <template is="dom-repeat" items="{{_tabs}}">
+        <paper-tab>[[item.title]]</paper-tab>
+      </template>
+    </paper-tabs>
   </template>
 </dom-module>
 
