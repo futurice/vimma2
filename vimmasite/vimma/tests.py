@@ -1817,6 +1817,14 @@ class AWSVMTests(APITestCase):
         items = response.data['results']
         self.assertEqual({avm1.vm.id}, {x['id'] for x in items})
 
+        # filter by .name field
+        # TODO: escape query param value
+        response = self.client.get(reverse('awsvm-list') +
+                '?name=' + avm1.name)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({avm1.vm.id}, {x['id'] for x in items})
+
         # user B can see all AWSVMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))
         response = self.client.get(reverse('awsvm-list'))

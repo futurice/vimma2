@@ -213,7 +213,7 @@ class AWSVMSerializer(serializers.ModelSerializer):
 class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSVMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vm',)
+    filter_fields = ('vm', 'name')
 
     def get_queryset(self):
         user = self.request.user
