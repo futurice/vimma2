@@ -5,8 +5,17 @@
   <!-- Without <title>, the back-forward browser history shows the #! urls -->
   <!--title>Vimma</title-->
 
+  <!--
+    Don't put any styles here (<style>, external stylesheets, etc). They will
+    bleed through everything when using Shady DOM.
+    <vimma-app> defines all styles which inherit through descendants.
+    Common styles which don't inherit (e.g. what an <h1> looks like) are put in
+    a single file and all components who want to use those styles import that
+    common file.
+  -->
+
   <script src="{% static 'vimma/components/bower_components/webcomponentsjs/webcomponents-lite.min.js' %}"></script>
-  <link rel="import" href="{% static 'vimma/components/index-elem/index-elem.html' %}">
+  <link rel="import" href="{% static 'vimma/components/vimma-app/vimma-app.html' %}">
 
   <script src="{% static 'vimma/components/bower_components/jquery/dist/jquery.min.js' %}"></script>
   <script src="{% static 'vimma/components/bower_components/jquery.cookie/jquery.cookie.js' %}"></script>
@@ -16,5 +25,5 @@
 {% endblock %}
 
 {% block body %}
-  <index-elem></index-elem>
+  <vimma-app></vimma-app>
 {% endblock %}

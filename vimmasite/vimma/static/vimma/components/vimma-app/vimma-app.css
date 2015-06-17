@@ -1,0 +1,8 @@
+index-elem {
+	/* Uncomment to check that this style inherits (bleeds?) through all
+	 * descendants. Check with both Shadow and Shady DOM & all browsers.
+	 */
+	/*
+	color: red;
+	*/
+}

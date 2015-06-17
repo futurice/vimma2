@@ -1,0 +1,34 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../index-elem/index-elem.html">
+
+<!--
+  Wrapper element for the single-page application.
+
+  Its purpose is to apply styling which inherits (bleeds through?) components.
+  E.g. setting ‘color: red’ on a <div> will also apply to all its (Shadow DOM)
+  descendants. I don't know if this is expected, but in 2015 June this happens
+  with both Chromium and Firefox using either Shady or Shadow DOM.
+
+  Common styles which don't inherit (e.g. the border of divs, what an <h1>
+  looks like – <h1>s in descendant components aren't descendants of the <h1> in
+  the top-level component, so the top-level style doesn't inherit) are not
+  handled by this component. Those styles are put in a separate file and all
+  components wanting to use them (e.g. to style their own <h1>s) will include
+  that file.
+
+  This wrapper component has a single child element so the style can have a
+  rule for that element, instead of a ‘*’ rule. Feels tidier.
+  The alternative is to not have this wrapper component and have a ‘*’ CSS rule
+  in <index-elem> instead.
+-->
+
+<dom-module id="vimma-app">
+  <link rel="import" type="css" href="vimma-app.css">
+
+  <template>
+    <index-elem></index-elem>
+  </template>
+
+  <script src="vimma-app.js"></script>
+</dom-module>
