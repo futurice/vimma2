@@ -1,0 +1,8 @@
+/* Common stylesheet included by each component who wants to use it. */
+
+plain-text.error {
+	background-color: Pink;
+}
+plain-text.error.toggles:hover {
+	background-color: HotPink;
+}

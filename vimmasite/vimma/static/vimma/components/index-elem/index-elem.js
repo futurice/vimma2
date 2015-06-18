@@ -49,5 +49,9 @@ Polymer({
         if (this._fragHead != newHead) {
             this._frag = newHead;
         }
+    },
+
+    _equal: function(a, b) {
+        return a === b;
     }
 });

@@ -1,0 +1,60 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
+<dom-module id="audit-display">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="audit-display.css">
+
+  <template>
+    <iron-ajax
+      id="ajax"
+      auto
+      url="[[_currentUrl]]"
+      handle-as="json"
+      loading="{{_loading}}"
+      on-error="handleError"
+      on-response="handleResponse"
+      ></iron-ajax>
+
+    <template is="dom-if" restamp if="[[_equal(_view, _viewLoading)]]">
+      <paper-spinner active></paper-spinner>
+    </template>
+
+    <template is="dom-if" restamp if="[[_equal(_view, _viewError)]]">
+      <paper-button id="reload" raised on-click="reload">
+        <iron-icon icon="refresh"></iron-icon>
+      </paper-button>
+      <br>
+      <plain-text class="error" text="[[_error]]"></plain-text>
+    </template>
+
+    <template is="dom-if" restamp if="[[_equal(_view, _viewData)]]">
+      <paper-button id="reload" raised on-click="reload">
+        <iron-icon icon="refresh"></iron-icon>
+      </paper-button>
+      <br>
+
+      <select on-change="_minLevelChange">
+        <template is="dom-repeat" items="[[_auditLevels]]">
+          <option value="[[item.id]]" selected$="{{_equal(item, _minLevel)}}"
+                  >[[item.name]]</option>
+        </template>
+      </select>
+
+      <span>[[_data.results.length]]</span>
+      /
+      <span>[[_data.count]]</span>
+      Audit items.
+      <br>
+      <paper-spinner active="[[_loading]]"></paper-spinner>
+    </template>
+  </template>
+</dom-module>
+
+<script src="audit-display.js"></script>

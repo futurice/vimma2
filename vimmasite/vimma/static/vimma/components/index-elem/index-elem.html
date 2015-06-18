@@ -1,5 +1,6 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../audit-display/audit-display.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../frag-history/frag-history.html">
@@ -17,6 +18,11 @@
         <paper-tab>[[item.title]]</paper-tab>
       </template>
     </paper-tabs>
+
+    <!-- dom-if instead of iron-pages to restamp -->
+    <template is="dom-if" if="{{_equal(_selected, 3)}}" restamp>
+      <audit-display></audit-display>
+    </template>
   </template>
 </dom-module>
 
