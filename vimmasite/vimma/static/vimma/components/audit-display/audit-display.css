@@ -1,3 +1,31 @@
-paper-button#reload {
+paper-button#reload, button#reload {
 	color: green;
+}
+
+div#box {
+	display: table;
+	position: relative;
+}
+
+div#box div#overlay {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+
+	background: rgba(0, 0, 0, 0.1);
+	text-align: center;
+}
+
+div#box div#overlay paper-spinner {
+}
+
+div#box div#navigation {
+	display: flex;
+	justify-content: space-between;
+}
+
+div#box button#show-more {
+	width: 100%;
 }

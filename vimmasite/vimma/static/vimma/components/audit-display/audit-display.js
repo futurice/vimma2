@@ -77,12 +77,24 @@ Polymer({
             type: String,
             value: 'data',
             readOnly: true
+        },
+
+        _firstItemNr: {
+            type: Number,
+            value: 1
         }
     },
 
     // <select> ‘change’ event
     _minLevelChange: function(ev) {
         this._minLevel = this._auditLevels[ev.target.selectedIndex];
+    },
+    _getAuditLvlName: function(lvl) {
+        if (lvl in auditNameForLevel) {
+            return auditNameForLevel[lvl];
+        }
+        console.log('Unknown audit level ‘' + lvl + '’');
+        return lvl;
     },
 
     _computeStartUrl: function(vmid, userid, minLvl, pageSize) {
@@ -105,6 +117,7 @@ Polymer({
 
     _startUrlChanged: function(newV, oldV) {
         this._currentUrl = newV;
+        this._firstItemNr = 1;
     },
 
     handleError: function(ev) {
@@ -147,10 +160,28 @@ Polymer({
         return this._viewData;
     },
 
-    reload: function() {
+    _reload: function() {
         this.set('_data', null);
         this._currentUrl = null;
         this._currentUrl = this._startUrl;
+        this._firstItemNr = 1;
+    },
+
+    _prevPage: function() {
+        this._currentUrl = this._data.previous;
+        this._firstItemNr -= this._pageSize;
+    },
+
+    _nextPage: function() {
+        this._currentUrl = this._data.next;
+        this._firstItemNr += this._pageSize;
+    },
+
+    _getLastItemNr: function(firstNr, data) {
+        if (!data || !data.results.length) {
+            return 0;
+        }
+        return firstNr + data.results.length - 1;
     },
 
     _equal: function(x, y) {

@@ -27,32 +27,81 @@
     </template>
 
     <template is="dom-if" restamp if="[[_equal(_view, _viewError)]]">
-      <paper-button id="reload" raised on-click="reload">
+      <paper-button id="reload" raised on-click="_reload">
         <iron-icon icon="refresh"></iron-icon>
+        Reload
       </paper-button>
       <br>
       <plain-text class="error" text="[[_error]]"></plain-text>
     </template>
 
     <template is="dom-if" restamp if="[[_equal(_view, _viewData)]]">
-      <paper-button id="reload" raised on-click="reload">
-        <iron-icon icon="refresh"></iron-icon>
-      </paper-button>
-      <br>
+      <div id="box">
+        <div id="navigation">
+          <button on-click="_prevPage" disabled$="[[!_data.previous]]">
+            ← Newer
+          </button>
 
-      <select on-change="_minLevelChange">
-        <template is="dom-repeat" items="[[_auditLevels]]">
-          <option value="[[item.id]]" selected$="{{_equal(item, _minLevel)}}"
-                  >[[item.name]]</option>
-        </template>
-      </select>
+          <span id="item-range">
+            <button id="reload" raised on-click="_reload">
+              <iron-icon icon="refresh"></iron-icon>
+            </button>
+            Logs
+            <span>[[_firstItemNr]]</span><!--
+            -->–<!--
+            --><span>[[_getLastItemNr(_firstItemNr, _data)]]</span>
+            of
+            <span>[[_data.count]]</span>
+            with level ≥
+            <select on-change="_minLevelChange">
+              <template is="dom-repeat" items="[[_auditLevels]]">
+                <option value="[[item.id]]"
+                        selected$="{{_equal(item, _minLevel)}}"
+                        >[[item.name]]</option>
+              </template>
+            </select>
+          </span>
 
-      <span>[[_data.results.length]]</span>
-      /
-      <span>[[_data.count]]</span>
-      Audit items.
-      <br>
-      <paper-spinner active="[[_loading]]"></paper-spinner>
+          <button on-click="_nextPage" disabled$="[[!_data.next]]">
+            Older →
+          </button>
+        </div>
+
+        <table id="table">
+          <thead>
+            <tr>
+              <td>Timestamp</td>
+              <td>Level</td>
+              <td>vm</td>
+              <!-- TODO: show the user -->
+              <td>Audit</td>
+            </tr>
+          </thead>
+          <tbody>
+            <template is="dom-repeat" items="[[_data.results]]">
+              <tr>
+                <!-- TODO: <local-date> -->
+                <td>[[item.timestamp]]</td>
+                <td>[[_getAuditLvlName(item.level)]]</td>
+                <td>[[item.vm]]</td>
+                <td>
+                  <plain-text text="[[item.text]]"></plain-text>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        <button id="show-more">
+          TODO: Show more
+        </button>
+
+        <div id="overlay" hidden$="[[!_loading]]">
+          <!-- TODO: vertically center the spinner -->
+          <!-- active="[[_loading]]" shows the spinner only briefly; bug? -->
+          <paper-spinner active></paper-spinner>
+        </div>
+      </div>
     </template>
   </template>
 </dom-module>
