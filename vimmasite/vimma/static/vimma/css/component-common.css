@@ -6,3 +6,8 @@ plain-text.error {
 plain-text.error.toggles:hover {
 	background-color: HotPink;
 }
+
+/* Override Chromium's user agent stylesheet */
+input, textarea, keygen, select, button {
+	font-family: Roboto;
+}

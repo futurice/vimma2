@@ -42,10 +42,6 @@ table#table > tbody > tr > td {
 	padding-right: 1ex;
 }
 
-table#table > tbody > tr > td.no-padding {
-	padding: 0;
-}
-
 table#table > tbody > tr.DEBUG {
 	color: Black;
 }
