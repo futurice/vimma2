@@ -106,6 +106,7 @@ Polymer({
     _computeStartUrl: function(vmid, userid, minLvl, pageSize) {
         var url = vimmaApiAuditList,
             params = [];
+        params.push('format=json');
         params.push('min_level=' + encodeURIComponent(minLvl.id));
         if (vmid != -1) {
             params.push('vm=' + vmid);
