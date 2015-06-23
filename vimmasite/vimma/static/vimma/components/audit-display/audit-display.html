@@ -92,8 +92,10 @@
           </tbody>
         </table>
 
-        <button id="show-more">
-          TODO: Show more
+        <button id="show-more"
+                on-click="_showMore"
+                disabled$="{{!_canShowMore(pageSize, _maxPageSize)}}">
+          Show more
         </button>
 
         <div id="overlay" hidden$="[[!_loading]]">

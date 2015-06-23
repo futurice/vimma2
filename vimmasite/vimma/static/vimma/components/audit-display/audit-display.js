@@ -30,15 +30,21 @@ Polymer({
             value: auditLevels[1]
         },
 
-        _pageSize: {
+        pageSize: {
             type: Number,
             value: 5
+        },
+
+        _maxPageSize: {
+            type: Number,
+            readOnly: true,
+            value: 100
         },
 
         // the first page of results
         _startUrl: {
             type: String,
-            computed: '_computeStartUrl(vmid, userid, _minLevel, _pageSize)',
+            computed: '_computeStartUrl(vmid, userid, _minLevel, pageSize)',
             observer: '_startUrlChanged'
         },
 
@@ -169,12 +175,12 @@ Polymer({
 
     _prevPage: function() {
         this._currentUrl = this._data.previous;
-        this._firstItemNr -= this._pageSize;
+        this._firstItemNr -= this.pageSize;
     },
 
     _nextPage: function() {
         this._currentUrl = this._data.next;
-        this._firstItemNr += this._pageSize;
+        this._firstItemNr += this.pageSize;
     },
 
     _getLastItemNr: function(firstNr, data) {
@@ -182,6 +188,13 @@ Polymer({
             return 0;
         }
         return firstNr + data.results.length - 1;
+    },
+
+    _canShowMore: function(pageSize, maxPageSize) {
+        return pageSize < maxPageSize;
+    },
+    _showMore: function() {
+        this.pageSize = Math.min(2*this.pageSize, this._maxPageSize);
     },
 
     _equal: function(x, y) {
