@@ -2,6 +2,8 @@
 
 plain-text.error {
 	background-color: Pink;
+	color: Black;
+	font-weight: normal;
 }
 plain-text.error.toggles:hover {
 	background-color: HotPink;

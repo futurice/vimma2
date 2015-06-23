@@ -1,0 +1,45 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
+<!--
+  Show the name and username for a userid.
+
+  <user-name userid="1" show="full"></user-name>
+
+  ‘show’ may be ‘full’, ‘name’ or ‘username’. If not ‘full’, one item is shown
+  as the text and the other as the tooltip.
+-->
+
+<dom-module id="user-name">
+  <link rel="import" type="css" href="../../css/component-common.css">
+
+  <template>
+    <iron-ajax
+      id="ajax"
+      auto
+      url="[[_url]]"
+      handle-as="json"
+      loading="{{_loading}}"
+      on-error="_handleError"
+      on-response="_handleResponse"
+      ></iron-ajax>
+
+      <template is="dom-if" if="[[_equal(_view, _viewLoading)]]">
+        <paper-spinner active></paper-spinner>
+      </template>
+
+      <template is="dom-if" if="[[_equal(_view, _viewError)]]">
+        <plain-text class="error" text="[[_error]]"></plain-text>
+      </template>
+
+      <template is="dom-if" if="[[_equal(_view, _viewUser)]]">
+        <span title="[[_tooltip]]">[[_text]]</span>
+      </template>
+  </template>
+</dom-module>
+
+<script src="user-name.js"></script>
