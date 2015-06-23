@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tests</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../local-date.html">
+  </head>
+
+  <body>
+    <local-date id="zero" hide-millis></local-date>
+    <local-date id="change-me"></local-date>
+
+    <script>
+      function chk(id, text, title) {
+        var node = Polymer.dom(document.getElementById(id).root);
+        assert.equal(node.textContent, text);
+        assert.equal(node.querySelector('span').title, title);
+      }
+
+      function pad(s, len) {
+        s = s + '';
+        while (s.length < len) {
+          s = '0' + s;
+        }
+        return s;
+      }
+
+      suite('<local-date> tests', function() {
+        test('no arguments displays epoch; toggle millis', function() {
+          var id = 'zero', el = document.getElementById(id),
+              d = new Date(0),
+              title = d.toISOString(),
+              text = d.getFullYear();
+          text += '-' + pad(d.getMonth() + 1, 2);
+          text += '-' + pad(d.getDate(), 2);
+          text += ' ' + pad(d.getHours(), 2);
+          text += ':' + pad(d.getMinutes(), 2);
+          text += ':' + pad(d.getSeconds(), 2);
+
+          chk(id, text, title);
+          el.hideMillis = false;
+          text += '.' + pad(d.getMilliseconds(), 3);
+          chk(id, text, title);
+        });
+
+        test('from epochMillis; toggle millis', function() {
+          var id = 'change-me', el = document.getElementById(id),
+              d = new Date(2015, 1-1, 22, 6, 7, 8, 91),
+              title = d.toISOString();
+
+          el.hideMillis = true;
+          el.dateString = null;
+          el.epochMillis = d.valueOf();
+          chk(id, '2015-01-22 06:07:08', title);
+          el.hideMillis = false;
+          chk(id, '2015-01-22 06:07:08.091', title);
+        });
+
+        test('from dateStr; toggle millis', function() {
+          var id = 'change-me', el = document.getElementById(id),
+              localStr = '2015-11-04 19:00:12',
+              d = new Date(2015, 11-1, 4, 19, 0, 12),
+              isoStr = d.toISOString();
+
+          el.hideMillis = true;
+          el.epochMillis = null;
+          el.dateString = d.toString();
+          chk(id, localStr, isoStr);
+
+          el.hideMillis = false;
+          chk(id, localStr + '.000', isoStr);
+
+          el.dateString = isoStr;
+          chk(id, localStr + '.000', isoStr);
+
+          el.hideMillis = true;
+          chk(id, localStr, isoStr);
+        });
+      });
+    </script>
+  </body>
+</html>

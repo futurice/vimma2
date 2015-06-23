@@ -5,6 +5,7 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
 <dom-module id="audit-display">
@@ -80,8 +81,9 @@
           <tbody>
             <template is="dom-repeat" items="[[_data.results]]">
               <tr class$="[[_getAuditLvlName(item.level)]]">
-                <!-- TODO: <local-date> -->
-                <td>[[item.timestamp]]</td>
+                <td>
+                  <local-date date-string="[[item.timestamp]]"></local-date>
+                </td>
                 <td>[[_getAuditLvlName(item.level)]]</td>
                 <td>[[item.vm]]</td>
                 <td>

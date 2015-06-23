@@ -1,0 +1,15 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<!--
+  Display a date-time as ‘YYYY-MM-DD HH:MM:SS[.mmm]’ in the browser's timezone
+  with the ISO string as a tooltip.
+
+  Set either epochMillis or dateString: they will be passed to ‘new Date(…)’.
+  ‘hideMillis’ hides milliseconds (‘.mmm’ above).
+-->
+
+<dom-module id="local-date">
+  <template><span title="[[iso]]">[[local]]</span></template>
+</dom-module>
+
+<script src="local-date.js"></script>
