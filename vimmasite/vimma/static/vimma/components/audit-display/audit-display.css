@@ -18,9 +18,6 @@ div#box div#overlay {
 	text-align: center;
 }
 
-div#box div#overlay paper-spinner {
-}
-
 div#box div#navigation {
 	display: flex;
 	justify-content: space-between;
@@ -28,4 +25,38 @@ div#box div#navigation {
 
 div#box button#show-more {
 	width: 100%;
+}
+
+table#table {
+	border-collapse: collapse;
+}
+
+table#table > thead {
+	font-weight: bold;
+}
+
+table#table > thead > tr > td,
+table#table > tbody > tr > td {
+	border: 0.1em solid DarkSlateGray;
+	padding-left: 1ex;
+	padding-right: 1ex;
+}
+
+table#table > tbody > tr > td.no-padding {
+	padding: 0;
+}
+
+table#table > tbody > tr.DEBUG {
+	color: Black;
+}
+table#table > tbody > tr.INFO {
+	color: MidnightBlue;
+}
+table#table > tbody > tr.WARNING {
+	color: #FF7E00;
+	font-weight: bold;
+}
+table#table > tbody > tr.ERROR {
+	color: Red;
+	font-weight: bold;
 }

@@ -79,13 +79,13 @@
           </thead>
           <tbody>
             <template is="dom-repeat" items="[[_data.results]]">
-              <tr>
+              <tr class$="[[_getAuditLvlName(item.level)]]">
                 <!-- TODO: <local-date> -->
                 <td>[[item.timestamp]]</td>
                 <td>[[_getAuditLvlName(item.level)]]</td>
                 <td>[[item.vm]]</td>
-                <td>
-                  <plain-text text="[[item.text]]"></plain-text>
+                <td class="no-padding">
+                  <plain-text text="[[item.text]]" size="50"></plain-text>
                 </td>
               </tr>
             </template>
