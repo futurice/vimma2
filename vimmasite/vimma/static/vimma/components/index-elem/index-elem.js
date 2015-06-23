@@ -1,6 +1,8 @@
 Polymer({
     is: 'index-elem',
 
+    behaviors: [VimmaBehaviors.Equal],
+
     properties: {
         _frag: String,
         _fragHead: {
@@ -49,9 +51,5 @@ Polymer({
         if (this._fragHead != newHead) {
             this._frag = newHead;
         }
-    },
-
-    _equal: function(a, b) {
-        return a === b;
     }
 });

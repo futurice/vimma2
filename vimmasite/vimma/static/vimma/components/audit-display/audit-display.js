@@ -1,6 +1,8 @@
 Polymer({
     is: 'audit-display',
 
+    behaviors: [VimmaBehaviors.Equal],
+
     // https://github.com/PolymerElements/iron-ajax/issues/63
     // If <iron-ajax> will treat connection errors like errors (it currently
     // treats them as successful responses) we will be able to make a more
@@ -196,9 +198,5 @@ Polymer({
     },
     _showMore: function() {
         this.pageSize = Math.min(2*this.pageSize, this._maxPageSize);
-    },
-
-    _equal: function(x, y) {
-        return x === y;
     }
 });
