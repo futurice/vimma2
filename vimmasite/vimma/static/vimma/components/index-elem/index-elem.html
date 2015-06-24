@@ -6,6 +6,7 @@
 <link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../frag-history/frag-history.html">
 <link rel="import" href="../frag-split/frag-split.html">
+<link rel="import" href="../schedules-tab/schedules-tab.html">
 
 <dom-module id="index-elem">
   <link rel="import" type="css" href="index-elem.css">
@@ -21,6 +22,11 @@
     </paper-tabs>
 
     <!-- dom-if instead of iron-pages to restamp -->
+
+    <template is="dom-if" if="{{_equal(_selected, 2)}}" restamp>
+      <schedules-tab></schedules-tab>
+    </template>
+
     <template is="dom-if" if="{{_equal(_selected, 3)}}" restamp>
       <audit-display page-size="20"></audit-display>
     </template>

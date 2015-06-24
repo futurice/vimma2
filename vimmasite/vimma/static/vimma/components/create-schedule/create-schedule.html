@@ -1,0 +1,41 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../api-loader/api-loader.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
+<dom-module id="create-schedule">
+  <link rel="import" type="css" href="../../css/component-common.css">
+
+  <template>
+    <template is="dom-if" if="[[!_expanded]]">
+      <button on-click="_toggle">Create Schedule</button>
+    </template>
+
+    <template is="dom-if" if="[[_expanded]]" restamp>
+      <api-loader
+        url="[[_tzApiUrl]]"
+        loading="{{_loading}}"
+        error="{{_loadErr}}"
+        data="{{_timezones}}"
+        ></api-loader>
+
+      <button on-click="_toggle">Close</button><br>
+      <template is="dom-if" if="[[_loading]]">
+        <paper-spinner active></paper-spinner>
+      </template>
+
+      <template is="dom-if" if="[[!_loading]]">
+        <template is="dom-if" if="[[!_null(_loadErr)]]">
+          <plain-text class="error" text="[[_loadErr]]"></plain-text>
+        </template>
+        <template is="dom-if" if="[[_null(_loadErr)]]">
+          <span>[[_timezones.length]]</span> timezones.
+        </template>
+      </template>
+    </template>
+  </template>
+</dom-module>
+
+<script src="create-schedule.js"></script>
