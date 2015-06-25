@@ -66,7 +66,6 @@ Polymer({
             matrix.push(row);
         }
 
-
         $.ajax({
             url: vimmaApiScheduleList,
             type: 'POST',

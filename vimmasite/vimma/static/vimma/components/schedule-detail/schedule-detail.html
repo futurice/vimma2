@@ -1,11 +1,66 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../ajax-load/ajax-load.html">
+<link rel="import" href="../api-loader/api-loader.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
 <dom-module id="schedule-detail">
   <link rel="import" type="css" href="../../css/component-common.css">
   <link rel="import" type="css" href="schedule-detail.css">
 
   <template>
-    <span>[[scheduleId]]</span>
+    <ajax-load
+      url="[[_scheduleUrl]]"
+      loading="{{_scheduleLoading}}"
+      error="{{_scheduleError}}"
+      data="{{_schedule}}"
+      ></ajax-load>
+
+    <api-loader
+      url="[[_tzUrl]]"
+      loading="{{_tzLoading}}"
+      error="{{_tzError}}"
+      data="{{_timezones}}"
+      ></api-loader>
+
+    <template is="dom-if" if="[[_loading]]" restamp>
+      <paper-spinner active></paper-spinner>
+    </template>
+    <template is="dom-if" if="[[!_loading]]" restamp>
+      <template is="dom-if" if="[[_error]]">
+        <plain-text class="error" text="[[_error]]"></plain-text>
+      </template>
+      <template is="dom-if" if="[[!_error]]">
+        <template is="dom-if" if="[[_actionError]]">
+          <plain-text class="error" text="[[_actionError]]"></plain-text>
+        </template>
+        <div id="summary" on-click="_toggle">
+          <span id="summary-name">[[_schedule.name]]</span>
+          <span id="summary-timezone"
+            >[[_tzName(_timezones, _schedule.timezone)]]</span>
+          <paper-icon-button
+            id="delete"
+            icon="delete"
+            title="Delete"
+            on-click="_delete"
+            ></paper-icon-button>
+        </div>
+        <template is="dom-if" if="[[_expanded]]">
+          <div id="details">
+            Hello world!
+          </div>
+        </template>
+
+        <template is="dom-if" if="[[_actionInFlight]]" restamp>
+          <div id="overlay">
+            <paper-spinner active></paper-spinner>
+          </div>
+        </template>
+      </template>
+    </template>
   </template>
 </dom-module>
 

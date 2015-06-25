@@ -30,5 +30,15 @@ Polymer({
 
     scheduleCreated: function(id) {
         this.unshift('_idObjs', {id: id});
+    },
+    _scheduleDeleted: function(ev) {
+        var i, n = this._idObjs.length;
+        for (i = 0; i < n; i++) {
+            if (this._idObjs[i].id == ev.detail) {
+                this.splice('_idObjs', i, 1);
+                return;
+            }
+        }
+        console.warn('Deleted schedule', ev.detail, 'not found');
     }
 });

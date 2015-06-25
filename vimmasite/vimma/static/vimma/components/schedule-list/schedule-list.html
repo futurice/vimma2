@@ -27,7 +27,10 @@
       </template>
       <template is="dom-if" if="[[!_error]]" restamp>
         <template is="dom-repeat" items="[[_idObjs]]">
-          <schedule-detail schedule-id="[[item.id]]"></schedule-detail>
+          <schedule-detail
+            schedule-id="[[item.id]]"
+            on-schedule-deleted="_scheduleDeleted"
+            ></schedule-detail>
         </template>
       </template>
     </template>
