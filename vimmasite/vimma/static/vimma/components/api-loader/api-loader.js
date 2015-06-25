@@ -14,15 +14,15 @@ Polymer({
             value: false
         },
 
-        // The error string or null; not defined if loading==false.
+        // The error or an empty string; not defined if loading==false.
         error: {
             type: String,
             notify: true,
             readOnly: true,
-            value: null
+            value: ''
         },
 
-        // The API results; only defined if loading==false and error==null.
+        // The API results; only defined if loading==false and error==''.
         data: {
             type: Object,
             notify: true,
@@ -49,7 +49,7 @@ Polymer({
             }
 
             this._setData(resultsArray[0]);
-            this._setError(null);
+            this._setError('');
             this._setLoading(false);
         }).bind(this);
 

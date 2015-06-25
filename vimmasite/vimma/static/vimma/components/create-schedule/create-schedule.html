@@ -1,39 +1,88 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../api-loader/api-loader.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
+<!--
+  Component to create a new schedule.
+
+  TODO: handle the case when there are no timezones in the database.
+-->
+
 <dom-module id="create-schedule">
   <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="create-schedule.css">
 
   <template>
     <template is="dom-if" if="[[!_expanded]]">
-      <button on-click="_toggle">Create Schedule</button>
+      <paper-button id="expand" raised on-click="_toggle">
+        <iron-icon icon="add"></iron-icon>
+        Create Schedule
+      </paper-button>
     </template>
 
     <template is="dom-if" if="[[_expanded]]" restamp>
-      <api-loader
-        url="[[_tzApiUrl]]"
-        loading="{{_loading}}"
-        error="{{_loadErr}}"
-        data="{{_timezones}}"
-        ></api-loader>
+      <div id="expanded">
+        <api-loader
+          url="[[_tzApiUrl]]"
+          loading="{{_loading}}"
+          error="{{_loadErr}}"
+          data="{{_timezones}}"
+          ></api-loader>
 
-      <button on-click="_toggle">Close</button><br>
-      <template is="dom-if" if="[[_loading]]">
-        <paper-spinner active></paper-spinner>
-      </template>
+        <paper-icon-button id="close" icon="close"
+          on-click="_toggle"></paper-icon-button>
 
-      <template is="dom-if" if="[[!_loading]]">
-        <template is="dom-if" if="[[!_null(_loadErr)]]">
-          <plain-text class="error" text="[[_loadErr]]"></plain-text>
+        <template is="dom-if" if="[[_loading]]">
+          <paper-spinner active></paper-spinner>
         </template>
-        <template is="dom-if" if="[[_null(_loadErr)]]">
-          <span>[[_timezones.length]]</span> timezones.
+
+        <template is="dom-if" if="[[!_loading]]">
+          <h1>Create a new Schedule</h1>
+          <template is="dom-if" if="[[_loadErr]]">
+            <plain-text class="error" text="[[_loadErr]]"></plain-text>
+          </template>
+          <template is="dom-if" if="[[!_loadErr]]">
+            <template is="dom-if" if="[[_createError]]">
+              <plain-text class="error" text="[[_createError]]"></plain-text>
+              <br>
+            </template>
+            <paper-input
+              id="name"
+              label="Name"
+              value="{{_newName}}"
+              auto-validate
+              error-message="The name may not be empty"
+              required
+              ></paper-input>
+            <br>
+            <label for="timezone">TimeZone:</label>
+            <select id="timezone" on-change="_newTzSelected">
+              <template is="dom-repeat" items="[[_timezones]]">
+                <option value="[[item.id]]"
+                        selected$="{{_equal(item, _newTz)}}"
+                        >[[item.name]]</option>
+              </template>
+            </select>
+            <br>
+            <paper-button id="create" raised on-click="_create">
+              <iron-icon icon="create"></iron-icon>
+              Create
+            </paper-button>
+          </template>
         </template>
-      </template>
+
+        <div id="overlay" hidden$="[[!_createInFlight]]">
+          <paper-spinner active></paper-spinner>
+        </div>
+      </div>
     </template>
   </template>
 </dom-module>
