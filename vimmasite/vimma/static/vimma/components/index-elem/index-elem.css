@@ -1,11 +1,9 @@
-/*
 paper-tabs {
-	--paper-tabs-selection-bar-color: red;
-	background-color: Black;
-	color: White;
+	--paper-tabs-selection-bar-color: var(--paper-red-a700);
+	background-color: var(--paper-grey-300);
+	color: var(--paper-grey-900);
 }
 
 paper-tab {
-	--paper-tab-ink: red;
+	--paper-tab-ink: var(--paper-red-100);
 }
-*/

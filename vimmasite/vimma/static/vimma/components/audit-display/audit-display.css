@@ -1,8 +1,13 @@
+:host {
+	display: block;
+}
+
 paper-button#reload, button#reload {
 	color: green;
 }
 
 div#box {
+	width: 100%;
 	display: table;
 	position: relative;
 }
@@ -28,6 +33,7 @@ div#box button#show-more {
 }
 
 table#table {
+	width: 100%;
 	border-collapse: collapse;
 }
 
