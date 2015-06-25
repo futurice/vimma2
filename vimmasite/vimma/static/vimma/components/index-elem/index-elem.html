@@ -24,6 +24,10 @@
 
     <!-- dom-if instead of iron-pages to restamp -->
 
+    <template is="dom-if" if="{{_equal(_selected, 1)}}" restamp>
+      Later: select a project and see only the VMs in that project.
+    </template>
+
     <template is="dom-if" if="{{_equal(_selected, 2)}}" restamp>
       <schedules-tab></schedules-tab>
     </template>

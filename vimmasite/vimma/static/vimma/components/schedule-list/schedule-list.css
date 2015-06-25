@@ -1,0 +1,7 @@
+:host {
+	display: block;
+}
+
+schedule-detail + schedule-detail {
+	margin-top: 0.5ex;
+}

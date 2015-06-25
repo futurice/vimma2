@@ -1,0 +1,37 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../api-loader/api-loader.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../plain-text/plain-text.html">
+<link rel="import" href="../schedule-detail/schedule-detail.html">
+
+<dom-module id="schedule-list">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="schedule-list.css">
+
+  <template>
+    <api-loader
+      url="{{_url}}"
+      loading="{{_loading}}"
+      error="{{_error}}"
+      data="{{_apiData}}"
+      ></api-loader>
+
+    <template is="dom-if" if="[[_loading]]" restamp>
+      <paper-spinner active></paper-spinner>
+    </template>
+
+    <template is="dom-if" if="[[!_loading]]" restamp>
+      <template is="dom-if" if="[[_error]]" restamp>
+        <plain-text class="error" text="[[_error]]"></plain-text>
+      </template>
+      <template is="dom-if" if="[[!_error]]" restamp>
+        <template is="dom-repeat" items="[[_idObjs]]">
+          <schedule-detail schedule-id="[[item.id]]"></schedule-detail>
+        </template>
+      </template>
+    </template>
+  </template>
+</dom-module>
+
+<script src="schedule-list.js"></script>

@@ -24,7 +24,7 @@ Polymer({
 
         // The API results; only defined if loading==false and error==''.
         data: {
-            type: Object,
+            type: Array,
             notify: true,
             readOnly: true,
             value: function() {

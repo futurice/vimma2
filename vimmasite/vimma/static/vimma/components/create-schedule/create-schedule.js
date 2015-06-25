@@ -85,6 +85,7 @@ Polymer({
             success: (function(data) {
                 this._createError = '';
                 this._toggle();
+                this.fire('schedule-created', data.id);
             }).bind(this),
             error: (function(xhr, txtStatus, saveErr) {
                 var errorText = getAjaxErr.apply(this, arguments);

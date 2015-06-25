@@ -1,10 +1,14 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../create-schedule/create-schedule.html">
+<link rel="import" href="../schedule-list/schedule-list.html">
 
 <dom-module id="schedules-tab">
+  <link rel="import" type="css" href="schedules-tab.css">
+
   <template>
-    <create-schedule></create-schedule>
+    <create-schedule on-schedule-created='_scheduleCreated'></create-schedule>
+    <schedule-list id="list"></schedule-list>
   </template>
 </dom-module>
 
