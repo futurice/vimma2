@@ -114,6 +114,11 @@ Polymer({
 
     _expandedChanged: function(newV, oldV) {
         var evName;
+
+        if (this.scheduleId === undefined) {
+            return;
+        }
+
         if (newV) {
             evName = 'schedule-expanded';
         } else {
