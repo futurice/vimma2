@@ -51,3 +51,10 @@ div#details {
 	border-top: 0.1em solid;
 	border-color: var(--paper-teal-200);
 }
+
+:host(.unsaved) paper-button#discard {
+	background-color: var(--paper-light-blue-50);
+}
+:host(.unsaved) paper-button#save {
+	background-color: var(--paper-green-300);
+}

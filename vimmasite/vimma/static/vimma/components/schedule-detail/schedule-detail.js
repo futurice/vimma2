@@ -1,6 +1,8 @@
 Polymer({
     is: 'schedule-detail',
 
+    behaviors: [VimmaBehaviors.Equal],
+
     properties: {
         scheduleId: {
             type: Number
@@ -12,7 +14,10 @@ Polymer({
         },
         _scheduleLoading: Boolean,
         _scheduleError: String,
-        _schedule: Object,
+        _schedule: {
+            type: Object,
+            observer: '_scheduleChanged'
+        },
 
         _tzUrl: {
             type: String,
@@ -45,6 +50,22 @@ Polymer({
         _actionError: {
             type: String,
             value: ''
+        },
+
+        // Properties for the ‘data model’ we are editing.
+        _newName: String,
+        _newMatrix: Array,
+        _newTzId: Number,
+        _newIsSpecial: Boolean,
+
+        _unsavedChanges: {
+            type: Boolean,
+            computed: '_computeUnsavedChanges(_schedule, _newName, _newMatrix, _newTzId, _newIsSpecial)'
+        },
+        class: {
+            type: String,
+            computed: '_getHostClass(_unsavedChanges)',
+            reflectToAttribute: true
         }
     },
 
@@ -109,7 +130,75 @@ Polymer({
             }).bind(this)
         });
     },
+
+    _save: function(ev) {
+        this._actionInFlight = true;
+        $.ajax({
+            url: vimmaApiScheduleDetailRoot + this.scheduleId + '/',
+            type: 'PUT',
+            contentType: 'application/json; charset=UTF-8',
+            headers: {
+                'X-CSRFToken': $.cookie('csrftoken')
+            },
+            data: JSON.stringify({
+                name: this._newName,
+                matrix: JSON.stringify(this._newMatrix),
+                timezone: this._newTzId,
+                is_special: this._newIsSpecial
+            }),
+            complete: (function() {
+                this._actionInFlight = false;
+            }).bind(this),
+            success: (function(data) {
+                this._actionError = '';
+                this._schedule = data;
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this._actionError = errorText;
+            }).bind(this)
+        });
+    },
+
     _toggle: function() {
         this._expanded = !this._expanded;
+    },
+
+    _scheduleChanged: function(newV, oldV) {
+        this._discardChanges();
+    },
+
+    _discardChanges: function() {
+        var s = this._schedule;
+        this._newName = s.name;
+        this._newMatrix = JSON.parse(s.matrix);
+        this._newTzId = s.timezone;
+        this._newIsSpecial = s.is_special;
+    },
+
+    _computeUnsavedChanges: function(schedule,
+        newName, newMatrix, newTzId, newIsSpecial) {
+        return !sameModels({
+            name: schedule.name,
+            matrix: JSON.parse(schedule.matrix),
+            timezone: schedule.timezone,
+            is_special: schedule.is_special
+        }, {
+            name: newName,
+            matrix: newMatrix,
+            timezone: newTzId,
+            is_special: newIsSpecial
+        });
+    },
+
+    _newTzSelected: function(ev) {
+        this._newTzId = this._timezones[ev.target.selectedIndex].id;
+    },
+
+    _getHostClass: function(unsavedChanges) {
+        if (unsavedChanges) {
+            return 'unsaved';
+        }
+        return '';
     }
 });
