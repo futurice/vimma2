@@ -6,6 +6,10 @@ VimmaBehaviors.Equal = {
     return x === y;
   },
 
+  _looseEqual: function(x, y) {
+    return x == y;
+  },
+
   // Looks like we can't pass the literal ‘null’ to a computed binding.
   // https://www.polymer-project.org/1.0/docs/devguide/data-binding.html#literals
   _null: function(x) {

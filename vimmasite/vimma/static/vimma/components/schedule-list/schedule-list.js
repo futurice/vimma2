@@ -1,7 +1,15 @@
 Polymer({
     is: 'schedule-list',
 
+    behaviors: [VimmaBehaviors.Equal],
+
     properties: {
+        frag: {
+            type: String,
+            notify: true
+        },
+        _fragHead: String,
+
         _url: {
             type: String,
             readOnly: true,
@@ -30,8 +38,21 @@ Polymer({
 
     scheduleCreated: function(id) {
         this.unshift('_idObjs', {id: id});
+        this.frag = id + '';
+    },
+    _scheduleExpanded: function(ev) {
+        this.frag = ev.detail + '';
+    },
+    _scheduleCollapsed: function(ev) {
+        if (this._fragHead == ev.detail) {
+            this.frag = '';
+        }
     },
     _scheduleDeleted: function(ev) {
+        if (this._fragHead == ev.detail) {
+            this.frag = '';
+        }
+
         var i, n = this._idObjs.length;
         for (i = 0; i < n; i++) {
             if (this._idObjs[i].id == ev.detail) {

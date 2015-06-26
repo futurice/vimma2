@@ -8,6 +8,17 @@ Polymer({
             type: Number
         },
 
+        /* The url fragment points to this schedule. On transitions to ‘true’,
+         * ensure the view is expanded.
+         * Triggered on browser (e.g. ‘back/forward/paste url’) navigation
+         * but also indirectly after the user expands this component (an event
+         * is fired and <schedule-list> changes the URL to point to us).
+         */
+        selectedViaFrag: {
+            type: Boolean,
+            observer: '_selectedViaFragChanged'
+        },
+
         _scheduleUrl: {
             type: String,
             computed: '_computeScheduleUrl(scheduleId)'
@@ -39,7 +50,8 @@ Polymer({
 
         _expanded: {
             type: Boolean,
-            value: false
+            value: false,
+            observer: '_expandedChanged'
         },
 
         /* User action (delete or save) */
@@ -69,6 +81,12 @@ Polymer({
         }
     },
 
+    _selectedViaFragChanged: function(newV, oldV) {
+        if (newV) {
+            this._expanded = true;
+        }
+    },
+
     _computeScheduleUrl: function(scheduleId) {
         return vimmaApiScheduleDetailRoot + scheduleId + '/';
     },
@@ -92,6 +110,16 @@ Polymer({
             }
         }
         return '';
+    },
+
+    _expandedChanged: function(newV, oldV) {
+        var evName;
+        if (newV) {
+            evName = 'schedule-expanded';
+        } else {
+            evName = 'schedule-collapsed';
+        }
+        this.fire(evName, this.scheduleId);
     },
 
     _tzName: function(tzArray, tzId) {

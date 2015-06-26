@@ -2,6 +2,8 @@
 
 <link rel="import" href="../api-loader/api-loader.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../frag-split/frag-split.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../schedule-detail/schedule-detail.html">
 
@@ -10,6 +12,10 @@
   <link rel="import" type="css" href="schedule-list.css">
 
   <template>
+    <frag-split
+      frag="{{frag}}"
+      head="{{_fragHead}}"
+      ></frag-split>
     <api-loader
       url="{{_url}}"
       loading="{{_loading}}"
@@ -29,6 +35,9 @@
         <template is="dom-repeat" items="[[_idObjs]]">
           <schedule-detail
             schedule-id="[[item.id]]"
+            selected-via-frag="[[_looseEqual(item.id, _fragHead)]]"
+            on-schedule-expanded="_scheduleExpanded"
+            on-schedule-collapsed="_scheduleCollapsed"
             on-schedule-deleted="_scheduleDeleted"
             ></schedule-detail>
         </template>

@@ -9,6 +9,7 @@ Polymer({
             type: String,
             observer: 'fragHeadChanged'
         },
+        _fragTail: String,
         _tabs: {
             type: Object,
             readOnly: true,
