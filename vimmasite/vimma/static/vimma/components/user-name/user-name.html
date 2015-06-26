@@ -1,6 +1,6 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../ajax-load/ajax-load.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../plain-text/plain-text.html">
@@ -18,15 +18,12 @@
   <link rel="import" type="css" href="../../css/component-common.css">
 
   <template>
-    <iron-ajax
-      id="ajax"
-      auto
+    <ajax-load
       url="[[_url]]"
-      handle-as="json"
       loading="{{_loading}}"
-      on-error="_handleError"
-      on-response="_handleResponse"
-      ></iron-ajax>
+      error="{{_error}}"
+      data="{{_user}}"
+      ></ajax-load>
 
       <template is="dom-if" if="[[_equal(_view, _viewLoading)]]">
         <paper-spinner active></paper-spinner>

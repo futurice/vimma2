@@ -1,5 +1,3 @@
-// See <audit-display> for the current limitations of <iron-ajax> which
-// require more error-handling code on our part.
 Polymer({
     is: 'user-name',
 
@@ -35,11 +33,8 @@ Polymer({
 
         _loading: Boolean,
 
-        // The error string or ‘null’ if there is no error
-        _error: {
-            type: String,
-            value: null
-        },
+        // The error string or the empty string if there is no error
+        _error: String,
 
         _user: Object,
 
@@ -77,34 +72,11 @@ Polymer({
         return vimmaApiUserDetailRoot + userid + '/?format=json';
     },
 
-    _handleError: function(ev) {
-        if (ev.detail.request !== this.$.ajax.lastRequest) {
-            return;
-        }
-        this._error = ev.detail.error.message;
-    },
-    _handleResponse: function(ev) {
-        if (ev.detail !== this.$.ajax.lastRequest) {
-            return;
-        }
-        if (ev.detail.response === null) {
-            if (ev.detail.xhr.status === 0) {
-                this._error = 'Error (cannot connect?)';
-            } else {
-                this._error = 'Error (invalid response)';
-            }
-            return;
-        }
-
-        this._error = null;
-        this._user = ev.detail.response;
-    },
-
     _computeView: function(loading, error) {
         if (loading) {
             return this._viewLoading;
         }
-        if (error != null) {
+        if (error) {
             return this._viewError;
         }
         return this._viewUser;
