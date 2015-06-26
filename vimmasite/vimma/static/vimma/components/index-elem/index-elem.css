@@ -7,3 +7,7 @@ paper-tabs {
 paper-tab {
 	--paper-tab-ink: var(--paper-red-100);
 }
+
+div#content {
+	margin-top: 1ex;
+}
