@@ -1,3 +1,10 @@
+// Hacky: we're forcing change notifications when setting ‘error’ to support
+// the use-case where the parent component defines a property with no default
+// value and binds <ajax-load error="{{someProp}}">.
+// Otherwise, a new <ajax-load> has error='' (the default value), on successful
+// load it sets error to '' which won't trigger a change notification so the
+// parent's ‘someProp’ isn't changed (e.g. from undefined or 'my error').
+// <create-schedule> and <api-loader> do the same.
 Polymer({
     is: 'ajax-load',
 
@@ -38,6 +45,8 @@ Polymer({
         if (ev.detail.request !== this.$.ajax.lastRequest) {
             return;
         }
+        // force a property change notification
+        this._setError('-' + ev.detail.error.message);
         this._setError(ev.detail.error.message);
     },
     _handleResponse: function(ev) {
@@ -48,15 +57,21 @@ Polymer({
         // https://github.com/PolymerElements/iron-ajax/issues/63
         if (ev.detail.response === null) {
             if (ev.detail.xhr.status === 0) {
+                // force a property change notification
+                this._setError('');
                 this._setError('Error (cannot connect?)');
             } else {
                 // trigger this by putting a long delay in the endpoint and
                 // killing the server during that delay.
+
+                // force a property change notification
+                this._setError('');
                 this._setError('Error (invalid response)');
             }
             return;
         }
 
+        this._setError('-');
         this._setError('');
         this._setData(ev.detail.response);
     }
