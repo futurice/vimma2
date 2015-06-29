@@ -49,6 +49,8 @@ Polymer({
             }
 
             this._setData(resultsArray[0]);
+            // force a property change notification
+            this._setError('-');
             this._setError('');
             this._setLoading(false);
         }).bind(this);
@@ -58,6 +60,8 @@ Polymer({
                 return;
             }
 
+            // force a property change notification
+            this._setError('-' + errorText);
             this._setError(errorText);
             this._setLoading(false);
         }).bind(this);
