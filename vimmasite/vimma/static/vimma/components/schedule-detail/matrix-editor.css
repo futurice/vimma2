@@ -1,0 +1,27 @@
+:host {
+	display: block;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+td {
+	width: 1em;
+	height: 1em;
+	border: 1px solid black;
+}
+
+td.on.normal {
+	background-color: var(--paper-green-500);
+}
+td.on.normal:hover, td.off.dragging {
+	background-color: var(--paper-grey-600);
+}
+
+td.off.normal {
+	background-color: var(--paper-grey-300);
+}
+td.off.normal:hover, td.on.dragging {
+	background-color: var(--paper-light-green-a400);
+}

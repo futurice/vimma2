@@ -1,14 +1,32 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
+<!--
+  Edits the matrix of boolean values.
+  When changing the matrix, both this component and the parent using it must
+  overwrite the ‘matrix’ property with a new matrix. Don't change only cells in
+  the existing matrix or use Polymer's SET API.
+-->
+
 <dom-module id="matrix-editor">
   <link rel="import" type="css" href="../../css/component-common.css">
   <link rel="import" type="css" href="matrix-editor.css">
 
   <template>
-    <p>
-      TODO: Matrix Editor
-      <button on-click="_negate">Negate Matrix</button>
-    </p>
+    <table id="matrix" on-mouseleave="_mouseLeave">
+      <template is="dom-repeat" items="[[_viewMatrix]]" index-as="row">
+        <tr>
+          <template is="dom-repeat" items="[[item]]" index-as="col">
+            <td
+              class$="[[_cellClass(row, col, _viewMatrix, _editing)]]"
+              on-mouseover='_mouseOver'
+              on-mousedown='_mouseDown'
+              on-mouseup='_mouseUp'
+              ></td>
+          </template>
+        </tr>
+      </template>
+    </table>
+    <span>[[_help(_hoverRow, _hoverCol)]]</span>
   </template>
 </dom-module>
 
