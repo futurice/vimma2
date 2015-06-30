@@ -47,6 +47,9 @@ class Profile(models.Model):
     projects = models.ManyToManyField(Project)
     roles = models.ManyToManyField(Role)
 
+    def __str__(self):
+        return self.user.username
+
 
 class TimeZone(models.Model):
     name = models.CharField(max_length=100, unique=True)
