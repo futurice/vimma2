@@ -69,6 +69,18 @@ Polymer({
     },
 
     _computeUrl: function(userid) {
+        /* Hack: prevent hitting an invalid url ‘…/null/…’.
+         * This component currently requires a valid user id. Although
+         * <audit-display> uses it correctly, inside a ‘dom-if’, when it
+         * changes the page of audits (e.g. change the minimum log level)
+         * and some audit rows don't have a user anymore, the existing
+         * <user-name> component receives a binding change, even though it's
+         * inside a ‘dom-if restamp’ which is now false.
+         */
+        if (userid === null) {
+            return null;
+        }
+
         return vimmaApiUserDetailRoot + userid + '/?format=json';
     },
 
