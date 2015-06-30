@@ -141,9 +141,4 @@ SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day
 del secs_in_day
 
 
-# AWS root device size limits, in GB
-AWS_ROOT_DEVICE_MIN_SIZE = 1
-AWS_ROOT_DEVICE_MAX_SIZE = 100
-
-
 from local_settings import *

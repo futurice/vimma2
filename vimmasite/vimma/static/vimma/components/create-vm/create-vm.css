@@ -1,0 +1,38 @@
+paper-button#expand {
+	color: white;
+	background-color: var(--paper-blue-700);
+}
+
+div#expanded {
+	position: relative;
+	border: 0.2em solid;
+	border-color: var(--paper-blue-100);
+	padding: 1ex;
+}
+
+#close {
+	position: absolute;
+	top: 0;
+	right: 0;
+	color: var(--paper-grey-700);
+}
+
+div#overlay {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+
+	background: rgba(0, 0, 0, 0.2);
+	text-align: center;
+}
+
+table#form label {
+	font-weight: bold;
+}
+
+paper-button#create {
+	color: white;
+	background-color: var(--paper-green-700);
+}

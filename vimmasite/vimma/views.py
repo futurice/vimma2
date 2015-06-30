@@ -398,9 +398,6 @@ class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
 aws_firewall_rule_protocol_choices_json = json.dumps([
     {'value': c[0], 'label': c[1]}
     for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
-aws_volume_type_choices_json = json.dumps([
-    {'value': c[0], 'label': c[1]}
-    for c in AWSVMConfig.VOLUME_TYPE_CHOICES])
 
 
 @login_required_or_forbidden
@@ -421,9 +418,6 @@ def base_js(request):
         'audit_level_choices_json': audit_levels_json,
         'aws_firewall_rule_protocol_choices_json':
         aws_firewall_rule_protocol_choices_json,
-        'aws_volume_type_choices_json': aws_volume_type_choices_json,
-        'AWS_ROOT_DEVICE_MIN_SIZE': settings.AWS_ROOT_DEVICE_MIN_SIZE,
-        'AWS_ROOT_DEVICE_MAX_SIZE': settings.AWS_ROOT_DEVICE_MAX_SIZE,
     }, content_type='application/javascript; charset=utf-8')
 
 

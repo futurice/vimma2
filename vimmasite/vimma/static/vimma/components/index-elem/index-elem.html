@@ -8,6 +8,7 @@
 <link rel="import" href="../frag-history/frag-history.html">
 <link rel="import" href="../frag-split/frag-split.html">
 <link rel="import" href="../schedules-tab/schedules-tab.html">
+<link rel="import" href="../vms-tab/vms-tab.html">
 
 <dom-module id="index-elem">
   <link rel="import" type="css" href="index-elem.css">
@@ -29,6 +30,10 @@
     <!-- dom-if instead of iron-pages to restamp -->
 
     <div id="content">
+      <template is="dom-if" if="{{_equal(_selected, 0)}}" restamp>
+        <vms-tab frag="{{_fragTail}}"></vms-tab>
+      </template>
+
       <template is="dom-if" if="{{_equal(_selected, 1)}}" restamp>
         Later: select a project and see only the VMs in that project.
       </template>

@@ -1,0 +1,176 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../api-loader/api-loader.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../plain-text/plain-text.html">
+<link rel="import" href="create-vm-aws-data.html">
+<link rel="import" href="create-vm-dummy-data.html">
+
+<dom-module id="create-vm">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="create-vm.css">
+
+  <template>
+    <paper-button
+      id="expand" hidden$="[[_expanded]]" raised on-click="_toggle">
+      <iron-icon icon="add"></iron-icon>
+      Create VM
+    </paper-button>
+
+    <!-- Bug(?): Put the <api-loader>s alone under a "dom-if", separate from
+      other code.
+      In 2015 Jun, this code behaves incorrectly if it's a sibling of
+      the <api-loader>s below:
+
+      <template is="dom-if" if="[[_loading]]">
+        Bug-Test: Loading.
+      </template>
+      <template is="dom-if" if="[[!_loading]]">
+        Bug-Test: Not loading.
+      </template>
+    -->
+    <template is="dom-if" if="[[_expanded]]" restamp>
+      <api-loader
+        url="[[_prjsUrl]]"
+        loading="{{_prjsLoading}}"
+        error="{{_prjsErr}}"
+        data="{{_prjs}}"
+        ></api-loader>
+
+      <api-loader
+        url="[[_providersUrl]]"
+        loading="{{_providersLoading}}"
+        error="{{_providersErr}}"
+        data="{{_providers}}"
+        ></api-loader>
+
+      <api-loader
+        url="[[_vmcfgsUrl]]"
+        loading="{{_vmcfgsLoading}}"
+        error="{{_vmcfgsErr}}"
+        data="{{_vmcfgs}}"
+        ></api-loader>
+
+      <api-loader
+        url="[[_schedulesUrl]]"
+        loading="{{_schedulesLoading}}"
+        error="{{_schedulesErr}}"
+        data="{{_schedules}}"
+        ></api-loader>
+    </template>
+
+    <template is="dom-if" if="[[_expanded]]" restamp>
+      <div id="expanded">
+        <paper-icon-button id="close" icon="close"
+          on-click="_toggle"></paper-icon-button>
+
+        <template is="dom-if" if="[[_loading]]">
+          <paper-spinner active></paper-spinner>
+        </template>
+
+        <template is="dom-if" if="[[!_loading]]" restamp>
+          <h1>Create a new VM</h1>
+          <template is="dom-if" if="[[_loadErr]]" restamp>
+            <plain-text class="error" text="[[_loadErr]]"></plain-text>
+          </template>
+          <template is="dom-if" if="[[!_loadErr]]" restamp>
+            <div hidden$="[[!_createError]]">
+              <plain-text class="error" text="[[_createError]]"></plain-text>
+            </div>
+
+            <table id="form">
+              <tr>
+                <td>
+                  <label for="prj">Project:</label>
+                </td>
+                <td>
+                  <select id="prj" on-change="_prjSelected">
+                    <template is="dom-repeat" items="[[_prjs]]">
+                      <option selected$="[[_equal(item, _selPrj)]]"
+                        >[[item.name]]</option>
+                    </template>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label for="provider">VM Provider:</label>
+                </td>
+                <td>
+                  <select id="provider" on-change="_providerSelected">
+                    <template is="dom-repeat" items="[[_providers]]">
+                      <option selected$="[[_equal(item, _selProvider)]]"
+                        >[[item.name]]</option>
+                    </template>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label for="vmcfg">VM Configuration:</label>
+                </td>
+                <td>
+                  <select id="vmcfg" on-change="_vmcfgSelected">
+                    <template is="dom-repeat" items="[[_vmcfgsForProvider]]">
+                      <option selected$="[[_equal(item, _selVmcfg)]]"
+                        >[[item.name]]</option>
+                    </template>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label for="schedule">Schedule:</label>
+                </td>
+                <td>
+                  <select id="schedule" on-change="_scheduleSelected">
+                    <template is="dom-repeat" items="[[_schedules]]">
+                      <option selected$="[[_equal(item, _selSchedule)]]"
+                        >[[item.name]]</option>
+                    </template>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <paper-input
+                    label="Comment"
+                    placeholder="What is this VM for?"
+                    value="{{_comment}}"
+                    ></paper-input>
+                </td>
+              </tr>
+            </table>
+
+            <template is="dom-if" if="[[_equal(_selProvider.type, 'dummy')]]"
+              restamp>
+              <create-vm-dummy-data data="{{_data}}"></create-vm-dummy-data>
+            </template>
+            <template is="dom-if" if="[[_equal(_selProvider.type, 'aws')]]"
+              restamp>
+              <create-vm-aws-data data="{{_data}}"></create-vm-aws-data>
+            </template>
+
+            <paper-button id="create" raised on-click="_create">
+              <iron-icon icon="create"></iron-icon>
+              Create
+            </paper-button>
+
+            <template is="dom-if" if="[[_createInFlight]]" restamp>
+              <div id="overlay">
+                <paper-spinner active></paper-spinner>
+              </div>
+            </template>
+          </template>
+        </template>
+      </div>
+    </template>
+  </template>
+</dom-module>
+
+<script src="create-vm.js"></script>

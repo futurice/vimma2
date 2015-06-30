@@ -38,6 +38,7 @@ Polymer({
         this._expanded = !this._expanded;
         if (this._expanded) {
             this._newName = '';
+            this._createError = '';
         }
     },
 

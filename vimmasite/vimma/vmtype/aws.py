@@ -81,35 +81,20 @@ def create_vm(vmconfig, vm, data, user_id):
     Returns (aws_vm, callables).
     data = {
         name: string,
-        root_device_size: int,
-        root_device_volume_type: string,
     }
 
     This function must be called inside a transaction. The caller must execute
     the returned callables only after committing.
     """
-    root_device_size = data['root_device_size']
-    if type(root_device_size) != int:
-        raise ValueError('root_device_size must be int')
-    if (root_device_size < settings.AWS_ROOT_DEVICE_MIN_SIZE or
-            root_device_size > settings.AWS_ROOT_DEVICE_MAX_SIZE):
-        raise ValueError('root_device_size must be between {} and {}'.format(
-            settings.AWS_ROOT_DEVICE_MIN_SIZE,
-            settings.AWS_ROOT_DEVICE_MAX_SIZE))
-
-    root_device_volume_type = data['root_device_volume_type']
-    if (root_device_volume_type not in
-            [c[0] for c in AWSVMConfig.VOLUME_TYPE_CHOICES]):
-        raise ValueError('Invalid root_device_volume_type value')
-
     aws_vm_config = vmconfig.awsvmconfig
 
     aws_vm = AWSVM.objects.create(vm=vm, name=data['name'],
             region=aws_vm_config.region)
     aws_vm.full_clean()
 
-    callables = [lambda: do_create_vm.delay(aws_vm_config.id, root_device_size,
-        root_device_volume_type, vm.id, user_id)]
+    callables = [lambda: do_create_vm.delay(aws_vm_config.id,
+        aws_vm_config.root_device_size, aws_vm_config.root_device_volume_type,
+        vm.id, user_id)]
     return aws_vm, callables
 
 
