@@ -1,10 +1,14 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../create-vm/create-vm.html">
+<link rel="import" href="../vm-list/vm-list.html">
 
 <dom-module id="vms-tab">
+  <link rel="import" type="css" href="vms-tab.css">
+
   <template>
-    <create-vm></create-vm>
+    <create-vm on-vm-created="_vmCreated"></create-vm>
+    <vm-list id="list" frag="{{frag}}"></vm-list>
   </template>
 </dom-module>
 

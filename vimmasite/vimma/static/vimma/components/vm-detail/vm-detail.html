@@ -1,0 +1,88 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../audit-display/audit-display.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../plain-text/plain-text.html">
+<link rel="import" href="../vm-data-model/vm-data-model.html">
+
+<dom-module id="vm-detail">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="vm-detail.css">
+
+  <template>
+    <vm-data-model id="vdm"></vm-data-model>
+
+    <template is="dom-if" if="[[_loading]]" restamp>
+      <paper-spinner active></paper-spinner>
+    </template>
+
+    <template is="dom-if" if="[[!_loading]]" restamp>
+      <template is="dom-if" if="[[_error]]" restamp>
+        <paper-icon-button
+           id="reload"
+           icon="refresh"
+           title="Refresh"
+           on-click="_reload"
+           ></paper-icon-button>
+        <div>
+          <plain-text class="error" text="[[_error]]"></plain-text>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[!_error]]">
+        <template is="dom-if" if="[[_actionError]]">
+          <plain-text class="error" text="[[_actionError]]"></plain-text>
+        </template>
+
+        <div id="summary">
+          <paper-icon-button
+            id="expand"
+            icon="expand-more"
+            title="Show/hide details"
+            on-click="_toggle"
+            ></paper-icon-button>
+          <paper-icon-button
+             id="reload"
+             icon="refresh"
+             title="Refresh"
+             on-click="_reload"
+             ></paper-icon-button>
+
+          <span id="smr-name">[[_getName(_vm)]]</span>
+          <span id="smr-state">[[_getStateName(_vm)]]</span>
+          <span id="smr-project">[[_getProjectName(_vm)]]</span>
+          <span id="smr-expiry">
+            <local-date
+              date-string="[[_getExpiryDate(_vm)]]"
+              hide-millis
+              ></local-date>
+          </span>
+
+          <paper-icon-button
+            id="reboot"
+            icon="power-settings-new"></paper-icon-button>
+          <paper-icon-button
+            id="destroy"
+            icon="delete"
+            title="Destroy…"
+            on-click="_destroy"
+            ></paper-icon-button>
+        </div>
+
+        <template is="dom-if" if="[[_expanded]]" restamp>
+          <div id="details">
+            <audit-display vmid="[[_vm.vm.id]]"></audit-display>
+          </div>
+        </template>
+
+        <template is="dom-if" if="[[_actionInFlight]]" restamp>
+          <div id="overlay">
+            <paper-spinner active></paper-spinner>
+          </div>
+        </template>
+      </template>
+    </template>
+  </template>
+</dom-module>
+
+<script src="vm-detail.js"></script>

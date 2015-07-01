@@ -193,12 +193,10 @@ Polymer({
             complete: (function() {
                 this._createInFlight = false;
             }).bind(this),
-            success: (function(data) {
+            success: (function() {
                 this._createError = '';
                 this._toggle();
-                console.log(data);
-                // TODO:
-                //this.fire('vm-created', data.id);
+                this.fire('vm-created');
             }).bind(this),
             error: (function(xhr, txtStatus, saveErr) {
                 var errorText = getAjaxErr.apply(this, arguments);

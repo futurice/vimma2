@@ -10,11 +10,11 @@ Polymer({
 
         _result: {
             type: String,
-            computed: 'makeResult(n, one, many)'
+            computed: '_makeResult(n, one, many)'
         }
     },
 
-    makeResult: function(n, one, many) {
+    _makeResult: function(n, one, many) {
         var what;
         if (n === 1) {
             what = one;

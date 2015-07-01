@@ -1,0 +1,52 @@
+:host {
+	position: relative;
+	display: block;
+	border: 0.2em solid;
+	border-color: var(--paper-amber-200);
+	padding: 1ex;
+}
+
+div#overlay {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+
+	background: rgba(0, 0, 0, 0.2);
+	text-align: center;
+}
+
+paper-icon-button#reload:hover {
+	color: var(--paper-green-700);
+	background: var(--paper-light-green-50);
+	border-radius: 50%;
+}
+
+div#summary {
+	display: flex;
+	align-items: baseline;
+}
+span#smr-name {
+	flex: 1 1;
+	overflow: auto;
+}
+span#smr-state {
+	flex: 0 0 15%;
+}
+span#smr-project {
+	flex: 0 0 20%;
+	overflow: auto;
+}
+span#smr-expiry {
+	flex: 0 0 17%;
+}
+span#smr-name, span#smr-state, span#smr-project, span#smr-expiry {
+	padding: 1ex;
+}
+
+paper-icon-button#destroy:hover {
+	color: var(--paper-red-a400);
+	background: var(--paper-red-100);
+	border-radius: 50%;
+}
