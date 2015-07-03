@@ -4,6 +4,8 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../frag-split/frag-split.html">
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../show-count/show-count.html">
@@ -16,6 +18,10 @@
 
   <template>
     <vm-data-model id="vdm"></vm-data-model>
+    <frag-split
+      frag="{{frag}}"
+      head="{{_fragHead}}"
+      ></frag-split>
 
     <div id="top-bar">
       <template is="dom-if" if="[[_loading]]" restamp>
@@ -116,7 +122,12 @@
       </div>
 
       <template is="dom-repeat" items="[[_sortedVms]]">
-        <vm-detail vmid="[[item.vm.id]]"></vm-detail>
+        <vm-detail
+          vmid="[[item.vm.id]]"
+          selected-via-frag="[[_looseEqual(item.vm.id, _fragHead)]]"
+          on-vm-expanded="_vmExpanded"
+          on-vm-collapsed="_vmCollapsed"
+          ></vm-detail>
       </template>
     </template>
   </template>

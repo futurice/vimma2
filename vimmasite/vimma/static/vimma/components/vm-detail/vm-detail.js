@@ -7,6 +7,12 @@ Polymer({
             observer: '_vmidChanged'
         },
 
+        // see <schedule-detail>.selectedViaFrag
+        selectedViaFrag: {
+            type: Boolean,
+            observer: '_selectedViaFragChanged'
+        },
+
         _loadingToken: Object,  /* same logic as in <vm-list> */
         _loading: Boolean,
         _error: String, // empty string if no error
@@ -24,13 +30,20 @@ Polymer({
 
         _expanded: {
             type: Boolean,
-            value: false
+            value: false,
+            observer: '_expandedChanged'
         }
     },
 
     _vmidChanged: function(newV, oldV) {
         this._expanded = this.properties._expanded.value;
         this._reload();
+    },
+
+    _selectedViaFragChanged: function(newV, oldV) {
+        if (newV) {
+            this._expanded = true;
+        }
     },
 
     _reload: function() {
@@ -168,5 +181,13 @@ Polymer({
 
     _toggle: function() {
         this._expanded = !this._expanded;
+    },
+
+    _expandedChanged: function(newV, oldV) {
+        if (this.vmid === undefined) {
+            return;
+        }
+
+        this.fire(newV ? 'vm-expanded' : 'vm-collapsed', this.vmid);
     }
 });

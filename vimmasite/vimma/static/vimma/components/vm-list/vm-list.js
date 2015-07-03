@@ -71,11 +71,14 @@
     Polymer({
         is: 'vm-list',
 
+        behaviors: [VimmaBehaviors.Equal],
+
         properties: {
             frag: {
                 type: String,
                 notify: true
             },
+            _fragHead: String,
 
             // load destroyed or non-destroyed VMs
             destroyed: {
@@ -155,6 +158,10 @@
                 computed: '_sort(_vms, _order)'
             }
         },
+
+        observers: [
+            '_expandIfVMSelected(_vms, _fragHead)'
+        ],
 
         ready: function() {
             this.reload();
@@ -290,6 +297,23 @@
         },
         _computeExpiryClass: function(order) {
             return this._computeClass(order, [orderExpiryAsc, orderExpiryDesc]);
+        },
+
+        _vmExpanded: function(ev) {
+            this.frag = ev.detail + '';
+        },
+        _vmCollapsed: function(ev) {
+            if (this._fragHead == ev.detail) {
+                this.frag = '';
+            }
+        },
+
+        _expandIfVMSelected: function(_vms, _fragHead) {
+            _vms.forEach(function(vm) {
+                if (vm.vm.id == _fragHead) {
+                    this.expanded = true;
+                }
+            }, this);
         }
     });
 })();
