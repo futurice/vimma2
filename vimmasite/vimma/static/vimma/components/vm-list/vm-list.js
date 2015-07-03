@@ -41,6 +41,9 @@
         if (a.isDestroyed() != b.isDestroyed()) {
             return compare(b.isDestroyed(), a.isDestroyed());
         }
+        if (a.isDestroyed()) {
+            return 0;
+        }
         return compare(a.isOn(), b.isOn());
     }
     function compareStateDesc(a, b) {
