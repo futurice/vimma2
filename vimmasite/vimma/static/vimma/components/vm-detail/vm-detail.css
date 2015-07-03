@@ -3,7 +3,6 @@
 	display: block;
 	border: 0.2em solid;
 	border-color: var(--paper-amber-200);
-	padding: 1ex;
 }
 
 div#overlay {
@@ -17,6 +16,11 @@ div#overlay {
 	text-align: center;
 }
 
+paper-icon-button#expand:hover {
+	color: var(--paper-amber-800);
+	background: var(--paper-amber-100);
+	border-radius: 50%;
+}
 paper-icon-button#reload:hover {
 	color: var(--paper-green-700);
 	background: var(--paper-light-green-50);
@@ -59,8 +63,18 @@ span#smr-state iron-icon.powered-off {
 	color: var(--paper-red-300);
 }
 
+paper-icon-button#reboot:hover {
+	color: var(--paper-amber-800);
+	background: var(--paper-amber-100);
+	border-radius: 50%;
+}
 paper-icon-button#destroy:hover {
 	color: var(--paper-red-a400);
 	background: var(--paper-red-100);
 	border-radius: 50%;
+}
+
+div#details {
+	padding: 1ex;
+	border-top: 0.2em dashed var(--paper-amber-200);
 }

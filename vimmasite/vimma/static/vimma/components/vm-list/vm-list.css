@@ -23,7 +23,6 @@ paper-icon-button#reload:hover {
 
 div#table-head {
 	display: flex;
-	padding: 1ex;
 	border: 0.2em solid transparent;
 }
 div#table-head > span.vborder {
