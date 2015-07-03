@@ -50,7 +50,9 @@
              on-click="_reload"
              ></paper-icon-button>
 
+          <span class="vborder"></span>
           <span id="smr-name">[[_getName(_vm)]]</span>
+          <span class="vborder"></span>
           <span id="smr-state">
             <iron-icon
               icon="[[_getStateIcon(_vm)]]"
@@ -58,13 +60,16 @@
               class$="[[_getStateClass(_vm)]]"
               ></iron-icon>
           </span>
+          <span class="vborder"></span>
           <span id="smr-project">[[_getProjectName(_vm)]]</span>
+          <span class="vborder"></span>
           <span id="smr-expiry">
             <local-date
               date-string="[[_getExpiryDate(_vm)]]"
               hide-millis
               ></local-date>
           </span>
+          <span class="vborder"></span>
 
           <paper-icon-button
             id="reboot"

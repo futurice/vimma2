@@ -27,6 +27,10 @@ div#summary {
 	display: flex;
 	align-items: baseline;
 }
+div#summary > span.vborder {
+	align-self: stretch;
+	border-left: 0.15em dashed var(--paper-light-blue-500);
+}
 span#smr-name {
 	flex: 1 1;
 	overflow: auto;
@@ -41,7 +45,7 @@ span#smr-project {
 span#smr-expiry {
 	flex: 0 0 17%;
 }
-span#smr-name, span#smr-project, span#smr-expiry {
+span#smr-name, span#smr-state, span#smr-project, span#smr-expiry {
 	padding: 1ex;
 }
 

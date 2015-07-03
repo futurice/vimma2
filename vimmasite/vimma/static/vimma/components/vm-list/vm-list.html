@@ -61,11 +61,15 @@
           icon="refresh"
           ></paper-icon-button>
 
+        <span class="vborder"></span>
+
         <span id="name" on-click="_sortByName" class$="[[_nameClass]]">
           <span class="label">Name</span>
           <iron-icon icon="[[_nameSortIcon]]" hidden$="[[!_nameSortIcon]]"
             ></iron-icon>
         </span>
+
+        <span class="vborder"></span>
 
         <span id="state"
           title="Power state"
@@ -77,11 +81,15 @@
             ></iron-icon>
         </span>
 
+        <span class="vborder"></span>
+
         <span id="project" on-click="_sortByProject" class$="[[_projectClass]]">
           <span class="label">Project</span>
           <iron-icon icon="[[_projectSortIcon]]" hidden$="[[!_projectSortIcon]]"
             ></iron-icon>
         </span>
+
+        <span class="vborder"></span>
 
         <span id="expiry-date" on-click="_sortByExpiry"
           class$="[[_expiryClass]]">
@@ -89,6 +97,8 @@
           <iron-icon icon="[[_expirySortIcon]]" hidden$="[[!_expirySortIcon)]]"
             ></iron-icon>
         </span>
+
+        <span class="vborder"></span>
 
         <paper-icon-button
           id="vm-reboot"

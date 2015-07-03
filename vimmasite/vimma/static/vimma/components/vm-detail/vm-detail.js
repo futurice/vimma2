@@ -29,6 +29,7 @@ Polymer({
     },
 
     _vmidChanged: function(newV, oldV) {
+        this._expanded = this.properties._expanded.value;
         this._reload();
     },
 
