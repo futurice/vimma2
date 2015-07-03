@@ -39,7 +39,7 @@
         <div id="summary">
           <paper-icon-button
             id="expand"
-            icon="expand-more"
+            icon="[[_getShowHideIcon(_expanded)]]"
             title="Show/hide details"
             on-click="_toggle"
             ></paper-icon-button>
@@ -73,7 +73,10 @@
 
           <paper-icon-button
             id="reboot"
-            icon="power-settings-new"></paper-icon-button>
+            icon="power-settings-new"
+            title="Reboot…"
+            on-click="_reboot"
+            ></paper-icon-button>
           <paper-icon-button
             id="destroy"
             icon="delete"

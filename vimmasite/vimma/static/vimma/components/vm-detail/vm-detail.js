@@ -61,6 +61,13 @@ Polymer({
         this.$.vdm.loadVM(this.vmid, success, fail);
     },
 
+    _getShowHideIcon: function(expanded) {
+        if (expanded) {
+            return 'expand-less';
+        }
+        return 'expand-more';
+    },
+
     /* Call VMModel methods (we can't do it in the template directly). */
     _getExpiryDate: function(vm) {
         return vm.getExpiryDate();
@@ -108,6 +115,36 @@ Polymer({
         this._actionInFlight = true;
         $.ajax({
             url: vimmaEndpointDestroyVM,
+            type: 'POST',
+            contentType: 'application/json; charset=UTF-8',
+            headers: {
+                'X-CSRFToken': $.cookie('csrftoken')
+            },
+            data: JSON.stringify({
+                vmid: this._vm.vm.id
+            }),
+            complete: (function() {
+                this._actionInFlight = false;
+            }).bind(this),
+            success: (function(data) {
+                this._actionError = '';
+            }).bind(this),
+            error: (function() {
+                var errorText = getAjaxErr.apply(this, arguments);
+                this._actionError = errorText;
+            }).bind(this)
+        });
+    },
+
+    _reboot: function(ev) {
+        ev.stopPropagation();
+        if (!confirm('Reboot VM: ‘' + this._vm.getName() + '’?')) {
+            return;
+        }
+
+        this._actionInFlight = true;
+        $.ajax({
+            url: vimmaEndpointRebootVM,
             type: 'POST',
             contentType: 'application/json; charset=UTF-8',
             headers: {
