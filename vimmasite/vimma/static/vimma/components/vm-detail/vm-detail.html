@@ -52,9 +52,17 @@
              ></paper-icon-button>
 
           <span class="vborder"></span>
-          <span id="smr-name">[[_getName(_vm)]]</span>
+          <span
+            id="smr-name"
+            on-tap="_toggle"
+            on-track="_summaryTrack"
+            >[[_getName(_vm)]]</span>
           <span class="vborder"></span>
-          <span id="smr-state">
+          <span
+            id="smr-state"
+            on-tap="_toggle"
+            on-track="_summaryTrack"
+            >
             <iron-icon
               icon="[[_getStateIcon(_vm)]]"
               title="[[_getStateName(_vm)]]"
@@ -62,9 +70,17 @@
               ></iron-icon>
           </span>
           <span class="vborder"></span>
-          <span id="smr-project">[[_getProjectName(_vm)]]</span>
+          <span
+            id="smr-project"
+            on-tap="_toggle"
+            on-track="_summaryTrack"
+            >[[_getProjectName(_vm)]]</span>
           <span class="vborder"></span>
-          <span id="smr-expiry">
+          <span
+            id="smr-expiry"
+            on-tap="_toggle"
+            on-track="_summaryTrack"
+            >
             <local-date
               date-string="[[_getExpiryDate(_vm)]]"
               hide-millis

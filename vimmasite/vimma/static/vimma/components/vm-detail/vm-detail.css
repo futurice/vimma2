@@ -63,6 +63,14 @@ paper-icon-button#destroy:hover {
 	border-radius: 50%;
 }
 
+div#summary:hover {
+	background-color: var(--paper-light-blue-50);
+}
+span#smr-name:hover, span#smr-state:hover, span#smr-project:hover,
+span#smr-expiry:hover {
+	cursor: pointer;
+}
+
 div#details {
 	padding: 1ex;
 	border-top: 0.2em dashed var(--paper-amber-200);

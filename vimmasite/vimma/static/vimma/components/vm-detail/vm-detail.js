@@ -189,5 +189,8 @@ Polymer({
         }
 
         this.fire(newV ? 'vm-expanded' : 'vm-collapsed', this.vmid);
+    },
+
+    _summaryTrack: function() {
     }
 });
