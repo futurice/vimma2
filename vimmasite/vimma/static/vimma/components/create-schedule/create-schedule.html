@@ -8,6 +8,7 @@
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
 <!--
@@ -82,9 +83,7 @@
           </template>
         </template>
 
-        <div id="overlay" hidden$="[[!_createInFlight]]">
-          <paper-spinner active></paper-spinner>
-        </div>
+        <loading-overlay hidden$="[[!_createInFlight]]"></loading-overlay>
       </div>
     </template>
   </template>

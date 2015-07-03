@@ -6,6 +6,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../user-name/user-name.html">
@@ -111,11 +112,7 @@
           Show more
         </button>
 
-        <div id="overlay" hidden$="[[!_loading]]">
-          <!-- TODO: vertically center the spinner -->
-          <!-- active="[[_loading]]" shows the spinner only briefly; bug? -->
-          <paper-spinner active></paper-spinner>
-        </div>
+        <loading-overlay hidden$="[[!_loading]]"></loading-overlay>
       </div>
     </template>
   </template>

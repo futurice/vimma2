@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="create-vm-aws-data.html">
 <link rel="import" href="create-vm-dummy-data.html">
@@ -168,9 +169,7 @@
             </paper-button>
 
             <template is="dom-if" if="[[_createInFlight]]" restamp>
-              <div id="overlay">
-                <paper-spinner active></paper-spinner>
-              </div>
+              <loading-overlay></loading-overlay>
             </template>
           </template>
         </template>

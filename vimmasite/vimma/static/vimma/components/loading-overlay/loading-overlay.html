@@ -1,0 +1,25 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+
+<!--
+  Cover its parent with a grey, semi-transparent box with a loading indicator
+  in the center.
+
+  The parent element should have non-static positioning
+  (e.g. ‘position: relative’) and have <loading-overlay> as its last child.
+-->
+
+<dom-module id="loading-overlay">
+  <link rel="import" type="css" href="loading-overlay.css">
+
+  <template>
+    <paper-spinner active></paper-spinner>
+  </template>
+</dom-module>
+
+<script>
+Polymer({
+  is: 'loading-overlay'
+});
+</script>

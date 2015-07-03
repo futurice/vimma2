@@ -12,17 +12,6 @@ div#box {
 	position: relative;
 }
 
-div#box div#overlay {
-	position: absolute;
-	left: 0;
-	top: 0;
-	right: 0;
-	bottom: 0;
-
-	background: rgba(0, 0, 0, 0.1);
-	text-align: center;
-}
-
 div#box div#navigation {
 	display: flex;
 	justify-content: space-between;
