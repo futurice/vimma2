@@ -33,13 +33,10 @@
           <div id="top-content">
             <h1 on-click="_toggle" title="Expand/Collapse">
               <iron-icon icon="[[_headingIcon]]"></iron-icon>
-              <show-count n="[[_sortedVms.length]]" one="VM"></show-count>
-              <template is="dom-if" if="[[destroyed]]">
-                (destroyed)
-              </template>
-              <template is="dom-if" if="[[!destroyed]]">
-                (not destroyed)
-              </template>
+              <show-count
+                n="[[_sortedVms.length]]"
+                one="[[_sayTopBarOne(destroyed)]]"
+                ></show-count>
               <h1>
           </div>
         </template>

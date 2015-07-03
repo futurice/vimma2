@@ -314,6 +314,13 @@
                     this.expanded = true;
                 }
             }, this);
+        },
+
+        _sayTopBarOne: function(destroyed) {
+            if (destroyed) {
+                return 'destroyed VM';
+            }
+            return 'active VM';
         }
     });
 })();
