@@ -67,8 +67,12 @@
             ></iron-icon>
         </span>
 
-        <span id="state" on-click="_sortByState" class$="[[_stateClass]]">
-          <span class="label">State</span>
+        <span id="state"
+          title="Power state"
+          on-click="_sortByState"
+          class$="[[_stateClass]]">
+          <iron-icon icon="power-settings-new"></iron-icon>
+          <span class="label"></span> <!-- spacer -->
           <iron-icon icon="[[_stateSortIcon]]" hidden$="[[!_stateSortIcon]]"
             ></iron-icon>
         </span>

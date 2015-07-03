@@ -72,12 +72,30 @@ Polymer({
     },
     _getStateName: function(vm) {
         if (vm.isDestroyed()) {
+            return 'Destroyed';
+        }
+        if (vm.isOn()) {
+            return 'Powered ON';
+        }
+        return 'Powered OFF';
+    },
+    _getStateIcon: function(vm) {
+        if (vm.isDestroyed()) {
+            return 'delete';
+        }
+        if (vm.isOn()) {
+            return 'check-circle';
+        }
+        return 'remove-circle';
+    },
+    _getStateClass: function(vm) {
+        if (vm.isDestroyed()) {
             return 'destroyed';
         }
         if (vm.isOn()) {
-            return 'on';
+            return 'powered-on';
         }
-        return 'off';
+        return 'powered-off';
     },
 
     _destroy: function(ev) {

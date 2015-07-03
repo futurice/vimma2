@@ -32,7 +32,7 @@ span#smr-name {
 	overflow: auto;
 }
 span#smr-state {
-	flex: 0 0 15%;
+	flex: 0 0 5%;
 }
 span#smr-project {
 	flex: 0 0 20%;
@@ -41,8 +41,18 @@ span#smr-project {
 span#smr-expiry {
 	flex: 0 0 17%;
 }
-span#smr-name, span#smr-state, span#smr-project, span#smr-expiry {
+span#smr-name, span#smr-project, span#smr-expiry {
 	padding: 1ex;
+}
+
+span#smr-state iron-icon.destroyed {
+	color: var(--paper-orange-500);
+}
+span#smr-state iron-icon.powered-on {
+	color: var(--paper-green-500);
+}
+span#smr-state iron-icon.powered-off {
+	color: var(--paper-red-300);
 }
 
 paper-icon-button#destroy:hover {

@@ -1,6 +1,8 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../audit-display/audit-display.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
@@ -49,7 +51,13 @@
              ></paper-icon-button>
 
           <span id="smr-name">[[_getName(_vm)]]</span>
-          <span id="smr-state">[[_getStateName(_vm)]]</span>
+          <span id="smr-state">
+            <iron-icon
+              icon="[[_getStateIcon(_vm)]]"
+              title="[[_getStateName(_vm)]]"
+              class$="[[_getStateClass(_vm)]]"
+              ></iron-icon>
+          </span>
           <span id="smr-project">[[_getProjectName(_vm)]]</span>
           <span id="smr-expiry">
             <local-date

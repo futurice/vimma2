@@ -31,7 +31,7 @@ span#name {
 	flex: 1 1;
 }
 span#state {
-	flex: 0 0 15%;
+	flex: 0 0 5%;
 }
 span#project {
 	flex: 0 0 20%;
@@ -40,12 +40,19 @@ span#expiry-date {
 	flex: 0 0 17%;
 }
 
-span#name, span#state, span#project, span#expiry-date {
+span#name, span#project, span#expiry-date {
 	/* center the label and the sort-icon vertically */
 	display: flex;
 	align-items: center;
 
 	padding: 1ex;
+	cursor: pointer;
+}
+span#state {
+	/* center the label and the sort-icon vertically */
+	display: flex;
+	align-items: center;
+
 	cursor: pointer;
 }
 span#name:hover, span#state:hover, span#project:hover, span#expiry-date:hover {
