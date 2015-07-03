@@ -77,9 +77,16 @@
                 notify: true
             },
 
+            // load destroyed or non-destroyed VMs
+            destroyed: {
+                type: Boolean,
+                value: false,
+                observer: '_destroyedChanged'
+            },
+
             expanded: {
                 type: Boolean,
-                value: true
+                value: false
             },
 
             // avoid 3 nested ‘dom-if’s
@@ -177,7 +184,11 @@
                 this._loading = false;
             }).bind(this);
 
-            this.$.vdm.loadAllVMs(success, fail);
+            this.$.vdm.loadAllVMs(this.destroyed, success, fail);
+        },
+
+        _destroyedChanged: function(newV, oldV) {
+            this.reload();
         },
 
         _toggle: function() {

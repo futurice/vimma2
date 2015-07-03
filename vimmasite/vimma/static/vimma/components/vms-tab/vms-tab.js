@@ -9,6 +9,6 @@ Polymer({
     },
 
     _vmCreated: function(ev) {
-        this.$.list.reload();
+        this.$.list_alive.reload();
     }
 });

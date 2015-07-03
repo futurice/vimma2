@@ -175,10 +175,18 @@
         });
     }
 
-    /* Like loadVMs but it loads all VMs. */
-    function loadAllVMs(successCallback, errCallback) {
+    /* Like loadVMs but it loads all VMs.
+     * If destroyed is a Boolean, it only loads destroyed/non-destroyed VMs.
+     * Else (e.g. destroyed is ‘undefined’ or ‘null’) it loads all VMs.
+     */
+    function loadAllVMs(destroyed, successCallback, errCallback) {
         apiGetAll([vimmaApiVMList], function(resArr) {
             var vms = resArr[0];
+            if (typeof(destroyed) === "boolean") {
+                vms = vms.filter(function(vm) {
+                    return (vm.destroyed_at !== null) === destroyed;
+                });
+            }
             loadVMs(vms.map(function(vm) {
                 return vm.id;
             }), successCallback, errCallback);
