@@ -102,15 +102,6 @@
       <template is="dom-repeat" items="[[_sortedVms]]">
         <vm-detail vmid="[[item.vm.id]]"></vm-detail>
       </template>
-
-      <template is="dom-repeat" items="[[_sortedVms]]">
-        <br>
-        <span>[[_getName(item)]]</span>
-        (<span>[[_getProjectName(item)]]</span>)
-        <span>[[_isDestroyed(item)]]</span>
-        <local-date date-string="[[_getExpiryDate(item)]]"
-          ></local-date>
-      </template>
     </template>
   </template>
 </dom-module>
