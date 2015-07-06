@@ -79,3 +79,11 @@ div#details {
 	padding: 1ex;
 	border-top: 0.2em dashed var(--paper-amber-200);
 }
+
+div#details > h1 {
+	margin: 0;
+}
+h1.section-toggle:hover {
+	cursor: pointer;
+	color: var(--paper-blue-900);
+}

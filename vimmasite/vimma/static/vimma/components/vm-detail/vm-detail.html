@@ -105,7 +105,17 @@
 
         <template is="dom-if" if="[[_expanded]]" restamp>
           <div id="details">
-            <audit-display vmid="[[_vm.vm.id]]"></audit-display>
+            <h1
+              class="section-toggle"
+              on-click="_toggleLogs"
+              title$="[[_getSectionTooltip(_showLogs, 'logs')]]"
+              >
+              <iron-icon icon="[[_getSectionIcon(_showLogs)]]"></iron-icon>
+              Logs
+            </h1>
+            <template is="dom-if" if="[[_showLogs]]" restamp>
+              <audit-display vmid="[[_vm.vm.id]]"></audit-display>
+            </template>
           </div>
         </template>
 

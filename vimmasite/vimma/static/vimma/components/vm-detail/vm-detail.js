@@ -32,6 +32,11 @@ Polymer({
             type: Boolean,
             value: false,
             observer: '_expandedChanged'
+        },
+
+        _showLogs: {
+            type: Boolean,
+            value: false
         }
     },
 
@@ -200,5 +205,25 @@ Polymer({
     },
 
     _summaryTrack: function() {
+    },
+
+    _toggleLogs: function() {
+        this._showLogs = !this._showLogs;
+    },
+
+    _getSectionIcon: function(sectionOpened) {
+        if (sectionOpened) {
+            return 'expand-less'; //'arrow-drop-up';
+        }
+        return 'expand-more'; //'arrow-drop-down';
+    },
+    _getSectionTooltip: function(sectionOpened, sectionName) {
+        var verb;
+        if (sectionOpened) {
+            verb = 'Hide';
+        } else {
+            verb = 'Show';
+        }
+        return verb + ' ' + sectionName;
     }
 });
