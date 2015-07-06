@@ -2,7 +2,8 @@
 
 # Provision and manage virtual machines from cloud providers (AWS)
 
-Vimma is distributed under the BSD 3-clause license, see the file `COPYING`.
+Vimma is Free Software published under the BSD 3-clause license.
+See the file `COPYING`.
 
 ```
 The deploy/DEPLOY file describes deploying to a production server.
