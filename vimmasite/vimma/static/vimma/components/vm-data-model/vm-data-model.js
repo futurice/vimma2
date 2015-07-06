@@ -45,14 +45,16 @@
     };
 
 
-    function AWSVMModel(vm, provider, project, expiration, aws_vm) {
+    function AWSVMModel(vm, provider, project, expiration,
+            aws_vm, aws_provider) {
         VMModel.call(this, vm, provider, project, expiration);
         this.aws_vm = aws_vm;
+        this.aws_provider = aws_provider;
     }
     AWSVMModel.prototype = Object.create(VMModel.prototype);
 
     AWSVMModel.prototype.getName = function() {
-        return this.aws_vm.name;
+        return this.aws_vm.name + '.' + this.aws_provider.route_53_zone;
     };
 
     AWSVMModel.prototype.isOn = function() {
@@ -127,11 +129,14 @@
         }
 
         function makeAWSVMModel(vm, provider, project, expiration) {
-            var url = vimmaApiAWSVMDetailRoot + '?vm=' + vm.id;
-            apiGet([url], function(resArr) {
+            var aws_vm_url = vimmaApiAWSVMDetailRoot + '?vm=' + vm.id,
+                aws_prov_url = vimmaApiAWSProviderDetailRoot +
+                    '?provider=' + provider.id;
+            apiGet([aws_vm_url, aws_prov_url], function(resArr) {
                 var aws_vm = resArr[0].results[0],
+                    aws_provider = resArr[1].results[0],
                     model = new AWSVMModel(vm, provider, project, expiration,
-                            aws_vm);
+                            aws_vm, aws_provider);
                 successCallback(model);
             }, errCallback);
         }
