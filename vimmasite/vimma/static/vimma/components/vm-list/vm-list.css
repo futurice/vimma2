@@ -23,7 +23,8 @@ paper-icon-button#reload:hover {
 
 div#table-head {
 	display: flex;
-	border: 0.2em solid transparent;
+	border-left: 0.2em solid transparent;
+	border-right: 0.2em solid transparent;
 }
 div#table-head > span.vborder {
 	align-self: stretch;
