@@ -80,6 +80,7 @@
             id="smr-expiry"
             on-tap="_toggle"
             on-track="_summaryTrack"
+            class$="[[_getExpiryClass(_vm)]]"
             >
             <local-date
               date-string="[[_getExpiryDate(_vm)]]"

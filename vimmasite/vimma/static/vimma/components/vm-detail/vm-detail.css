@@ -71,6 +71,10 @@ span#smr-expiry:hover {
 	cursor: pointer;
 }
 
+span#smr-expiry.expires-soon {
+	color: var(--paper-red-500);
+}
+
 div#details {
 	padding: 1ex;
 	border-top: 0.2em dashed var(--paper-amber-200);
