@@ -37,6 +37,10 @@ Polymer({
         _showLogs: {
             type: Boolean,
             value: false
+        },
+        _showPowerLog: {
+            type: Boolean,
+            value: false
         }
     },
 
@@ -209,6 +213,9 @@ Polymer({
 
     _toggleLogs: function() {
         this._showLogs = !this._showLogs;
+    },
+    _togglePowerLog: function() {
+        this._showPowerLog = !this._showPowerLog;
     },
 
     _getSectionIcon: function(sectionOpened) {

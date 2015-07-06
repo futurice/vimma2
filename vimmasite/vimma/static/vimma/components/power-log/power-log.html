@@ -1,0 +1,58 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
+<dom-module id="power-log">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="power-log.css">
+
+  <template>
+    <div id="main">
+      <template is="dom-if" if="[[!_loading]]">
+        <template is="dom-if" if="[[_error]]">
+          <div>
+            <plain-text class="error" text="[[_error]]"></plain-text>
+          </div>
+        </template>
+      </template>
+
+      <div id="nav">
+        <paper-icon-button
+          id="older"
+          icon="arrow-back"
+          title="Older"
+          on-click="_loadOlder"
+          disabled="[[!_apiData.next]]"
+          ></paper-icon-button>
+        <span id="nav-expand">
+          <paper-icon-button
+             id="reload"
+             icon="refresh"
+             title="Refresh"
+             on-click="_reload"
+             ></paper-icon-button>
+          <paper-toggle-button
+            checked="{{_showOnlyTransitions}}"></paper-toggle-button>
+          Show only transitions
+        </span>
+        <paper-icon-button
+          id="newer"
+          icon="arrow-forward"
+          title="Newer"
+          on-click="_loadNewer"
+          disabled="[[!_apiData.previous]]"
+          ></paper-icon-button>
+      </div>
+
+      <div id="container"></div>
+
+      <loading-overlay hidden$="[[!_loading]]"></loading-overlay>
+    </div>
+  </template>
+</dom-module>
+
+<script src="power-log.js"></script>
