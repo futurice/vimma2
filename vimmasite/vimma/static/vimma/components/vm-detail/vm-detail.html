@@ -10,6 +10,7 @@
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
+<link rel="import" href="../vm-schedule/vm-schedule.html">
 
 <dom-module id="vm-detail">
   <link rel="import" type="css" href="../../css/component-common.css">
@@ -118,6 +119,7 @@
               Schedule and Expiration
             </h1>
             <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
+              <vm-schedule vmid="[[vmid]]"></vm-schedule>
               <expiration-item
                 expid="[[_vm.expiration.id]]"
                 ></expiration-item>
