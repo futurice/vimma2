@@ -1,0 +1,19 @@
+div#main {
+	position: relative;
+}
+
+paper-button#reload {
+	color: var(--paper-green-800);
+}
+
+paper-icon-button#extend {
+	color: var(--paper-amber-900);
+}
+paper-icon-button#extend:hover {
+	background: var(--paper-amber-100);
+	border-radius: 50%;
+}
+
+paper-dialog#dialog {
+	position: absolute;
+}

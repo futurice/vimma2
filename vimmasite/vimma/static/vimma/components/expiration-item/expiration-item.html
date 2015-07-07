@@ -1,0 +1,78 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../loading-overlay/loading-overlay.html">
+<link rel="import" href="../local-date/local-date.html">
+<link rel="import" href="../plain-text/plain-text.html">
+
+<dom-module id="expiration-item">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="expiration-item.css">
+
+  <template>
+    <template is="dom-if" if="[[_loading]]" restamp>
+      <paper-spinner active></paper-spinner>
+    </template>
+
+    <template is="dom-if" if="[[!_loading]]" restamp>
+      <template is="dom-if" if="[[_loadErr]]">
+        <paper-button id="reload" raised on-click="_reload">
+          <iron-icon icon="refresh"></iron-icon>
+          Reload
+        </paper-button>
+        <div>
+          <plain-text class="error" text="[[_loadErr]]"></plain-text>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[!_loadErr]]">
+        <div id="main">
+          <template is="dom-if" if="[[_actionErr]]">
+            <div>
+              <plain-text class="error" text="[[_actionErr]]"></plain-text>
+            </div>
+          </template>
+
+          Expires on
+          <local-date
+            date-string="[[_exp.expires_at]]"
+            hide-millis
+            ></local-date>
+          <paper-icon-button
+            id="extend"
+            icon="event"
+            title="Change…"
+            on-click="_openDialog"
+            ></paper-icon-button>
+
+          <template is="dom-if" if="[[_actionInFlight]]" restamp>
+            <loading-overlay></loading-overlay>
+          </template>
+        </div>
+      </template>
+    </template>
+
+    <paper-dialog
+      id="dialog"
+      with-backdrop
+      on-iron-overlay-closed="_dialogClosed"
+      >
+      <h2>Change Expiration</h2>
+      <div>
+        <input type="date" value="{{_dateStr::input}}">
+        <input type="time" value="{{_timeStr::input}}">
+      </div>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm>Accept</paper-button>
+      </div>
+    </paper-dialog>
+  </template>
+</dom-module>
+
+<script src="expiration-item.js"></script>

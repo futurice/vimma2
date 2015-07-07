@@ -278,9 +278,11 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
 class ExpirationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expiration
-        # explicitly list the fields to include vmexpiration
+        # explicitly list the fields to include:
+        # vmexpiration, firewallruleexpiration
         fields = ('id', 'expires_at', 'last_notification',
-                'grace_end_action_performed', 'vmexpiration')
+                'grace_end_action_performed',
+                'vmexpiration', 'firewallruleexpiration')
 
 class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ExpirationSerializer

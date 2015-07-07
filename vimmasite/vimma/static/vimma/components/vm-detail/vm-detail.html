@@ -5,6 +5,7 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
@@ -107,6 +108,21 @@
 
         <template is="dom-if" if="[[_expanded]]" restamp>
           <div id="details">
+            <h1
+              class="section-toggle"
+              on-click="_toggleScheduleAndExpiry"
+              title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]"
+              >
+              <iron-icon
+                icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
+              Schedule and Expiration
+            </h1>
+            <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
+              <expiration-item
+                expid="[[_vm.expiration.id]]"
+                ></expiration-item>
+            </template>
+
             <h1
               class="section-toggle"
               on-click="_toggleLogs"

@@ -34,6 +34,10 @@ Polymer({
             observer: '_expandedChanged'
         },
 
+        _showScheduleAndExpiry: {
+            type: Boolean,
+            value: false
+        },
         _showLogs: {
             type: Boolean,
             value: false
@@ -211,6 +215,9 @@ Polymer({
     _summaryTrack: function() {
     },
 
+    _toggleScheduleAndExpiry: function() {
+        this._showScheduleAndExpiry = !this._showScheduleAndExpiry;
+    },
     _toggleLogs: function() {
         this._showLogs = !this._showLogs;
     },
