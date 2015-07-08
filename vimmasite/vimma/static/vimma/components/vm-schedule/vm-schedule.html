@@ -30,35 +30,33 @@
       </template>
 
       <template is="dom-if" if="[[!_loadErr]]">
-        <div id="main">
-          <template is="dom-if" if="[[_actionErr]]">
-            <div>
-              <plain-text class="error" text="[[_actionErr]]"></plain-text>
-            </div>
+        <template is="dom-if" if="[[_actionErr]]">
+          <div>
+            <plain-text class="error" text="[[_actionErr]]"></plain-text>
+          </div>
+        </template>
+
+        <label for="schedule">Schedule:</label>
+        <select id="schedule" on-change="_scheduleChanged">
+          <template is="dom-repeat" items="[[_schedules]]">
+            <option
+              selected$="[[_equal(item.id, _newSchedId)]]"
+              >[[item.name]]</option>
           </template>
+        </select>
 
-          <label for="schedule">Schedule:</label>
-          <select id="schedule" on-change="_scheduleChanged">
-            <template is="dom-repeat" items="[[_schedules]]">
-              <option
-                selected$="[[_equal(item.id, _newSchedId)]]"
-                >[[item.name]]</option>
-            </template>
-          </select>
+        <paper-icon-button
+          id="save"
+          icon="save"
+          title="Save"
+          on-click="_save"
+          disabled$="[[!_unsavedChanges]]"
+          class$="[[_getButtonClass(_unsavedChanges)]]"
+          ></paper-icon-button>
 
-          <paper-icon-button
-            id="save"
-            icon="save"
-            title="Save"
-            on-click="_save"
-            disabled$="[[!_unsavedChanges]]"
-            class$="[[_getButtonClass(_unsavedChanges)]]"
-            ></paper-icon-button>
-
-          <template is="dom-if" if="[[_actionInFlight]]" restamp>
-            <loading-overlay></loading-overlay>
-          </template>
-        </div>
+        <template is="dom-if" if="[[_actionInFlight]]" restamp>
+          <loading-overlay></loading-overlay>
+        </template>
       </template>
     </template>
   </template>

@@ -31,29 +31,27 @@
       </template>
 
       <template is="dom-if" if="[[!_loadErr]]">
-        <div id="main">
-          <template is="dom-if" if="[[_actionErr]]">
-            <div>
-              <plain-text class="error" text="[[_actionErr]]"></plain-text>
-            </div>
-          </template>
+        <template is="dom-if" if="[[_actionErr]]">
+          <div>
+            <plain-text class="error" text="[[_actionErr]]"></plain-text>
+          </div>
+        </template>
 
-          Expires on
-          <local-date
-            date-string="[[_exp.expires_at]]"
-            hide-millis
-            ></local-date>
-          <paper-icon-button
-            id="extend"
-            icon="event"
-            title="Change…"
-            on-click="_openDialog"
-            ></paper-icon-button>
+        Expires on
+        <local-date
+          date-string="[[_exp.expires_at]]"
+          hide-millis
+          ></local-date>
+        <paper-icon-button
+          id="extend"
+          icon="event"
+          title="Change…"
+          on-click="_openDialog"
+          ></paper-icon-button>
 
-          <template is="dom-if" if="[[_actionInFlight]]" restamp>
-            <loading-overlay></loading-overlay>
-          </template>
-        </div>
+        <template is="dom-if" if="[[_actionInFlight]]" restamp>
+          <loading-overlay></loading-overlay>
+        </template>
       </template>
     </template>
 

@@ -1,3 +1,8 @@
+:host {
+	display: block;
+	position: relative;
+}
+
 paper-button#reload {
 	color: var(--paper-green-800);
 }
@@ -8,8 +13,4 @@ paper-icon-button#save.unsaved {
 paper-icon-button#save.unsaved:hover {
 	background: var(--paper-amber-100);
 	border-radius: 50%;
-}
-
-div#main {
-	position: relative;
 }
