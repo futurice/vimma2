@@ -8,12 +8,14 @@
 <link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../loading-overlay/loading-overlay.html">
+<link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../override-schedule/override-schedule.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../user-name/user-name.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
+<link rel="import" href="dummy-vm-basic-details.html">
 
 <dom-module id="vm-detail">
   <link rel="import" type="css" href="../../css/component-common.css">
@@ -145,16 +147,17 @@
                     Destruction completed on
                     <local-date
                       date-string="[[_vm.vm.destroyed_at]]"
-                      hide-millis></local-date>
+                      hide-millis></local-date>.
                   </template>
                   <template is="dom-if" if="[[!_vm.vm.destroyed_at]]">
-                    Destruction has not completed yet
+                    Destruction has not succeeded yet.
                   </template>
                 </div>
               </template>
 
-              <template is="dom-if" if="[[_equal(_vm.provider.type, 'dummy')]]">
-                Dummy
+              <template is="dom-if" restamp
+                if="[[_equal(_vm.provider.type, 'dummy')]]">
+                <dummy-vm-basic-details vm="[[_vm]]"></dummy-vm-basic-details>
               </template>
 
               <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
