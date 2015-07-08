@@ -10,6 +10,9 @@ div#top-content {
 	flex-grow: 1;
 }
 
+div#top-content > h1 {
+	margin: 0;
+}
 div#top-content > h1:hover {
 	cursor: pointer;
 	color: var(--paper-blue-900);

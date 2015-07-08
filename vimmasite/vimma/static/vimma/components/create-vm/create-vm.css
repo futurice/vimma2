@@ -17,6 +17,10 @@ div#expanded {
 	color: var(--paper-grey-700);
 }
 
+div#expanded > h1 {
+	margin: 0;
+}
+
 table#form label {
 	font-weight: bold;
 }

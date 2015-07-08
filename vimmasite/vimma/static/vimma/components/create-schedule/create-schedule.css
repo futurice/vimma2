@@ -21,3 +21,7 @@ div#expanded {
 	right: 0;
 	color: var(--paper-grey-700);
 }
+
+div#expanded > h1 {
+	margin: 0;
+}
