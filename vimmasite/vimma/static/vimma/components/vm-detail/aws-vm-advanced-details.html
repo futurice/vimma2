@@ -1,0 +1,36 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<dom-module id="aws-vm-advanced-details">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="detail-tables.css">
+
+  <template>
+    <div class="item">
+      <table>
+        <tr>
+          <td>Instance</td>
+          <td>[[vm.aws_vm.instance_id]]</td>
+        </tr>
+        <tr>
+          <td>Security Group</td>
+          <td>[[vm.aws_vm.security_group_id]]</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="item">
+      <table>
+        <tr>
+          <td>Region</td>
+          <td>[[vm.aws_vm.region]]</td>
+        </tr>
+        <tr>
+          <td>Reservation</td>
+          <td>[[vm.aws_vm.reservation_id]]</td>
+        </tr>
+      </table>
+    </div>
+  </template>
+</dom-module>
+
+<script src="aws-vm-advanced-details.js"></script>

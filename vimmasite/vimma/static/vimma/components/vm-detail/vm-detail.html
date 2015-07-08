@@ -16,6 +16,7 @@
 <link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
 <link rel="import" href="aws-vm-basic-details.html">
+<link rel="import" href="aws-vm-advanced-details.html">
 <link rel="import" href="dummy-vm-basic-details.html">
 
 <dom-module id="vm-detail">
@@ -186,6 +187,31 @@
               <expiration-item
                 expid="[[_vm.expiration.id]]"
                 ></expiration-item>
+            </template>
+
+            <h1
+              class="section-toggle"
+              on-click="_toggleAdvancedDetails"
+              title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]"
+              >
+              <iron-icon
+                icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
+              Advanced Details
+            </h1>
+            <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
+              <template is="dom-if" restamp
+                if="[[_equal(_vm.provider.type, 'dummy')]]">
+                Dummy VMs have no advanced details.
+              </template>
+
+              <template is="dom-if" restamp
+                if="[[_equal(_vm.provider.type, 'aws')]]">
+                <aws-vm-advanced-details vm="[[_vm]]"></aws-vm-advanced-details>
+              </template>
+
+              <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
+                Unknown VM type: <span>[[_vm.provider.type]]</span>.
+              </template>
             </template>
 
             <h1
