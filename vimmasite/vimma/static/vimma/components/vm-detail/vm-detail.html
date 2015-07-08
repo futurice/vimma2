@@ -15,6 +15,7 @@
 <link rel="import" href="../user-name/user-name.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
+<link rel="import" href="aws-vm-basic-details.html">
 <link rel="import" href="dummy-vm-basic-details.html">
 
 <dom-module id="vm-detail">
@@ -158,6 +159,11 @@
               <template is="dom-if" restamp
                 if="[[_equal(_vm.provider.type, 'dummy')]]">
                 <dummy-vm-basic-details vm="[[_vm]]"></dummy-vm-basic-details>
+              </template>
+
+              <template is="dom-if" restamp
+                if="[[_equal(_vm.provider.type, 'aws')]]">
+                <aws-vm-basic-details vm="[[_vm]]"></aws-vm-basic-details>
               </template>
 
               <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">

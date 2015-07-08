@@ -1,0 +1,23 @@
+:host {
+	display: flex;
+}
+
+div.item {
+	flex: 1 0;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table tr:hover {
+	background-color: var(--paper-grey-100);
+}
+
+table td:first-child {
+	border-right: 0.1em solid var(--paper-grey-500);
+	padding-right: 1ex;
+}
+table td:last-child {
+	padding-left: 1ex;
+}

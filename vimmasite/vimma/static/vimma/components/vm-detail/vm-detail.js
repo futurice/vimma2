@@ -253,6 +253,7 @@ Polymer({
     _unknownVMType: function(vmType) {
         switch (vmType) {
             case 'dummy':
+            case 'aws':
                 return false;
             default:
                 return true;

@@ -3,9 +3,9 @@
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../user-name/user-name.html">
 
-<dom-module id="dummy-vm-basic-details">
+<dom-module id="aws-vm-basic-details">
   <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="dummy-vm-basic-details.css">
+  <link rel="import" type="css" href="aws-vm-basic-details.css">
 
   <template>
     <div class="item">
@@ -15,8 +15,12 @@
           <td>[[_getName(vm)]]</td>
         </tr>
         <tr>
-          <td>Provider State</td>
-          <td>[[vm.dummy_vm.status]]</td>
+          <td>Public IP</td>
+          <td>[[vm.aws_vm.ip_address]]</td>
+        </tr>
+        <tr>
+          <td>AWS State</td>
+          <td>[[vm.aws_vm.state]]</td>
         </tr>
         <tr>
           <td>Last status check</td>
@@ -62,4 +66,4 @@
   </template>
 </dom-module>
 
-<script src="dummy-vm-basic-details.js"></script>
+<script src="aws-vm-basic-details.js"></script>
