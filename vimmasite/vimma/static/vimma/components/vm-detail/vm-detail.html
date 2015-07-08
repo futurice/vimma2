@@ -203,10 +203,10 @@
             <h1
               class="section-toggle"
               on-click="_togglePowerLog"
-              title$="[[_getSectionTooltip(_showPowerLog, 'Power Log')]]"
+              title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]"
               >
               <iron-icon icon="[[_getSectionIcon(_showPowerLog)]]"></iron-icon>
-              Power Log
+              Power Chart
             </h1>
             <template is="dom-if" if="[[_showPowerLog]]" restamp>
               <power-log vmid="[[_vm.vm.id]]"></power-log>
