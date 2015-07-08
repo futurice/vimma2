@@ -1,6 +1,5 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
@@ -20,13 +19,13 @@
 
     <template is="dom-if" if="[[!_loading]]" restamp>
       <template is="dom-if" if="[[_loadErr]]">
-        <paper-button id="reload" raised on-click="_reload">
-          <iron-icon icon="refresh"></iron-icon>
-          Reload
-        </paper-button>
-        <div>
-          <plain-text class="error" text="[[_loadErr]]"></plain-text>
-        </div>
+        <paper-icon-button
+          id="reload"
+          icon="refresh"
+          title="Reload"
+          on-click="_reload"
+          ></paper-icon-button>
+        <plain-text class="error" text="[[_loadErr]]"></plain-text>
       </template>
 
       <template is="dom-if" if="[[!_loadErr]]">
