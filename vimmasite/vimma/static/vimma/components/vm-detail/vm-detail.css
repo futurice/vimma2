@@ -87,3 +87,8 @@ h1.section-toggle:hover {
 	cursor: pointer;
 	color: var(--paper-blue-900);
 }
+
+div#destruction-details {
+	font-weight: bold;
+	color: var(--paper-amber-900);
+}

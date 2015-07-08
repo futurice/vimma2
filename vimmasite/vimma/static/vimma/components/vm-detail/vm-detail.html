@@ -5,11 +5,13 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../override-schedule/override-schedule.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
+<link rel="import" href="../user-name/user-name.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
 
@@ -110,6 +112,56 @@
 
         <template is="dom-if" if="[[_expanded]]" restamp>
           <div id="details">
+            <h1
+              class="section-toggle"
+              on-click="_toggleBasicDetails"
+              title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]"
+              >
+              <iron-icon
+                icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
+              Details
+            </h1>
+            <template is="dom-if" if="[[_showBasicDetails]]" restamp>
+              <template is="dom-if"
+                if="[[_any(_vm.vm.destroy_request_at, _vm.vm.destroyed_at)]]"
+                restamp>
+                <div id="destruction-details">
+                  Destruction requested
+                  <template is="dom-if" if="[[_vm.vm.destroy_request_at]]"
+                    restamp>
+                    on
+                    <local-date
+                      date-string="[[_vm.vm.destroy_request_at]]"
+                      hide-millis></local-date>
+                  </template>
+                  <template is="dom-if" if="[[_vm.vm.destroy_request_by]]"
+                    restamp>
+                    by
+                    <user-name userid="[[_vm.vm.destroy_request_by]]"
+                      ></user-name>
+                  </template>
+                  <br>
+                  <template is="dom-if" if="[[_vm.vm.destroyed_at]]" restamp>
+                    Destruction completed on
+                    <local-date
+                      date-string="[[_vm.vm.destroyed_at]]"
+                      hide-millis></local-date>
+                  </template>
+                  <template is="dom-if" if="[[!_vm.vm.destroyed_at]]">
+                    Destruction has not completed yet
+                  </template>
+                </div>
+              </template>
+
+              <template is="dom-if" if="[[_equal(_vm.provider.type, 'dummy')]]">
+                Dummy
+              </template>
+
+              <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
+                Unknown VM type: <span>[[_vm.provider.type]]</span>.
+              </template>
+            </template>
+
             <h1
               class="section-toggle"
               on-click="_toggleScheduleAndExpiry"

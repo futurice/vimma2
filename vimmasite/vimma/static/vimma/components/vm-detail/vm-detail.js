@@ -1,6 +1,8 @@
 Polymer({
     is: 'vm-detail',
 
+    behaviors: [VimmaBehaviors.Equal],
+
     properties: {
         vmid: {
             type: Number,
@@ -34,6 +36,10 @@ Polymer({
             observer: '_expandedChanged'
         },
 
+        _showBasicDetails: {
+            type: Boolean,
+            value: true
+        },
         _showScheduleAndExpiry: {
             type: Boolean,
             value: false
@@ -215,6 +221,9 @@ Polymer({
     _summaryTrack: function() {
     },
 
+    _toggleBasicDetails: function() {
+        this._showBasicDetails = !this._showBasicDetails;
+    },
     _toggleScheduleAndExpiry: function() {
         this._showScheduleAndExpiry = !this._showScheduleAndExpiry;
     },
@@ -239,5 +248,14 @@ Polymer({
             verb = 'Show';
         }
         return verb + ' ' + sectionName;
+    },
+
+    _unknownVMType: function(vmType) {
+        switch (vmType) {
+            case 'dummy':
+                return false;
+            default:
+                return true;
+        }
     }
 });
