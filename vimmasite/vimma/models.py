@@ -333,7 +333,9 @@ class AWSVM(models.Model):
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)
+    # public IP address
     ip_address = models.CharField(max_length=50, blank=True)
+    private_ip_address = models.CharField(max_length=50, blank=True)
 
     # Destruction happens using several asynchronous tasks, which mark these
     # fields when they succeed. When all fields are True we can mark the parent

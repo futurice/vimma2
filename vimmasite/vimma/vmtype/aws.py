@@ -349,15 +349,18 @@ def _update_vm_status_impl(vm_id):
             len(instances)), vm_id=vm_id)
         new_state = 'Error'
         new_ip_address = None
+        new_private_ip_address = None
     else:
         inst = instances[0]
         new_state = inst.state
         new_ip_address = inst.ip_address
+        new_private_ip_address = inst.private_ip_address
 
     def write_data():
         aws_vm = AWSVM.objects.get(id=aws_vm_id)
         aws_vm.state = new_state
         aws_vm.ip_address = new_ip_address or ''
+        aws_vm.private_ip_address = new_private_ip_address or ''
         aws_vm.save()
     retry_in_transaction(write_data)
     aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)
