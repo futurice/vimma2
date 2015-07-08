@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../expiration-item/expiration-item.html">
 <link rel="import" href="../loading-overlay/loading-overlay.html">
+<link rel="import" href="../override-schedule/override-schedule.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../vm-data-model/vm-data-model.html">
@@ -120,6 +121,7 @@
             </h1>
             <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
               <vm-schedule vmid="[[vmid]]"></vm-schedule>
+              <override-schedule vmid="[[vmid]]"></override-schedule>
               <expiration-item
                 expid="[[_vm.expiration.id]]"
                 ></expiration-item>

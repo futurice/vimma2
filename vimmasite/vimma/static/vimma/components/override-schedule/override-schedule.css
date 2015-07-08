@@ -1,0 +1,38 @@
+:host {
+	display: block;
+	position: relative;
+}
+
+paper-icon-button#reload:hover {
+	color: var(--paper-green-700);
+	background: var(--paper-light-green-50);
+	border-radius: 50%;
+}
+
+paper-icon-button#clear-override:hover {
+	color: var(--paper-red-a400);
+	background: var(--paper-red-100);
+	border-radius: 50%;
+}
+
+paper-button#show-new-override, paper-button#apply-new-override {
+	background-color: var(--paper-green-600);
+	color: white;
+}
+
+table#new-override {
+	padding: 0.5ex;
+	border: 0.15em solid;
+	border-color: var(--paper-green-600);
+}
+table#new-override caption {
+	border: 0.15em solid;
+	border-color: var(--paper-green-600);
+	border-bottom: 0;
+}
+table#new-override caption > h3 {
+	margin: 0;
+}
+table#new-override label {
+	font-weight: bold;
+}
