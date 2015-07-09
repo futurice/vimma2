@@ -1,7 +1,0 @@
-:host::shadow div#box {
-	background-color: Pink;
-}
-
-:host::shadow div#box.trims:hover {
-	background-color: HotPink;
-}
