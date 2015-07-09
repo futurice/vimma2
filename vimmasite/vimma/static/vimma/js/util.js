@@ -91,6 +91,13 @@ function apiGet(urlArray, successCallback, errCallback) {
  * resultsArray[i] is itself an array with the data for urlArray[i].
  */
 function apiGetAll(urlArray, successCallback, errCallback) {
+    if (!urlArray.length) {
+        setTimeout(function() {
+            successCallback([]);
+        }, 0);
+        return;
+    }
+
     var resultsArray = [],
         // completedArray[i] == true if urlArray[i] finished successfully
         completedArray = [],

@@ -36,7 +36,9 @@
           </div>
         </template>
 
-        Expires on
+        <template is="dom-if" if="[[!noExplanation]]">
+          Expires on
+        </template>
         <local-date
           date-string="[[_exp.expires_at]]"
           hide-millis

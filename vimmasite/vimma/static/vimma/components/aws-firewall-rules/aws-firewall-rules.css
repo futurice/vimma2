@@ -1,0 +1,27 @@
+div#main {
+	position: relative;
+}
+
+paper-icon-button#reload:hover {
+	color: var(--paper-green-700);
+	background: var(--paper-light-green-50);
+	border-radius: 50%;
+}
+
+paper-icon-button#delete:hover {
+	color: var(--paper-red-a400);
+	background: var(--paper-red-100);
+	border-radius: 50%;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table td + td, table th + th {
+	border-left: 0.1em solid var(--paper-grey-500);
+}
+table td, table th {
+	padding-left: 1ex;
+	padding-right: 1ex;
+}

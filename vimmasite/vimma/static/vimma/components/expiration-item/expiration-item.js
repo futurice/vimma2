@@ -7,6 +7,11 @@ Polymer({
             observer: '_expidChanged'
         },
 
+        noExplanation: {
+            type: Boolean,
+            value: false
+        },
+
         _loadingToken: Object,  // same logic as in <vm-list>
         _loading: Boolean,
         _loadErr: String,   // empty string if no error

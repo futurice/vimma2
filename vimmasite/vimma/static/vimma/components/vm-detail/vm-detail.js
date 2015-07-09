@@ -44,6 +44,10 @@ Polymer({
             type: Boolean,
             value: false
         },
+        _showFirewallRules: {
+            type: Boolean,
+            value: false
+        },
         _showAdvancedDetails: {
             type: Boolean,
             value: false
@@ -230,6 +234,9 @@ Polymer({
     },
     _toggleScheduleAndExpiry: function() {
         this._showScheduleAndExpiry = !this._showScheduleAndExpiry;
+    },
+    _toggleFirewallRules: function() {
+        this._showFirewallRules = !this._showFirewallRules;
     },
     _toggleAdvancedDetails: function() {
         this._showAdvancedDetails = !this._showAdvancedDetails;
