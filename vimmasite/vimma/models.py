@@ -375,11 +375,9 @@ class AWSFirewallRule(models.Model):
 
     PROTO_TCP = 'tcp'
     PROTO_UDP = 'udp'
-    PROTO_ICMP = 'icmp'
     IP_PROTOCOL_CHOICES = (
         (PROTO_TCP, 'TCP'),
         (PROTO_UDP, 'UDP'),
-        (PROTO_ICMP, 'ICMP'),
     )
     ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
 
