@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.utils.timezone import utc
 import json
 import pytz
+import ipaddress
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -3284,6 +3285,28 @@ class ExpirationTests(TestCase):
 
 
 class FirewallRule_AWSFirewallRule_Tests(TestCase):
+
+    def test_firewall_special_check(self):
+        """
+        Test if firewall rules are flagged as special correctly.
+        """
+        non_special = [
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/25", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.1/32", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="1.2.3.4/27", ip_protocol=AWSFirewallRule.PROTO_TCP),
+        ]
+
+        special = [
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/24", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="0.0.0.0/0", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/8", ip_protocol=AWSFirewallRule.PROTO_TCP),
+        ]
+
+        for rule in non_special:
+            self.assertFalse(rule.is_special())
+
+        for rule in special:
+            self.assertTrue(rule.is_special())
 
     def test_api_permissions(self):
         """
