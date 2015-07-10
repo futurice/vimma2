@@ -43,6 +43,7 @@ Polymer({
             this._exp = resArr[0];
             this._loadErr = '';
             this._loading = false;
+            this._setExpiryClass();
         }).bind(this);
 
         var fail = (function(err) {
@@ -125,5 +126,18 @@ Polymer({
                 this._actionErr = errorText;
             }).bind(this)
         });
-    }
+    },
+    _setExpiryClass: function() {
+        var d = new Date(this._exp.expires_at).valueOf(),
+            now = new Date().valueOf(),
+            soon = d - now < 1000*60*60*24*30;
+        if (d < now) {
+            this.classList.add('expires-expired');
+        } else if (soon) {
+            this.classList.add('expires-soon');
+        } else {
+            this.classList.remove('expires-soon');
+            this.classList.remove('expires-expired');
+        }
+    },
 });
