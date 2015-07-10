@@ -72,6 +72,10 @@ span#smr-expiry:hover {
 }
 
 span#smr-expiry.expires-soon {
+	color: var(--paper-orange-500);
+}
+
+span#smr-expiry.expires-expired {
 	color: var(--paper-red-500);
 }
 
