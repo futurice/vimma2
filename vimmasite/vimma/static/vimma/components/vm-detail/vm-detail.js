@@ -113,8 +113,12 @@ Polymer({
         return vm.getExpiryDate();
     },
     _getExpiryClass: function(vm) {
-        var d = new Date(vm.getExpiryDate()),
-            soon = d.valueOf() - new Date().valueOf() < 1000*60*60*24*30;
+        var d = new Date(vm.getExpiryDate()).valueOf(),
+            now = new Date().valueOf(),
+            soon = d - now < 1000*60*60*24*30;
+        if (d < now) {
+            return 'expires-expired';
+        }
         if (soon) {
             return 'expires-soon';
         }
