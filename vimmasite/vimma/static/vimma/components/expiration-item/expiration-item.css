@@ -20,3 +20,11 @@ paper-icon-button#extend:hover {
 paper-dialog#dialog {
 	position: absolute;
 }
+
+:host(.expires-soon) local-date {
+	color: var(--paper-orange-500);
+}
+
+:host(.expires-expired) local-date {
+	color: var(--paper-red-500);
+}
