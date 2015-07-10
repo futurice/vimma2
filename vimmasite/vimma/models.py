@@ -4,6 +4,7 @@ from django.db import models, transaction
 import json
 import logging
 import re
+import ipaddress
 
 
 class Permission(models.Model):
@@ -389,11 +390,10 @@ class AWSFirewallRule(models.Model):
         """
         Same as FirewallRule.is_special.
         """
-        if self.from_port != self.to_port:
+        net = ipaddress.IPv4Network(self.cidr_ip, strict=False)
+        if net.num_addresses > 255:
             return True
-        # one of the models or the settings could define the set of safe ports
-        return self.from_port not in {80, 443, 8000, 8080}
-
+        return False
 
 class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
