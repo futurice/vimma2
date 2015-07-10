@@ -84,10 +84,15 @@ div#details {
 	border-top: 0.2em dashed var(--paper-amber-200);
 }
 
-div#details > h1 {
+div#details > h3 {
 	margin: 0;
 }
-h1.section-toggle:hover {
+
+div#details > h3 {
+	margin: 0;
+}
+
+h3.section-toggle:hover {
 	cursor: pointer;
 	color: var(--paper-blue-900);
 }

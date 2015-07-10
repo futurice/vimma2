@@ -117,7 +117,7 @@
 
         <template is="dom-if" if="[[_expanded]]" restamp>
           <div id="details">
-            <h1
+            <h3
               class="section-toggle"
               on-click="_toggleBasicDetails"
               title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]"
@@ -125,7 +125,7 @@
               <iron-icon
                 icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
               Details
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showBasicDetails]]" restamp>
               <template is="dom-if"
                 if="[[_any(_vm.vm.destroy_request_at, _vm.vm.destroyed_at)]]"
@@ -173,7 +173,7 @@
               </template>
             </template>
 
-            <h1
+            <h3
               class="section-toggle"
               on-click="_toggleScheduleAndExpiry"
               title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]"
@@ -181,7 +181,7 @@
               <iron-icon
                 icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
               Schedule and Expiration
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
               <vm-schedule vmid="[[vmid]]"></vm-schedule>
               <override-schedule vmid="[[vmid]]"></override-schedule>
@@ -190,7 +190,7 @@
                 ></expiration-item>
             </template>
 
-            <h1
+            <h3
               class="section-toggle"
               on-click="_toggleFirewallRules"
               title$="[[_getSectionTooltip(_showFirewallRules, 'Firewall Rules')]]"
@@ -198,7 +198,7 @@
               <iron-icon
                 icon="[[_getSectionIcon(_showFirewallRules)]]"></iron-icon>
               Firewall Rules
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showFirewallRules]]" restamp>
               <template is="dom-if" restamp
                 if="[[_equal(_vm.provider.type, 'dummy')]]">
@@ -215,7 +215,7 @@
               </template>
             </template>
 
-            <h1
+            <h3
               class="section-toggle"
               on-click="_toggleAdvancedDetails"
               title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]"
@@ -223,7 +223,7 @@
               <iron-icon
                 icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
               Advanced Details
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
               <template is="dom-if" restamp
                 if="[[_equal(_vm.provider.type, 'dummy')]]">
@@ -240,26 +240,26 @@
               </template>
             </template>
 
-            <h1
+            <h3
               class="section-toggle"
               on-click="_toggleLogs"
               title$="[[_getSectionTooltip(_showLogs, 'logs')]]"
               >
               <iron-icon icon="[[_getSectionIcon(_showLogs)]]"></iron-icon>
               Logs
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showLogs]]" restamp>
               <audit-display vmid="[[_vm.vm.id]]"></audit-display>
             </template>
 
-            <h1
+            <h3
               class="section-toggle"
               on-click="_togglePowerLog"
               title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]"
               >
               <iron-icon icon="[[_getSectionIcon(_showPowerLog)]]"></iron-icon>
               Power Chart
-            </h1>
+            </h3>
             <template is="dom-if" if="[[_showPowerLog]]" restamp>
               <power-log vmid="[[_vm.vm.id]]"></power-log>
             </template>
