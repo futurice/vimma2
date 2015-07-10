@@ -34,3 +34,8 @@ TRAVIS_DB = {
 DATABASES = {
     'default': TRAVIS_DB[os.environ['TRAVIS_DB']],
 }
+
+# Networks defined as non-special. Firewall rules for these networks will not be flagged as special.
+# Example: 
+# TRUSTED_NETWORKS = ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12']
+TRUSTED_NETWORKS = []

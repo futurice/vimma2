@@ -3306,20 +3306,30 @@ class ExpirationTests(TestCase):
 
 class FirewallRule_AWSFirewallRule_Tests(TestCase):
 
+    def setUp(self):
+        self.saved_trusted_nets = settings.TRUSTED_NETWORKS
+        settings.TRUSTED_NETWORKS = ['192.168.0.0/16']
+
+    def tearDown(self):
+        settings.TRUSTED_NETWORKS = self.saved_trusted_nets
+
     def test_firewall_special_check(self):
         """
         Test if firewall rules are flagged as special correctly.
         """
         non_special = [
-            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/25", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/24", ip_protocol=AWSFirewallRule.PROTO_TCP),
             AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.1/32", ip_protocol=AWSFirewallRule.PROTO_TCP),
             AWSFirewallRule(from_port=80, to_port=80, cidr_ip="1.2.3.4/27", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="192.168.0.0/16", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="192.168.0.0/23", ip_protocol=AWSFirewallRule.PROTO_TCP),
         ]
 
         special = [
-            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/24", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/23", ip_protocol=AWSFirewallRule.PROTO_TCP),
             AWSFirewallRule(from_port=80, to_port=80, cidr_ip="0.0.0.0/0", ip_protocol=AWSFirewallRule.PROTO_TCP),
             AWSFirewallRule(from_port=80, to_port=80, cidr_ip="10.10.0.0/8", ip_protocol=AWSFirewallRule.PROTO_TCP),
+            AWSFirewallRule(from_port=80, to_port=80, cidr_ip="192.168.0.0/15", ip_protocol=AWSFirewallRule.PROTO_TCP),
         ]
 
         for rule in non_special:
