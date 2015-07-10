@@ -128,17 +128,23 @@ LOGGING = {
 
 # On VM creation, set a schedule override to keep it Powered On.
 VM_CREATION_OVERRIDE_SECS = 60*60
-
-
 secs_in_day = 60*60*24
+
+# Default VM expiration - 3 months
+# This is also the maximum amount of time in the future that one can extend the expiration to.
 DEFAULT_VM_EXPIRY_SECS = secs_in_day*30*3
+
+# Notification intervals relative to expiration date
 VM_NOTIFICATION_INTERVALS = [x*secs_in_day for x in
         [-14, -7, -3, -2, -1, 0, 1, 2]]
-VM_GRACE_INTERVAL = secs_in_day*7
 
-NORMAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 3
-SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day
+# Keep VM for this amount of time after expiration
+VM_GRACE_INTERVAL = secs_in_day*14
+
+# Firewall rule expiration
+NORMAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 30 * 3
+SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 7
+
 del secs_in_day
-
 
 from local_settings import *
