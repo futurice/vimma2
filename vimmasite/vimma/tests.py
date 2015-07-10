@@ -2485,13 +2485,22 @@ class SetExpirationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         checkExpiration(exp.id, future2_ts)
 
+        # superuser can set beyond a certain limit
+        superuser_ts = int((now + datetime.timedelta(
+            seconds=settings.DEFAULT_VM_EXPIRY_SECS+65)).timestamp())
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': superuser_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, superuser_ts)
+
         # can't set beyond a certain limit
+        u.profile.roles.remove(role)
         bad_ts = int((now + datetime.timedelta(
             seconds=settings.DEFAULT_VM_EXPIRY_SECS+60)).timestamp())
         response = self.client.post(url, content_type='application/json',
             data=json.dumps({'id': exp.id, 'timestamp': bad_ts}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        checkExpiration(exp.id, future2_ts)
+        checkExpiration(exp.id, superuser_ts)
 
     def test_FirewallRule_perms_and_not_found(self):
         """
@@ -2581,7 +2590,18 @@ class SetExpirationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         checkExpiration(exp.id, future2_ts)
 
+        # superuser can set beyond a certain limit
+        max_secs = max(settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS,
+                settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
+        superuser_ts = int((now + datetime.timedelta(
+            seconds=max_secs+65*60)).timestamp())
+        response = self.client.post(url, content_type='application/json',
+            data=json.dumps({'id': exp.id, 'timestamp': superuser_ts}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        checkExpiration(exp.id, superuser_ts)
+
         # can't set beyond a certain limit
+        u.profile.roles.remove(role)
         max_secs = max(settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS,
                 settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
         bad_ts = int((now + datetime.timedelta(
@@ -2589,7 +2609,7 @@ class SetExpirationTests(TestCase):
         response = self.client.post(url, content_type='application/json',
             data=json.dumps({'id': exp.id, 'timestamp': bad_ts}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        checkExpiration(exp.id, future2_ts)
+        checkExpiration(exp.id, superuser_ts)
 
 
 class CreateDeleteFirewallRuleTests(TestCase):

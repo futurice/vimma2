@@ -177,15 +177,16 @@ class VMExpirationController(ExpirationController):
     def can_set_expiry_date(self, tstamp, user_id):
         now_tstamp = int(
                 datetime.datetime.utcnow().replace(tzinfo=utc).timestamp())
-        if tstamp < now_tstamp:
-            return False
-        if tstamp - now_tstamp > settings.DEFAULT_VM_EXPIRY_SECS:
-            return False
 
         def call():
             user = User.objects.get(id=user_id)
             exp = Expiration.objects.get(id=self.exp_id)
             prj = exp.vmexpiration.vm.project
+            if tstamp < now_tstamp:
+                return False
+            if tstamp - now_tstamp > settings.DEFAULT_VM_EXPIRY_SECS and not can_do(user, Actions.SET_ANY_EXPIRATION):
+                return False
+                
             return can_do(user, Actions.CREATE_VM_IN_PROJECT, prj)
         return retry_in_transaction(call)
 
@@ -225,7 +226,7 @@ class FirewallRuleExpirationController(ExpirationController):
             max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
                     if fw_rule.is_special()
                     else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
-            if tstamp - now_tstamp > max_duration:
+            if tstamp - now_tstamp > max_duration and not can_do(user, Actions.SET_ANY_EXPIRATION):
                 return False
 
             return True

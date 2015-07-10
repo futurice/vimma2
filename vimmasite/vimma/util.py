@@ -116,6 +116,9 @@ def can_do(user, what, data=None):
         if user.profile.projects.filter(id=vm.project.id).count() == 0:
             return False
         return can_do(user, Actions.USE_SCHEDULE, schedule)
+    elif what == Actions.SET_ANY_EXPIRATION:
+        # only omnipotent users can do this
+        return False
     else:
         aud.warning('Unknown action “{}”'.format(action))
         return False

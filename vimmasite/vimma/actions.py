@@ -13,3 +13,4 @@ class Actions:
     READ_ALL_POWER_LOGS = 'read-all-power-logs'
     OVERRIDE_VM_SCHEDULE = 'override-vm-schedule'
     CHANGE_VM_SCHEDULE = 'change-vm-schedule'
+    SET_ANY_EXPIRATION = 'set-any-expiration'
