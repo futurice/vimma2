@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.conf import settings
 import json
 import logging
 import re
@@ -391,7 +392,12 @@ class AWSFirewallRule(models.Model):
         Same as FirewallRule.is_special.
         """
         net = ipaddress.IPv4Network(self.cidr_ip, strict=False)
-        if net.num_addresses > 255:
+        trusted_nets = map(lambda net: ipaddress.IPv4Network(net), settings.TRUSTED_NETWORKS)
+        for trusted_net in trusted_nets:
+            # if net is fully contained in a trusted_net, flag rule as non-special
+            if trusted_net.overlaps(net) and trusted_net.prefixlen <= net.prefixlen:
+                return False
+        if net.num_addresses > 256:
             return True
         return False
 
