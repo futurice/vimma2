@@ -1,5 +1,4 @@
 import datetime
-from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.utils import OperationalError
@@ -10,10 +9,10 @@ import pytz
 import random
 import time
 
-from vimma.audit import Auditor
-from vimma.models import Profile, VM
-from vimma.perms import Perms
 from vimma.actions import Actions
+from vimma.audit import Auditor
+from vimma.models import VM, User
+from vimma.perms import Perms
 
 
 aud = Auditor(__name__)
@@ -21,16 +20,12 @@ aud = Auditor(__name__)
 
 @transaction.atomic
 def create_vimma_user(username, email, password, first_name='', last_name=''):
-    """
-    Create a User and the associated Profile and return the User.
-
-    You should use this function to create users, to make sure the profile is
-    also created.
-    """
-    u = User.objects.create_user(username, email, password,
-            first_name=first_name, last_name=last_name)
-    u.profile = Profile.objects.create(user=u)
-    return u
+    user,_ = User.objects.get_or_create(username=username, defaults=dict(email=email,
+            first_name=first_name, last_name=last_name))
+    if _:
+        user.set_password(password)
+        user.save()
+    return user
 
 
 def has_perm(user, perm):
@@ -38,10 +33,8 @@ def has_perm(user, perm):
     Return True if user (User object) has perm (string), False otherwise.
 
     The omnipotent permission grants any perm.
-    Throws an exception if the user has no Profile (that's an incorrect state,
-    so fail-fast; don't hide the problem).
     """
-    for r in user.profile.roles.filter():
+    for r in user.roles.filter():
         if r.permissions.filter(name=Perms.OMNIPOTENT).exists():
             return True
         if r.permissions.filter(name=perm).exists():
@@ -87,7 +80,7 @@ def can_do(user, what, data=None):
         return has_perm(user, Perms.READ_ANY_PROJECT)
     elif what == Actions.CREATE_VM_IN_PROJECT:
         prj = data
-        return user.profile.projects.filter(id=prj.id).count() > 0
+        return user.projects.filter(id=prj.id).count() > 0
     elif what == Actions.USE_PROVIDER:
         prov = data
         return (not prov.is_special or
@@ -98,7 +91,7 @@ def can_do(user, what, data=None):
                 has_perm(user, Perms.USE_SPECIAL_VM_CONFIG))
     elif what == Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT:
         prj = data
-        return user.profile.projects.filter(id=prj.id).count() > 0
+        return user.projects.filter(id=prj.id).count() > 0
     elif what == Actions.USE_SCHEDULE:
         schedule = data
         if not schedule.is_special:
@@ -110,10 +103,10 @@ def can_do(user, what, data=None):
         return has_perm(user, Perms.READ_ALL_POWER_LOGS)
     elif what == Actions.OVERRIDE_VM_SCHEDULE:
         vm = data
-        return user.profile.projects.filter(id=vm.project.id).count() > 0
+        return user.projects.filter(id=vm.project.id).count() > 0
     elif what == Actions.CHANGE_VM_SCHEDULE:
         vm, schedule = data['vm'], data['schedule']
-        if user.profile.projects.filter(id=vm.project.id).count() == 0:
+        if user.projects.filter(id=vm.project.id).count() == 0:
             return False
         return can_do(user, Actions.USE_SCHEDULE, schedule)
     elif what == Actions.SET_ANY_EXPIRATION:

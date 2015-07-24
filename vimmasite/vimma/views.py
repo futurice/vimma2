@@ -1,6 +1,5 @@
 import datetime
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
@@ -20,9 +19,9 @@ from vimma.actions import Actions
 from vimma.audit import Auditor
 import vimma.expiry
 from vimma.models import (
-    Profile, Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
+    Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
-    VM, DummyVM, AWSVM,
+    User, VM, DummyVM, AWSVM,
     Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
     FirewallRule, AWSFirewallRule,
 )
@@ -36,25 +35,16 @@ from vimmasite.pagination import VimmaPagination
 aud = Auditor(__name__)
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ('id', 'user', 'projects')
-
-class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ProfileSerializer
-    queryset = Profile.objects.all()
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('projects', 'user')
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'email')
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'projects',)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('id', 'projects',)
 
 
 class TimeZoneSerializer(serializers.ModelSerializer):
@@ -102,7 +92,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if can_do(user, Actions.READ_ANY_PROJECT):
             return Project.objects.filter()
-        return user.profile.projects
+        return user.projects
 
 
 class ProviderSerializer(serializers.ModelSerializer):
@@ -180,9 +170,9 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
         # This also works, but Mihai doesn't know if it hides any traps, e.g.
         # by comparing objects instead of integers:
-        #return VM.objects.filter(project__in=user.profile.projects.filter())
+        #return VM.objects.filter(project__in=user.projects.filter())
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return VM.objects.filter(project__id__in=prj_ids)
 
@@ -201,7 +191,7 @@ class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return DummyVM.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return DummyVM.objects.filter(vm__project__id__in=prj_ids)
 
@@ -220,7 +210,7 @@ class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return AWSVM.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return AWSVM.objects.filter(vm__project__id__in=prj_ids)
 
@@ -240,7 +230,7 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ALL_AUDITS):
             queryset = Audit.objects.filter()
         else:
-            projects = user.profile.projects.all()
+            projects = user.projects.all()
             prj_ids = [p.id for p in projects]
             queryset = Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
                     Q(user__id=user.id))
@@ -270,7 +260,7 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ALL_POWER_LOGS):
             return PowerLog.objects.filter()
         else:
-            projects = user.profile.projects.all()
+            projects = user.projects.all()
             prj_ids = [p.id for p in projects]
             return PowerLog.objects.filter(vm__project__id__in=prj_ids)
 
@@ -295,7 +285,7 @@ class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return Q(type=Expiration.TYPE_VM)
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return Q(type=Expiration.TYPE_VM,
                 vmexpiration__vm__project__id__in=prj_ids)
@@ -308,7 +298,7 @@ class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return Q(type=Expiration.TYPE_FIREWALL_RULE)
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return Q(type=Expiration.TYPE_FIREWALL_RULE,
                 firewallruleexpiration__firewallrule__vm__project__id__in=prj_ids)
@@ -333,7 +323,7 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return VMExpiration.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
 
@@ -353,7 +343,7 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return FirewallRuleExpiration.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return FirewallRuleExpiration.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)
@@ -373,7 +363,7 @@ class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return FirewallRule.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return FirewallRule.objects.filter(vm__project__id__in=prj_ids)
 
@@ -392,7 +382,7 @@ class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return AWSFirewallRule.objects.filter()
 
-        projects = user.profile.projects.all()
+        projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return AWSFirewallRule.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)

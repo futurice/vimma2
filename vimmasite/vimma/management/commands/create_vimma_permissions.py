@@ -10,8 +10,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for name in ALL_PERMS:
-            try:
-                Permission.objects.get(name=name)
-            except Permission.DoesNotExist:
-                self.stdout.write('creating permission {}'.format(name))
-                Permission.objects.create(name=name)
+            p,_ = Permission.objects.get_or_create(name=name)

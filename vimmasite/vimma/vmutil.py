@@ -1,6 +1,5 @@
 import datetime
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.timezone import utc
 
@@ -9,7 +8,7 @@ from vimma.audit import Auditor
 from vimma.celery import app
 import vimma.expiry
 from vimma.models import (
-    Provider, VM,
+    Provider, VM, User,
     Expiration, VMExpiration,
     PowerLog,
     FirewallRule,

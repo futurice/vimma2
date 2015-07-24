@@ -5,13 +5,11 @@ import django
 django.setup()
 
 import argparse
-from django.contrib.auth.models import User
 from django.db.models import Q
-import json
+import json, os
 import urllib.request
 
-from secrets import FUM_API_TOKEN
-from vimma.models import Permission, Role, Project
+from vimma.models import Permission, Role, Project, User
 from vimma.perms import Perms
 import vimma.util
 
@@ -33,7 +31,7 @@ def get_api_all(url, log_label='results'):
     results = []
     while url is not None:
         req = urllib.request.Request(url,
-                headers={'Authorization': 'Token ' + FUM_API_TOKEN})
+                headers={'Authorization': 'Token ' + os.getenv('FUM_API_TOKEN'))})
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode('utf-8'))
         results.extend(data['results'])
@@ -74,16 +72,16 @@ def sync_projects():
 
         fum_members = set(p['users'])
         vimma_members = {prof.user.username for prof in
-                vimma_prj.profile_set.filter()}
+                vimma_prj.user_set.filter()}
 
         for u in vimma_members.difference(fum_members):
-            prof = User.objects.get(username=u).profile
-            vimma_prj.profile_set.remove(prof)
+            u = User.objects.get(username=u)
+            vimma_prj.user_set.remove(u)
 
         for u in fum_members.difference(vimma_members):
             try:
-                prof = User.objects.get(username=u).profile
-                vimma_prj.profile_set.add(prof)
+                u = User.objects.get(username=u)
+                vimma_prj.user_set.add(u)
             except User.DoesNotExist:
                 pass
 
@@ -134,7 +132,7 @@ def sync_admin_users():
         it_team_role.permissions.add(perm)
     for u in fum_it_team:
         try:
-            User.objects.get(username=u).profile.roles.add(it_team_role)
+            User.objects.get(username=u).roles.add(it_team_role)
         except User.DoesNotExist:
             pass
 

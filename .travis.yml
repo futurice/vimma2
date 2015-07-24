@@ -35,7 +35,7 @@ install:
   #- PATH=`pwd`/travis-bin:$PATH
 
   - cp config/local_settings.py.travis config/local_settings.py
-  - pip install -r req.txt
+  - pip install -r requirements.txt
   - psql -c 'create database vimma;' -U postgres
 
   - npm install
