@@ -943,3 +943,4 @@ def delete_firewall_rule(request):
         msg = ''.join(lines)
         aud.error(msg, user_id=request.user.id)
         return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+

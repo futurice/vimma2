@@ -22,7 +22,7 @@ aud = Auditor(__name__)
 def create_vimma_user(username, email, password, first_name='', last_name=''):
     user,_ = User.objects.get_or_create(username=username, defaults=dict(email=email,
             first_name=first_name, last_name=last_name))
-    if _:
+    if _ and password:
         user.set_password(password)
         user.save()
     return user

@@ -48,13 +48,6 @@ def sync_users():
 
     for u in filter(valid_user,
             get_api_all('https://api.fum.futurice.com/users/', 'users')):
-        try:
-            vimma_user = User.objects.get(username=u['username'])
-            vimma_user.email = u['email']
-            vimma_user.first_name = u['first_name']
-            vimma_user.last_name = u['last_name']
-            vimma_user.save()
-        except User.DoesNotExist:
             vimma_user = vimma.util.create_vimma_user(
                     u['username'], u['email'], '',
                     first_name=u['first_name'], last_name=u['last_name'])
@@ -63,12 +56,7 @@ def sync_users():
 def sync_projects():
     for p in filter(lambda p: p['email'],
             get_api_all('https://api.fum.futurice.com/projects/', 'projects')):
-        try:
-            vimma_prj = Project.objects.get(email=p['email'])
-            vimma_prj.name = p['name']
-            vimma_prj.save()
-        except Project.DoesNotExist:
-            vimma_prj = Project.objects.create(name=p['name'], email=p['email'])
+            vimma_prj,_ = Project.objects.get_or_create(name=p['name'], defaults=dict(email=p['email']))
 
         fum_members = set(p['users'])
         vimma_members = {prof.user.username for prof in

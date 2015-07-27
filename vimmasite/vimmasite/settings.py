@@ -1,4 +1,5 @@
 import django.conf.global_settings as DEFAULT_SETTINGS
+from ast import literal_eval
 import os
 import logging
 import time
@@ -42,13 +43,12 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.contrib.auth.middleware.RemoteUserMiddleware',
+    'vimma.auth.CustomHeaderMiddleware',# a configurable 'django.contrib.auth.middleware.RemoteUserMiddleware'
 )
 
-AUTHENTICATION_BACKENDS = DEFAULT_SETTINGS.AUTHENTICATION_BACKENDS +  (
-    'django.contrib.auth.backends.RemoteUserBackend',
-)
-REMOTE_USER_ENABLED = True
+AUTHENTICATION_BACKENDS = literal_eval(os.getenv('AUTHENTICATION_BACKENDS')) \
+        if os.getenv('AUTHENTICATION_BACKENDS') else DEFAULT_SETTINGS.AUTHENTICATION_BACKENDS
+REMOTE_USER_ENABLED = os.getenv('REMOTE_USER_ENABLED', 'false').lower() == 'true'
 
 ROOT_URLCONF = 'vimmasite.urls'
 

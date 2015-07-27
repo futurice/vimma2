@@ -16,6 +16,17 @@ RUN apt-get update && apt-get install -y \
 	git unzip redis-server \
     libpcre3 libpcre3-dev libssl-dev
 
+# Development dependencies
+RUN apt-get update && apt-get install -y \
+    default-jre xvfb chromium-browser firefox
+# Install Google Chrome: web-component-tester doesn't detect Chromium
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+RUN echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
+RUN apt-get update && apt-get install -y google-chrome-stable
+RUN wget -P /tmp https://chromedriver.storage.googleapis.com/2.12/chromedriver_linux64.zip
+RUN unzip /tmp/chromedriver_linux64.zip -d /usr/bin
+RUN chmod +rx /usr/bin/chromedriver
+
 # Node.js
 # Download node.js from Futurice CDN S3 bucket over SSL. Files there have verified checksums. Official site downloads are over insecure connection.
 ENV NODE_VERSION 0.10.36
@@ -47,9 +58,9 @@ RUN useradd -m app
 RUN mkdir -p /opt/app
 RUN chown app /opt/app
 
-ADD docker/requirements.txt /opt/app/
-ADD docker/package.json /opt/app/
-ADD docker/bower.json vimma/static/vimma/components/
+ADD docker/dev/requirements.txt /opt/app/
+ADD docker/dev/package.json /opt/app/
+ADD docker/dev/bower.json vimma/static/vimma/components/
 RUN chown -R app vimma/static/vimma/components/
 
 RUN pip3 install -r requirements.txt

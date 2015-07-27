@@ -13,7 +13,7 @@ The DOC file has some explanations about the structure & features.
 ## Running with Docker:
 
 ```bash
-docker build --rm --tag futurice/vimma .
+docker build --rm --tag futurice/vimmadev -f docker/dev/Dockerfile .
 docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
 docker run --rm -it -p 8000:8000 --name vimma \
     -e DB_USER=postgres \
@@ -22,9 +22,9 @@ docker run --rm -it -p 8000:8000 --name vimma \
     -e DEBUG=true \
     -e CELERY_LOG_LEVEL=debug \
     --link postgres:postgres \
-    futurice/vimma
+    futurice/vimmadev
 ```
-http://DOCKER_IP:8000/vimma/?dom=shadow
+http://DOCKER_IP:8000/?dom=shadow
 http://DOCKER_IP:8000/admin/
 
 ```bash

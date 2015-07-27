@@ -5,5 +5,5 @@ import vimma.urls
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^vimma/', include(vimma.urls)),
+    url(r'^', include(vimma.urls)),
 ]
