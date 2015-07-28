@@ -1,0 +1,15 @@
+{
+  "name": "vimma",
+  "private": true,
+  "dependencies": {
+    "polymer": "Polymer/polymer#1.0",
+    "iron-elements": "PolymerElements/iron-elements#1.0",
+    "paper-elements": "PolymerElements/paper-elements#1.0",
+    "jquery": "2.1.4",
+    "jquery.cookie": "1.4.1",
+    "bootstrap": "3.3.5",
+    "highcharts": "4.1.7",
+    "web-component-tester": "3.3",
+    "qunit": "1.18.0"
+  }
+}

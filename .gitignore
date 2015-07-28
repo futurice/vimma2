@@ -1,18 +1,4 @@
-/env/
+*.pyc
 __pycache__/
-/node_modules/
-/vimmasite/vimma/static/vimma/components/bower_components/
+tags
 
-/config/local_settings.py
-/config/secrets.py
-/config/dev_secrets.py
-/config/db.sqlite3
-/config/db.sqlite3-journal
-
-/vimma.log*
-
-/celerybeat.pid
-/celerybeat-schedule.db
-
-/.vagrant/
-/vimmasite/static/

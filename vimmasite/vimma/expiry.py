@@ -1,13 +1,12 @@
 import datetime
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.utils.timezone import utc
 import pytz
 
 from vimma.actions import Actions
 from vimma.audit import Auditor
 from vimma.util import retry_in_transaction, can_do
-from vimma.models import Expiration, VMExpiration
+from vimma.models import Expiration, VMExpiration, User
 import vimma.vmutil
 
 

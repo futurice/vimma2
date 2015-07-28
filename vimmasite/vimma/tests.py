@@ -1,6 +1,5 @@
 import datetime
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -18,10 +17,10 @@ from vimma import util
 from vimma.actions import Actions
 from vimma import expiry
 from vimma.models import (
-    Permission, Role, Project, Profile, TimeZone, Schedule,
+    Permission, Role, Project, TimeZone, Schedule,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
-    VM, DummyVM, AWSVM,
+    User, VM, DummyVM, AWSVM,
     Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
     FirewallRule, AWSFirewallRule,
 )
@@ -93,9 +92,9 @@ class RoleTests(TestCase):
 
         nobody = util.create_vimma_user('nobody', 'n@a.com', 'pass')
         fry = util.create_vimma_user('fry', 'f@a.com', 'pass')
-        fry.profile.roles.add(sched_editors)
+        fry.roles.add(sched_editors)
         hubert = util.create_vimma_user('hubert', 'h@a.com', 'pass')
-        hubert.profile.roles.add(sched_editors, omni_role)
+        hubert.roles.add(sched_editors, omni_role)
 
         def check(user, perm, result):
             self.assertIs(util.has_perm(user, perm), result)
@@ -117,11 +116,6 @@ class RoleTests(TestCase):
         check(hubert, Perms.OMNIPOTENT, True)
         check(hubert, 'X', True)
         check(hubert, 'Y', True)
-
-        # Incorrectly created user: has no Profile
-        invalid = User.objects.create_user('invalid', 'a@b.com', 'pw')
-        with self.assertRaises(Profile.DoesNotExist):
-            util.has_perm(invalid, 'some-perm')
 
 
 class ProjectTests(APITestCase):
@@ -165,12 +159,12 @@ class ProjectTests(APITestCase):
         perm.full_clean()
         role.permissions.add(perm)
 
-        user_b.profile.roles.add(role)
+        user_b.roles.add(role)
 
         prj_a = Project.objects.create(name='PrjA', email='a@prj.com')
         prj_b = Project.objects.create(name='PrjB', email='b@prj.com')
-        user_a.profile.projects.add(prj_a)
-        user_b.profile.projects.add(prj_b)
+        user_a.projects.add(prj_a)
+        user_b.projects.add(prj_b)
 
         def get_list():
             response = self.client.get(reverse('project-list'))
@@ -220,22 +214,6 @@ class ProjectTests(APITestCase):
 
 class UserTest(APITestCase):
 
-    def test_default_user_has_no_profile(self):
-        """
-        Users directly created have no associated profile.
-        """
-        bad_user = User.objects.create_user('a', 'a@example.com', 'pass')
-        with self.assertRaises(Profile.DoesNotExist):
-            bad_user.profile
-
-    def test_associated_profile(self):
-        """
-        When using util.create_vimma_user a profile is present.
-        """
-        u = util.create_vimma_user('a', 'a@example.com', 'pass')
-        p = u.profile
-        self.assertEqual(u.username, p.user.username)
-
     def test_API(self):
         """
         Everyone can read all users. Only some fields are exposed.
@@ -256,7 +234,7 @@ class UserTest(APITestCase):
 
         # check fields
         self.assertEqual(set(item.keys()), {'id', 'username',
-            'first_name', 'last_name', 'email'})
+            'first_name', 'last_name', 'email', 'projects'})
 
         # can't modify
         response = self.client.put(reverse('user-detail',
@@ -282,47 +260,48 @@ class ProfileTest(APITestCase):
 
     def test_API(self):
         """
-        Everyone can read all profiles. Only some fields are exposed.
+        Everyone can read all users. Only some fields are exposed.
         The API doesn't allow writing.
         """
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
         self.assertTrue(self.client.login(username='a', password='p'))
-        response = self.client.get(reverse('profile-list'))
+        response = self.client.get(reverse('user-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(len(items), 1)
 
-        response = self.client.get(reverse('profile-detail',
-            args=[user.profile.id]))
+        response = self.client.get(reverse('user-detail',
+            args=[user.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
 
         # check fields
-        self.assertEqual(set(item.keys()), {'id', 'user', 'projects'})
+        self.assertEqual(set(item.keys()), {'id', 'first_name', 'last_name',
+            'username', 'email', 'projects'})
 
         # can't modify
-        response = self.client.put(reverse('profile-detail',
+        response = self.client.put(reverse('user-detail',
             args=[item['id']]), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('profile-detail',
+        response = self.client.delete(reverse('user-detail',
             args=[item['id']]))
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
-        response = self.client.post(reverse('profile-list'), item,
+        response = self.client.post(reverse('user-list'), item,
                 format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_API_filter(self):
         """
-        Filter profiles by: project, user.
+        Filter users by: project, user.
         """
         u_a = util.create_vimma_user('a', 'a@example.com', 'p')
         u_b = util.create_vimma_user('b', 'b@example.com', 'p')
@@ -335,29 +314,29 @@ class ProfileTest(APITestCase):
         p3 = Project.objects.create(name='P3', email='p3@x.com')
         p3.full_clean()
 
-        u_a.profile.projects.add(p1, p2)
-        u_b.profile.projects.add(p2, p3)
-        u_c.profile.projects.add(p3)
+        u_a.projects.add(p1, p2)
+        u_b.projects.add(p2, p3)
+        u_c.projects.add(p3)
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get('{}?projects={}'.format(
-            reverse('profile-list'), p2.id))
+            reverse('user-list'), p2.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(set(i['id'] for i in items),
-                {u_a.profile.id, u_b.profile.id})
+                {u_a.id, u_b.id})
 
-        response = self.client.get(reverse('profile-list'))
+        response = self.client.get(reverse('user-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(set(i['id'] for i in items),
-                {u_a.profile.id, u_b.profile.id, u_c.profile.id})
+                {u_a.id, u_b.id, u_c.id})
 
-        response = self.client.get('{}?user={}'.format(
-            reverse('profile-list'), u_a.id))
+        response = self.client.get('{}?id={}'.format(
+            reverse('user-list'), u_a.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
-        self.assertEqual(set(i['id'] for i in items), {u_a.profile.id})
+        self.assertEqual(set(i['id'] for i in items), {u_a.id})
 
 
 class ScheduleTests(APITestCase):
@@ -425,7 +404,7 @@ class ScheduleTests(APITestCase):
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
         perm.full_clean()
         role.permissions.add(perm)
-        w.profile.roles.add(role)
+        w.roles.add(role)
 
         def get_list():
             response = self.client.get(reverse('schedule-list'))
@@ -510,7 +489,7 @@ class ScheduleTests(APITestCase):
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
         perm.full_clean()
         role.permissions.add(perm)
-        w.profile.roles.add(role)
+        w.roles.add(role)
 
         self.assertTrue(self.client.login(username='w', password='p'))
         new_item = {'name': 'NewSched', 'matrix': json.dumps([2, [True]])}
@@ -589,7 +568,7 @@ class TimeZoneTests(APITestCase):
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         perm.full_clean()
         role.permissions.add(perm)
-        user_b.profile.roles.add(role)
+        user_b.roles.add(role)
 
         def get_list():
             response = self.client.get(reverse('timezone-list'))
@@ -1428,15 +1407,15 @@ class VMTests(APITestCase):
         vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
         vm3.full_clean()
 
-        ua.profile.projects.add(p1, p2)
-        ub.profile.projects.add(p1)
+        ua.projects.add(p1, p2)
+        ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        ub.profile.roles.add(role)
+        ub.roles.add(role)
 
         # user A can only see VMs in his projects
         self.assertTrue(self.client.login(username='a', password='p'))
@@ -1576,15 +1555,15 @@ class DummyVMTests(APITestCase):
         dvm3 = DummyVM.objects.create(vm=vm3, name='dummy 3')
         dvm3.full_clean()
 
-        ua.profile.projects.add(p1, p2)
-        ub.profile.projects.add(p1)
+        ua.projects.add(p1, p2)
+        ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        ub.profile.roles.add(role)
+        ub.roles.add(role)
 
         # user A can only see DummyVMs in his projects
         self.assertTrue(self.client.login(username='a', password='p'))
@@ -1788,15 +1767,15 @@ class AWSVMTests(APITestCase):
         avm3 = AWSVM.objects.create(vm=vm3, name='3', region='a')
         avm3.full_clean()
 
-        ua.profile.projects.add(p1, p2)
-        ub.profile.projects.add(p1)
+        ua.projects.add(p1, p2)
+        ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        ub.profile.roles.add(role)
+        ub.roles.add(role)
 
         # user A can only see AWSVMs in his projects
         self.assertTrue(self.client.login(username='a', password='p'))
@@ -1921,7 +1900,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
                     'schedule': s.id}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -1975,7 +1954,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         role = Role.objects.create(name='SpecSched Role')
         role.full_clean()
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         s3 = Schedule.objects.create(name='s3', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]), is_special=True)
         s3.full_clean()
@@ -2003,7 +1982,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         role = Role.objects.create(name='SpecVmConfig Role')
         role.full_clean()
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -2035,7 +2014,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         role = Role.objects.create(name='Special Provider Role')
         role.full_clean()
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -2078,14 +2057,14 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # can perform the actions in own project
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
                     data=json.dumps({'vmid': vm.id}))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # forbidden outside own projects
-        u.profile.projects.remove(prj)
+        u.projects.remove(prj)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
                     data=json.dumps({'vmid': vm.id}))
@@ -2095,7 +2074,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='all powerful')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         for url in map(reverse, url_names):
             response = self.client.post(url, content_type='application/json',
                     data=json.dumps({'vmid': vm.id}))
@@ -2158,7 +2137,7 @@ class OverrideScheduleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # can override schedules in own project
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         for data in ({'state': None}, {'state': True, 'seconds': 3600},
                 {'state': False, 'seconds': 600}):
             data.update({'vmid': vm.id})
@@ -2171,7 +2150,7 @@ class OverrideScheduleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # forbidden outside own projects
-        u.profile.projects.remove(prj)
+        u.projects.remove(prj)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'state': None}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -2180,7 +2159,7 @@ class OverrideScheduleTests(TestCase):
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='all powerful')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'state': None}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2357,7 +2336,7 @@ class ChangeVMScheduleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         checkScheduleId(vm.id, s1.id)
         # ok in own projects
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(url, content_type='application/json',
             data=json.dumps({'vmid': vm.id, 'scheduleid': s2.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2373,7 +2352,7 @@ class ChangeVMScheduleTests(TestCase):
         perm = Permission.objects.create(name=Perms.USE_SPECIAL_SCHEDULE)
         role = Role.objects.create(name='users of special schedules')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'scheduleid': s3.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2463,7 +2442,7 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, now_ts)
 
         # ok in own projects
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2476,11 +2455,11 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, future_ts)
 
         # also ok if user has the required permission
-        u.profile.projects.remove(prj)
+        u.projects.remove(prj)
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='your God')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'id': exp.id, 'timestamp': future2_ts}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2495,7 +2474,7 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, superuser_ts)
 
         # can't set beyond a certain limit
-        u.profile.roles.remove(role)
+        u.roles.remove(role)
         bad_ts = int((now + datetime.timedelta(
             seconds=settings.DEFAULT_VM_EXPIRY_SECS+60)).timestamp())
         response = self.client.post(url, content_type='application/json',
@@ -2568,7 +2547,7 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, now_ts)
 
         # ok in own projects
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'id': exp.id, 'timestamp': future_ts}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2581,11 +2560,11 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, future_ts)
 
         # also ok if user has the required permission
-        u.profile.projects.remove(prj)
+        u.projects.remove(prj)
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='your God')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({'id': exp.id, 'timestamp': future2_ts}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2602,7 +2581,7 @@ class SetExpirationTests(TestCase):
         checkExpiration(exp.id, superuser_ts)
 
         # can't set beyond a certain limit
-        u.profile.roles.remove(role)
+        u.roles.remove(role)
         max_secs = max(settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS,
                 settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
         bad_ts = int((now + datetime.timedelta(
@@ -2690,7 +2669,7 @@ class CreateDeleteFirewallRuleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # ok in own projects
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(create_url,
                 content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'data': None}))
@@ -2702,13 +2681,13 @@ class CreateDeleteFirewallRuleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # also ok if user has the required permission
-        u.profile.projects.remove(prj)
+        u.projects.remove(prj)
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='all powerful')
         role.permissions.add(perm)
-        u.profile.roles.add(role)
+        u.roles.add(role)
 
-        u.profile.projects.add(prj)
+        u.projects.add(prj)
         response = self.client.post(create_url,
                 content_type='application/json',
                 data=json.dumps({'vmid': vm.id, 'data': None}))
@@ -2730,14 +2709,14 @@ class CanDoTests(TestCase):
         u1 = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
-        u1.profile.projects.add(prj1)
+        u1.projects.add(prj1)
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
 
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         role = Role.objects.create(name='all powerful')
         role.permissions.add(perm)
-        u1.profile.roles.add(role)
+        u1.roles.add(role)
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
 
@@ -2841,15 +2820,15 @@ class AuditTests(TestCase):
         vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
         vmS.full_clean()
 
-        uF.profile.projects.add(pD)
-        uH.profile.projects.add(pD, pS)
+        uF.projects.add(pD)
+        uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ALL_AUDITS)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        uB.profile.roles.add(role)
+        uB.roles.add(role)
 
         Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
                 text='vmd-').full_clean()
@@ -2952,7 +2931,7 @@ class AuditTests(TestCase):
         perm_omni = Permission.objects.create(name=Perms.OMNIPOTENT)
         omni_role = Role.objects.create(name='Omni Role')
         omni_role.permissions.add(perm_omni)
-        u.profile.roles.add(omni_role)
+        u.roles.add(omni_role)
         check_filtering()
 
 
@@ -3032,15 +3011,15 @@ class PowerLogTests(TestCase):
         vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
         vmS.full_clean()
 
-        uF.profile.projects.add(pD)
-        uH.profile.projects.add(pD, pS)
+        uF.projects.add(pD)
+        uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ALL_POWER_LOGS)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        uB.profile.roles.add(role)
+        uB.roles.add(role)
 
         plD1 = PowerLog.objects.create(vm=vmD, powered_on=True)
         plD1.full_clean()
@@ -3171,15 +3150,15 @@ class ExpirationTests(TestCase):
         vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
         vmS.full_clean()
 
-        uF.profile.projects.add(pD)
-        uH.profile.projects.add(pD, pS)
+        uF.projects.add(pD)
+        uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
         perm.full_clean()
         role = Role.objects.create(name='All Seeing')
         role.full_clean()
         role.permissions.add(perm)
-        uB.profile.roles.add(role)
+        uB.roles.add(role)
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
@@ -3379,15 +3358,15 @@ class FirewallRule_AWSFirewallRule_Tests(TestCase):
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
         aws_fw_ruleS.full_clean()
 
-        uF.profile.projects.add(pD)
-        uH.profile.projects.add(pD, pS)
+        uF.projects.add(pD)
+        uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
         perm.full_clean()
         role = Role.objects.create(name='all powerful')
         role.full_clean()
         role.permissions.add(perm)
-        uB.profile.roles.add(role)
+        uB.roles.add(role)
 
         def check_user_sees(username, fw_id_set, aws_fw_id_set):
             """

@@ -1,11 +1,10 @@
 import celery.exceptions
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.utils import OperationalError
 import logging
 import traceback
 
-from vimma.models import Audit, VM
+from vimma.models import Audit, VM, User
 
 
 log = logging.getLogger(__name__)

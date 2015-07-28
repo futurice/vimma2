@@ -1,30 +1,26 @@
-"""
-Django settings for vimmasite project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/dev/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/dev/ref/settings/
-"""
-
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import django.conf.global_settings as DEFAULT_SETTINGS
+from ast import literal_eval
 import os
+import logging
+import time
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+TEMPLATE_DEBUG = DEBUG
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+SECRET_KEY = os.getenv('SECRET_KEY', '')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-TEMPLATE_DEBUG = True
-
-ALLOWED_HOSTS = []
-
-
-# Application definition
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.getenv('DB_NAME', 'vimma'),
+        'USER': os.getenv('DB_USER', 'vimma'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'vimma'),
+        'HOST': os.getenv('DB_HOST', 'postgres'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+    }
+}
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -33,8 +29,10 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'vimma',
     'rest_framework',
+    'django_extensions',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -45,38 +43,25 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.contrib.auth.middleware.RemoteUserMiddleware',
+    'vimma.auth.CustomHeaderMiddleware',# a configurable 'django.contrib.auth.middleware.RemoteUserMiddleware'
 )
 
-AUTHENTICATION_BACKENDS = (
-    'vimma.backends.RemoteNoUnknownUserBackend',
-)
+AUTHENTICATION_BACKENDS = literal_eval(os.getenv('AUTHENTICATION_BACKENDS')) \
+        if os.getenv('AUTHENTICATION_BACKENDS') else DEFAULT_SETTINGS.AUTHENTICATION_BACKENDS
+REMOTE_USER_ENABLED = os.getenv('REMOTE_USER_ENABLED', 'false').lower() == 'true'
 
 ROOT_URLCONF = 'vimmasite.urls'
 
 WSGI_APPLICATION = 'vimmasite.wsgi.application'
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/dev/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -87,15 +72,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 100,
 }
 
-
-# Logging Configuration
-
-import logging
-import time
-
 # Log UTC times
 logging.Formatter.converter = time.gmtime
-
 LOGGING = {
     'version': 1,
     'formatters': {
@@ -110,21 +88,14 @@ LOGGING = {
             'level': 'WARNING',
             'formatter': 'fmt',
         },
-        'fileH': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'fmt',
-            'filename': 'vimma.log',
-            'encoding': 'utf-8',
-            'maxBytes': 2*1024*1024,
-            'backupCount': 5,
-        },
     },
     'root': {
         'level': 'NOTSET',
-        'handlers': ['consoleH', 'fileH'],
+        'handlers': ['consoleH'],
     },
 }
 
+AUTH_USER_MODEL = 'vimma.User'
 
 # On VM creation, set a schedule override to keep it Powered On.
 VM_CREATION_OVERRIDE_SECS = 60*60
@@ -145,6 +116,11 @@ VM_GRACE_INTERVAL = secs_in_day*14
 NORMAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 30 * 3
 SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 7
 
+TRUSTED_NETWORKS = ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12']
+
 del secs_in_day
 
-from local_settings import *
+try:
+    from local_settings import *
+except Exception as e:
+    print("No local_settings configured")

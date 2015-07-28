@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as DefaultUser, AbstractBaseUser, AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.conf import settings
@@ -40,17 +40,13 @@ class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
     email = models.EmailField()
 
+class User(AbstractUser):
+    projects = models.ManyToManyField(Project, blank=True)
+    roles = models.ManyToManyField(Role, blank=True)
 
-class Profile(models.Model):
-    """
-    An extension of the User model.
-    """
-    user = models.OneToOneField(User)
-    projects = models.ManyToManyField(Project)
-    roles = models.ManyToManyField(Role)
-
-    def __str__(self):
-        return self.user.username
+if settings.REMOTE_USER_ENABLED:
+    User._meta.get_field('password').null = True
+    User._meta.get_field('password').blank = True
 
 
 class TimeZone(models.Model):

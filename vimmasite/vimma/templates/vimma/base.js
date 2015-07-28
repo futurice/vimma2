@@ -8,9 +8,6 @@ var indexUrl = '{% url "index" %}',
     vimmaApiProjectList = '{% url "project-list" %}',
     vimmaApiProjectDetailRoot = apiDetailRootUrl(
             '{% url "project-detail" 0 %}'),
-    vimmaApiProfileList = '{% url "profile-list" %}',
-    vimmaApiProfileDetailRoot = apiDetailRootUrl(
-            '{% url "profile-detail" 0 %}'),
     vimmaApiUserList = '{% url "user-list" %}',
     vimmaApiUserDetailRoot = apiDetailRootUrl(
             '{% url "user-detail" 0 %}'),
