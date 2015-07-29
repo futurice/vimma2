@@ -1,5 +1,6 @@
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.contrib.staticfiles.testing import LiveServerTestCase, StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
+from django.conf import settings
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -35,13 +36,11 @@ class BasicFirefox(StaticLiveServerTestCase):
     def url(self, path):
         """
         Return the full URL (http://server/path) for the absolute path.
+
+        TODO FIX: The default 'self.live_server_url' (localhost:8081) does not find static/bower_components,
+        as they are not part of any application. Directing traffic to Nginx.
         """
-        return '{}{}'.format(self.live_server_url, path)
-
-
-    def a_test_index(self):
-        self.driver.get(self.url(reverse('index')))
-        self.assertEqual('', self.driver.title)
+        return '{}{}'.format(settings.LIVE_SERVER_URL, path)
 
     def test_javascript_unit_tests(self):
         self.driver.get(self.url(reverse('test')))

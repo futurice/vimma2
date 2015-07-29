@@ -1,16 +1,16 @@
 from django.contrib import admin
 
 from vimma.models import (
-    TimeZone,
-    Role, User,
+    TimeZone, Permission,
+    Role, User, Project,
     Provider, DummyProvider, AWSProvider,
     VMConfig, DummyVMConfig, AWSVMConfig,
 )
 
 
 for model in (
-        TimeZone,
-        Role, User,
+        TimeZone, Permission,
+        Role, User, Project,
         Provider, DummyProvider, AWSProvider,
         VMConfig, DummyVMConfig, AWSVMConfig,
         ):

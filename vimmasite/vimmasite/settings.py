@@ -62,6 +62,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+LIVE_SERVER_URL = 'http://localhost:8000'# TOOD: see test_live.py
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

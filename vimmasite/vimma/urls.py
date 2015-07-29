@@ -1,4 +1,7 @@
+from django.conf import settings
 from django.conf.urls import url, include
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 from rest_framework import routers
 
 from vimma.views import (
@@ -60,4 +63,4 @@ urlpatterns = [
         name='createFirewallRule'),
     url(r'^delete-firewall-rule$', delete_firewall_rule,
         name='deleteFirewallRule'),
-]
+] + staticfiles_urlpatterns()

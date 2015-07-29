@@ -60,19 +60,19 @@ RUN chown app /opt/app
 
 ADD docker/dev/requirements.txt /opt/app/
 ADD docker/dev/package.json /opt/app/
-ADD docker/dev/bower.json vimma/static/vimma/components/
-RUN chown -R app vimma/static/vimma/components/
+ADD docker/dev/bower.json /opt/app/static/
+RUN chown -R app static/
 
 RUN pip3 install -r requirements.txt
 
 USER app
 
 RUN npm install
-RUN mkdir -p /opt/app/vimma/static/vimma/components/bower_components
-RUN cd vimma/static/vimma/components && /opt/app/node_modules/.bin/bower install
+RUN mkdir -p /opt/app/static/bower_components
+RUN cd static/ && /opt/app/node_modules/.bin/bower install
 
-ADD docker/supervisord.conf /etc/supervisor/supervisord.conf
-ADD docker/nginx-site.conf /etc/nginx/conf.d/
+ADD docker/dev/supervisord.conf /etc/supervisor/supervisord.conf
+ADD docker/dev/nginx-site.conf /etc/nginx/conf.d/
 
 COPY vimmasite/ /opt/app/
 
@@ -83,9 +83,6 @@ ENV DJANGO_SETTINGS_MODULE vimmasite.settings
 ENV PYTHONPATH config
 ENV SECRET_KEY default_insecure_secret
 ENV CELERY_LOG_LEVEL info
-
-RUN mkdir -p static
-RUN python3 manage.py collectstatic --noinput --clear --link
 
 EXPOSE 8000
 
