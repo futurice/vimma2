@@ -21,6 +21,8 @@ docker run --rm -it -p 8000:8000 --name vimma \
     -e DB_PASSWORD=mysecretpassword \
     -e DEBUG=true \
     -e CELERY_LOG_LEVEL=debug \
+    -v ~/vimma2/vimma:/opt/app/vimma:ro \
+    -v ~/vimma2/vimmasite:/opt/app/vimmasite:ro \
     --link postgres:postgres \
     futurice/vimmadev
 ```
