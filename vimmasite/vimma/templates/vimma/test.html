@@ -3,12 +3,12 @@
 
 {% block head %}
   <title>Unit Tests</title>
-  <link rel="stylesheet" href="{% static 'vimma/components/bower_components/qunit/qunit/qunit.css' %}">
+  <link rel="stylesheet" href="{% static 'bower_components/qunit/qunit/qunit.css' %}">
 {% endblock %}
 
 {% block body %}
   <div id="qunit"></div>
   <div id="qunit-fixture"></div>
-  <script src="{% static 'vimma/components/bower_components/qunit/qunit/qunit.js' %}"></script>
+  <script src="{% static 'bower_components/qunit/qunit/qunit.js' %}"></script>
   <script src="{% static 'vimma/js/test.js' %}"></script>
 {% endblock %}

@@ -40,6 +40,9 @@ class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
     email = models.EmailField()
 
+    def __str__(self):
+        return self.name
+
 class User(AbstractUser):
     projects = models.ManyToManyField(Project, blank=True)
     roles = models.ManyToManyField(Role, blank=True)
