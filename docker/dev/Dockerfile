@@ -74,7 +74,7 @@ RUN cd static/ && /opt/app/node_modules/.bin/bower install
 ADD docker/dev/supervisord.conf /etc/supervisor/supervisord.conf
 ADD docker/dev/nginx-site.conf /etc/nginx/conf.d/
 
-COPY vimmasite/ /opt/app/
+COPY . /opt/app/
 
 ADD scripts/* /opt/app/scripts/
 RUN mkdir logs/
