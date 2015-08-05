@@ -1,3 +1,0 @@
-Polymer({
-    is: 'vimma-app'
-});

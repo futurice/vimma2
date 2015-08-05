@@ -1,0 +1,32 @@
+<link rel="import" href="/static/bower_components/polymer/polymer.html">
+<link rel="import" href="/static/bower_components/paper-spinner/paper-spinner.html">
+
+<link rel="import" href="../plain-text/plain-text.html">
+<link rel="import" href="../schedule-detail/schedule-detail.html">
+
+<dom-module id="schedule-list">
+  <link rel="import" type="css" href="../../css/component-common.css">
+  <link rel="import" type="css" href="schedule-list.css">
+
+  <template>
+    <iron-ajax
+      auto
+      id="ajax"
+      url="{{_url}}"
+      handle-as="json"
+      last-response="{{pageData}}">
+    </iron-ajax>
+
+    <template is="dom-repeat" items="[[pageData.results]]">
+      <schedule-detail
+        schedule-id="[[item.id]]"
+        on-schedule-expanded="_scheduleExpanded"
+        on-schedule-collapsed="_scheduleCollapsed"
+        on-schedule-deleted="_scheduleDeleted"
+        ></schedule-detail>
+    </template>
+
+  </template>
+</dom-module>
+
+<script src="schedule-list.js"></script>

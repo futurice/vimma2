@@ -2,19 +2,6 @@
 {% load staticfiles %}
 
 {% block head %}
-  <!-- Without <title>, the back-forward browser history shows the #! urls -->
-  <!--title>Vimma</title-->
-
-  <!--
-    Don't put any styles here (<style>, external stylesheets, etc). They will
-    bleed through everything when using Shady DOM.
-    <vimma-app> defines all styles which inherit through descendants.
-    Common styles which don't inherit (e.g. what an <h1> looks like) are put in
-    a single file and all components who want to use those styles import that
-    common file.
-  -->
-
-  <!-- Fonts -->
   <link href='//fonts.googleapis.com/css?family=Roboto:400,700|Roboto+Mono:400,700|Roboto+Slab:400,700&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
 
   <script src="{% static 'bower_components/webcomponentsjs/webcomponents-lite.min.js' %}"></script>
@@ -23,11 +10,85 @@
   <script src="{% static 'bower_components/jquery.cookie/jquery.cookie.js' %}"></script>
   <script src="{% static 'bower_components/highcharts/highcharts.js' %}"></script>
 
-  <script src="{% static 'vimma/js/index.js' %}"></script>
+  <script src="{% static 'js/index.js' %}"></script>
+  <link rel="import" href="{% static 'elements.html' %}">
 
-  <link rel="import" href="{% static 'vimma/components/vimma-app/vimma-app.html' %}">
+  <link rel="import" href="{% static 'components/audit-display/audit-display.html' %}">
+  <link rel="import" href="{% static 'components/schedules-tab/schedules-tab.html' %}">
+  <link rel="import" href="{% static 'components/vms-tab/vms-tab.html' %}">
+
 {% endblock %}
 
 {% block body %}
-  <vimma-app></vimma-app>
+  {# verbatim for {{ }} to not be evaluated by Django #}
+  {% verbatim %}
+  <template is="dom-bind" id="app">
+
+    <paper-drawer-panel id="paperDrawerPanel">
+      <!-- Drawer Scroll Header Panel -->
+      <paper-scroll-header-panel drawer fixed>
+
+        <!-- Drawer Toolbar -->
+        <paper-toolbar id="drawerToolbar">
+          <span class="paper-font-title">Vimma</span>
+        </paper-toolbar>
+
+        <!-- Drawer Content -->
+        <paper-menu class="list" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
+          <a data-route="home" href="/">
+            <iron-icon icon="home"></iron-icon>
+            <span>VMs</span>
+          </a>
+
+          <a data-route="schedules" href="/schedules">
+            <iron-icon icon="info"></iron-icon>
+            <span>Schedules</span>
+          </a>
+
+          <a data-route="audit" href="/audit">
+            <iron-icon icon="mail"></iron-icon>
+            <span>Audit (logs)</span>
+          </a>
+        </paper-menu>
+      </paper-scroll-header-panel>
+
+      <!-- Main Area -->
+      <paper-scroll-header-panel main>
+        <paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle></paper-icon-button>
+
+        <!-- Main Content -->
+        <div class="content">
+          <iron-pages attr-for-selected="data-route" selected="{{route}}">
+
+            <section data-route="home">
+              <paper-material elevation="1">
+                  <vms-tab></vms-tab>
+              </paper-material>
+            </section>
+
+            <section data-route="schedules">
+              <paper-material elevation="1">
+                <schedules-tab></schedules-tab>
+              </paper-material>
+            </section>
+
+            <section data-route="audit">
+              <paper-material elevation="1">
+                <audit-display page-size="20" page="1"></audit-display>
+              </paper-material>
+            </section>
+
+            <section data-route="projects">
+              Later: select a project and see only the VMs in that project.
+            </section>
+
+          </iron-pages>
+        </div>
+      </paper-scroll-header-panel>
+    </paper-drawer-panel>
+
+  </template>
+  {% endverbatim %}
+
+  <script src="{% static 'js/app.js' %}"></script>
 {% endblock %}

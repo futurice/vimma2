@@ -8,6 +8,7 @@
     "jquery": "2.1.4",
     "jquery.cookie": "1.4.1",
     "bootstrap": "3.3.5",
-    "highcharts": "4.1.7"
+    "highcharts": "4.1.7",
+    "page": "visionmedia/page.js#~1.6.3"
   }
 }

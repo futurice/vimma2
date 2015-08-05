@@ -6,7 +6,6 @@
 <link rel="import" href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/static/bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
-<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../user-name/user-name.html">
@@ -18,55 +17,33 @@
   <template>
     <iron-ajax
       id="ajax"
-      auto
-      url="[[_currentUrl]]"
+      url="/api/audit/"
+      params='{"page":"1", "min_level":"1-INFO"}'
       handle-as="json"
-      loading="{{_loading}}"
-      on-error="handleError"
-      on-response="handleResponse"
+      last-response="{{pageData}}"
+      auto
       ></iron-ajax>
 
-    <template is="dom-if" restamp if="[[_equal(_view, _viewLoading)]]">
-      <paper-spinner active></paper-spinner>
-    </template>
-
-    <template is="dom-if" restamp if="[[_equal(_view, _viewError)]]">
-      <paper-button id="reload" raised on-click="_reload">
-        <iron-icon icon="refresh"></iron-icon>
-        Reload
-      </paper-button>
-      <br>
-      <plain-text class="error" text="[[_error]]"></plain-text>
-    </template>
-
-    <template is="dom-if" restamp if="[[_equal(_view, _viewData)]]">
       <div id="box">
         <div id="navigation">
-          <button on-click="_prevPage" disabled$="[[!_data.previous]]">
+          <button on-click="_prevPage" disabled$="[[!pageData.previous]]">
             ← Newer
           </button>
 
           <span id="item-range">
-            <button id="reload" raised on-click="_reload">
-              <iron-icon icon="refresh"></iron-icon>
-            </button>
             Logs
-            <span>[[_firstItemNr]]</span><!--
-            -->–<!--
-            --><span>[[_getLastItemNr(_firstItemNr, _data)]]</span>
+            <span>[[pageNumber]]</span>-<span>X</span>
             of
-            <span>[[_data.count]]</span>
+            <span>[[pageData.count]]</span>
             with level ≥
             <select on-change="_minLevelChange">
               <template is="dom-repeat" items="[[_auditLevels]]">
-                <option value="[[item.id]]"
-                        selected$="{{_equal(item, _minLevel)}}"
-                        >[[item.name]]</option>
+                <option value="[[item.id]]" selected$="{{_equal(item, _minLevel)}}">[[item.name]]</option>
               </template>
             </select>
           </span>
 
-          <button on-click="_nextPage" disabled$="[[!_data.next]]">
+          <button on-click="_nextPage" disabled$="[[!pageData.next]]">
             Older →
           </button>
         </div>
@@ -82,7 +59,7 @@
             </tr>
           </thead>
           <tbody>
-            <template is="dom-repeat" items="[[_data.results]]">
+            <template is="dom-repeat" items="[[pageData.results]]">
               <tr class$="[[_getAuditLvlName(item.level)]]">
                 <td>
                   <local-date date-string="[[item.timestamp]]"></local-date>
@@ -94,8 +71,7 @@
                     –
                   </template>
                   <template is="dom-if" if="[[!_null(item.user)]]" restamp>
-                    <user-name userid="[[item.user]]" show="username">
-                    </user-name>
+                    <user-name userid="[[item.user]]" show="username"></user-name>
                   </template>
                 </td>
                 <td>
@@ -105,16 +81,7 @@
             </template>
           </tbody>
         </table>
-
-        <button id="show-more"
-                on-click="_showMore"
-                disabled$="{{!_canShowMore(pageSize, _maxPageSize)}}">
-          Show more
-        </button>
-
-        <loading-overlay hidden$="[[!_loading]]"></loading-overlay>
       </div>
-    </template>
   </template>
 </dom-module>
 

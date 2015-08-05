@@ -1,8 +1,6 @@
 :host {
 	position: relative;
 	display: block;
-	border: 0.2em solid;
-	border-color: var(--paper-amber-200);
 }
 
 paper-icon-button#expand:hover {

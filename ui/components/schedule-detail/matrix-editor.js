@@ -49,6 +49,7 @@
         },
 
         _matrixChanged: function(newV, oldV) {
+            console.log("matrixChanged",newV,oldV,typeof(newV));
             this._viewMatrix = clone(newV);
         },
 

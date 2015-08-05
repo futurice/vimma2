@@ -74,3 +74,9 @@ var indexUrl = '{% url "index" %}',
             '{{aws_firewall_rule_protocol_choices_json|escapejs}}'),
 
     _dummy_end;
+
+function uriparams(uri, name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"), results = regex.exec(uri);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}

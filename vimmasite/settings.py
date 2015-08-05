@@ -35,6 +35,8 @@ INSTALLED_APPS = (
     'django_extensions',
 )
 
+STATICFILES_DIRS = DEFAULT_SETTINGS.STATICFILES_DIRS + (os.path.join(BASE_DIR, 'ui'),)
+
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
