@@ -159,10 +159,6 @@
             }
         },
 
-        observers: [
-            '_expandIfVMSelected(_vms, _fragHead)'
-        ],
-
         ready: function() {
             this.reload();
         },
@@ -306,14 +302,6 @@
             if (this._fragHead == ev.detail) {
                 this.frag = '';
             }
-        },
-
-        _expandIfVMSelected: function(_vms, _fragHead) {
-            _vms.forEach(function(vm) {
-                if (vm.vm.id == _fragHead) {
-                    this.expanded = true;
-                }
-            }, this);
         },
 
         _sayTopBarOne: function(destroyed) {

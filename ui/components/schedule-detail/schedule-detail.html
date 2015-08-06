@@ -46,7 +46,7 @@
 
     <div id="summary" on-click="toggle">
       <span id="summary-name">[[schedule.name]]</span>
-      <span id="summary-timezone">tz:<span>[[_tzName(timezones.results, schedule.timezone)]]</span></span>
+      <span id="summary-timezone">[[_tzName(timezones.results, schedule.timezone)]]</span>
       <paper-icon-button
         id="delete"
         icon="delete"
@@ -70,8 +70,7 @@
         <select id="tz-select" on-change="_newTzSelected">
           <template is="dom-repeat" items="[[timezones.results]]">
             <option value="[[item.id]]"
-                    selected$="[[_equal(item.id, _newTzId)]]"
-                    >[[item.name]]</option>
+                    selected$="[[_equal(item.id, _newTzId)]]">[[item.name]]</option>
           </template>
         </select>
 
