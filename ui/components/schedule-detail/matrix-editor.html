@@ -1,5 +1,8 @@
 <link rel="import" href="/static/bower_components/polymer/polymer.html">
 
+<link rel="import" href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
+
+
 <!--
   Edits the matrix of boolean values.
   When changing the matrix, both this component and the parent using it must
@@ -20,8 +23,8 @@
               class$="[[_cellClass(row, col, _viewMatrix, _editing)]]"
               on-mouseover='_mouseOver'
               on-mousedown='_mouseDown'
-              on-mouseup='_mouseUp'
-              ></td>
+              on-mouseup='_mouseUp'>
+            </td>
           </template>
         </tr>
       </template>

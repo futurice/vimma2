@@ -43,7 +43,6 @@ RUN wget --quiet -O /tmp/node.tar.gz https://s3-eu-west-1.amazonaws.com/futurice
 RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62
 RUN echo "deb http://nginx.org/packages/ubuntu/ trusty nginx" >> /etc/apt/sources.list
 RUN apt-get update && apt-get install -y nginx
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
 # Set timezone to Europe/Helsinki
 RUN echo 'Europe/Helsinki' > /etc/timezone && rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Helsinki /etc/localtime
@@ -72,7 +71,7 @@ RUN mkdir -p /opt/app/static/bower_components
 RUN cd static/ && /opt/app/node_modules/.bin/bower install
 
 ADD docker/dev/supervisord.conf /etc/supervisor/supervisord.conf
-ADD docker/dev/nginx-site.conf /etc/nginx/conf.d/
+ADD docker/dev/nginx.conf /etc/nginx/
 
 COPY . /opt/app/
 

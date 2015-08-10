@@ -3,6 +3,7 @@
 <link rel="import" href="/static/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/static/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/static/bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="/static/bower_components/iron-form/iron-form.html">
 
 <link rel="import" href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/static/bower_components/paper-icon-button/paper-icon-button.html">
@@ -11,7 +12,6 @@
 <link rel="import" href="/static/bower_components/paper-toggle-button/paper-toggle-button.html">
 
 <link rel="import" href="../equal-behavior/equal-behavior.html">
-<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="matrix-editor.html">
 
@@ -40,48 +40,50 @@
       <plain-text class="error" text="[[_error]]"></plain-text>
     </template>
 
-    <template is="dom-if" if="[[_actionError]]">
-      <plain-text class="error" text="[[_actionError]]"></plain-text>
-    </template>
-
     <div id="summary" on-click="toggle">
       <span id="summary-name">[[schedule.name]]</span>
       <span id="summary-timezone">[[_tzName(timezones.results, schedule.timezone)]]</span>
-      <paper-icon-button
-        id="delete"
-        icon="delete"
-        title="Delete…"
-        on-click="_delete">
-      </paper-icon-button>
+
+      <iron-ajax
+        id="deleteButtonAjax"
+        method="DELETE"
+        url="[[_scheduleUrl]]"
+        headers$="[[csrfTokenHeader()]]">
+        <paper-icon-button icon="delete" title="Delete" on-click="_delete">
+        </paper-icon-button>
+      </iron-ajax>
+
     </div>
 
     <iron-collapse id="collapse">
       <div id="details">
+      <form is="iron-form" id="form" method="post" content-type="application/json" action="[[_scheduleUrl]]">
+
         <paper-input
+          name="name"
+          value="{{schedule.name}}"
           label="Name"
-          value="{{_newName}}"
           required
           auto-validate
           error-message="The name may not be empty">
         </paper-input>
 
-        <label for="tz-select">TimeZone:</label>
-
-        <select id="tz-select" on-change="_newTzSelected">
+        <label for="tz-select">Timezone</label>
+        <select id="tz-select" name="timezone" on-change="timezoneSelected">
           <template is="dom-repeat" items="[[timezones.results]]">
-            <option value="[[item.id]]"
-                    selected$="[[_equal(item.id, _newTzId)]]">[[item.name]]</option>
+            <option value="{{item.id}}" selected$="[[_equal(item.id, schedule.timezone)]]">[[item.name]]</option>
           </template>
         </select>
 
-        <matrix-editor matrix="{{parse(schedule.matrix)}}"></matrix-editor>
+        <matrix-editor value="{{schedule.matrix}}"></matrix-editor>
 
-        <paper-toggle-button id="is-special" checked="{{_newIsSpecial}}"></paper-toggle-button>
+        <paper-toggle-button id="is-special" name="is_special" checked="{{schedule.is_special}}"></paper-toggle-button>
+
         <label for="is-special">
           Using this schedule requires special permissions
         </label>
 
-        <paper-button id="save" raised on-click="_save">
+        <paper-button id="save" raised on-click="submitForm">
           <iron-icon icon="save"></iron-icon>
           Save
         </paper-button>
@@ -90,6 +92,9 @@
           <iron-icon icon="undo"></iron-icon>
           Undo changes
         </paper-button>
+
+      </form>
+      </div>
     </iron-collapse>
 
   </template>

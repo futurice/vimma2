@@ -35,7 +35,14 @@ INSTALLED_APPS = (
     'django_extensions',
 )
 
-STATICFILES_DIRS = DEFAULT_SETTINGS.STATICFILES_DIRS + (os.path.join(BASE_DIR, 'ui'),)
+STATICFILES_DIRS = DEFAULT_SETTINGS.STATICFILES_DIRS
+if DEBUG:
+    STATICFILES_DIRS = STATICFILES_DIRS + (
+        os.path.join(BASE_DIR, 'ui'),
+        '/usr/local/lib/python3.4/dist-packages/django/contrib/admin/static/',
+        '/usr/local/lib/python3.4/dist-packages/rest_framework/static/',
+        '/usr/local/lib/python3.4/dist-packages/django_extensions/static/',
+    )
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',

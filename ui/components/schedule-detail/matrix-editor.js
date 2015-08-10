@@ -13,9 +13,16 @@
     Polymer({
         is: 'matrix-editor',
 
+        behaviors: [Polymer.IronFormElementBehavior],
+
         properties: {
-            matrix: {
-                type: Array,
+            name: {
+                type: String,
+                value: 'matrix',
+                notify: true
+            },
+            value: {
+                type: String,
                 notify: true,
                 observer: '_matrixChanged'
             },
@@ -49,8 +56,7 @@
         },
 
         _matrixChanged: function(newV, oldV) {
-            console.log("matrixChanged",newV,oldV,typeof(newV));
-            this._viewMatrix = clone(newV);
+            this._viewMatrix = JSON.parse(clone(newV));
         },
 
         _cellClass: function(row, col, viewMatrix, editing) {
@@ -112,7 +118,7 @@
                 throw 'Already editing';
             }
 
-            this._viewMatrix = clone(this.matrix);
+            this._viewMatrix = JSON.parse(clone(this.value));
 
             this._editing = true;
             this._startRow = row;
@@ -126,7 +132,7 @@
                 throw 'Not editing';
             }
 
-            var m = clone(this.matrix),
+            var m = JSON.parse(clone(this.value)),
                 val = !m[this._startRow][this._startCol],
                 rMin = Math.min(this._startRow, row),
                 rMax = Math.max(this._startRow, row),
@@ -146,7 +152,7 @@
                 throw 'Not editing';
             }
             this._editing = false;
-            this.matrix = clone(this._viewMatrix);
+            this.value = JSON.stringify(clone(this._viewMatrix));
         }
     });
 })();
