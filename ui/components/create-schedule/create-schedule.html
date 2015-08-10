@@ -1,14 +1,12 @@
 <link rel="import" href="/static/bower_components/polymer/polymer.html">
-
-<link rel="import" href="../api-loader/api-loader.html">
 <link rel="import" href="/static/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/static/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/static/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/static/bower_components/paper-input/paper-input.html">
 <link rel="import" href="/static/bower_components/paper-spinner/paper-spinner.html">
+
 <link rel="import" href="../equal-behavior/equal-behavior.html">
-<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
 <!--
@@ -21,72 +19,60 @@
 -->
 
 <dom-module id="create-schedule">
-  <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="create-schedule.css">
+<link rel="import" type="css" href="../../css/component-common.css">
+<link rel="import" type="css" href="create-schedule.css">
+<template>
 
-  <template>
-    <template is="dom-if" if="[[!_expanded]]">
-      <paper-button id="expand" raised on-click="_toggle">
-        <iron-icon icon="add"></iron-icon>
-        Create Schedule
-      </paper-button>
-    </template>
+  <paper-button id="expand" raised on-click="_toggle">
+    <iron-icon icon="add"></iron-icon>
+    Create Schedule
+  </paper-button>
 
-    <template is="dom-if" if="[[_expanded]]" restamp>
-      <div id="expanded">
-        <api-loader
-          url="[[_tzApiUrl]]"
-          loading="{{_loading}}"
-          error="{{_loadErr}}"
-          data="{{_timezones}}"
-          ></api-loader>
+  <div class$="[[_toggleClass]]">
+  <paper-material elevation="3" style="padding:20px;">
 
-        <paper-icon-button id="close" icon="close"
-          on-click="_toggle"></paper-icon-button>
+    <iron-ajax
+      auto
+      id="ajax-timezone"
+      url="[[_tzApiUrl]]"
+      handle-as="json"
+      last-response="{{timezones}}">
+    </iron-ajax>
 
-        <template is="dom-if" if="[[_loading]]">
-          <paper-spinner active></paper-spinner>
-        </template>
 
-        <template is="dom-if" if="[[!_loading]]">
-          <h1>Create a new Schedule</h1>
-          <template is="dom-if" if="[[_loadErr]]">
-            <plain-text class="error" text="[[_loadErr]]"></plain-text>
+    <paper-icon-button id="close" icon="close" on-click="_toggle">
+    </paper-icon-button>
+
+    <form is="iron-form" id="form" method="post" content-type="application/json" action="[[createUrl]]">
+      <paper-input
+        id="name"
+        name="name"
+        label="Name"
+        value="{{_newName}}"
+        auto-validate
+        error-message="The name may not be empty"
+        required>
+      </paper-input>
+
+      <div style="margin: 20px 0px 20px 0px;">
+        <label for="timezone">Time Zone</label>
+        <select id="timezone" name="timezone" on-change="timezoneSelected">
+          <template is="dom-repeat" items="[[timezones.results]]">
+            <option value="[[item.id]]" selected$="{{_equal(item, _newTz)}}">[[item.name]]</option>
           </template>
-          <template is="dom-if" if="[[!_loadErr]]">
-            <template is="dom-if" if="[[_createError]]">
-              <plain-text class="error" text="[[_createError]]"></plain-text>
-              <br>
-            </template>
-            <paper-input
-              id="name"
-              label="Name"
-              value="{{_newName}}"
-              auto-validate
-              error-message="The name may not be empty"
-              required
-              ></paper-input>
-            <br>
-            <label for="timezone">TimeZone:</label>
-            <select id="timezone" on-change="_newTzSelected">
-              <template is="dom-repeat" items="[[_timezones]]">
-                <option value="[[item.id]]"
-                        selected$="{{_equal(item, _newTz)}}"
-                        >[[item.name]]</option>
-              </template>
-            </select>
-            <br>
-            <paper-button id="create" raised on-click="_create">
-              <iron-icon icon="create"></iron-icon>
-              Create
-            </paper-button>
-          </template>
-        </template>
-
-        <loading-overlay hidden$="[[!_createInFlight]]"></loading-overlay>
+        </select>
       </div>
-    </template>
-  </template>
+
+      <paper-button id="create" raised on-click="submitForm">
+        <iron-icon icon="create"></iron-icon>
+        Create
+      </paper-button>
+    </form>
+
+  </paper-material>
+  </div>
+
+</template>
 </dom-module>
 
 <script src="create-schedule.js"></script>

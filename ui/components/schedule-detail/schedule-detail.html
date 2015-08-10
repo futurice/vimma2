@@ -68,7 +68,7 @@
           error-message="The name may not be empty">
         </paper-input>
 
-        <label for="tz-select">Timezone</label>
+        <label for="tz-select">Time Zone</label>
         <select id="tz-select" name="timezone" on-change="timezoneSelected">
           <template is="dom-repeat" items="[[timezones.results]]">
             <option value="{{item.id}}" selected$="[[_equal(item.id, schedule.timezone)]]">[[item.name]]</option>

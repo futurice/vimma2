@@ -95,6 +95,14 @@ class Schedule(models.Model):
     def __str__(self):
         return self.name
 
+    def default_matrix(self):
+        return [[False]*48]*7
+
+    def save(self, *args, **kwargs):
+        if not self.matrix:
+            self.matrix = json.dumps(self.default_matrix())
+        super().save(*args, **kwargs)
+
 
 class Provider(models.Model):
     """
