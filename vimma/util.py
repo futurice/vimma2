@@ -172,7 +172,7 @@ def vm_at_now(vm_id):
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
         vm = VM.objects.get(id=vm_id)
 
-        if now > vm.vmexpiration.expiration.expires_at.timestamp():
+        if now > vm.expiration.expires_at.timestamp():
             return False
 
         if (vm.sched_override_state != None and

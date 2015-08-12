@@ -285,7 +285,7 @@ def expiration_notify(vm_id):
     with aud.ctx_mgr(vm_id=vm_id):
         def read():
             vm = VM.objects.get(id=vm_id)
-            return vm.vmexpiration.expiration.expires_at
+            return vm.expiration.expires_at
         exp_date = retry_in_transaction(read)
         aud.warning('Notify of VM expiration on ' + str(exp_date),
                 vm_id=vm_id)
@@ -299,7 +299,7 @@ def expiration_grace_action(vm_id):
     with aud.ctx_mgr(vm_id=vm_id):
         def read():
             vm = VM.objects.get(id=vm_id)
-            return vm.vmexpiration.expiration.expires_at
+            return vm.expiration.expires_at
         exp_date = retry_in_transaction(read)
         aud.warning('Performing action at the end of grace period for VM ' +
                 'which expired on ' + str(exp_date),
