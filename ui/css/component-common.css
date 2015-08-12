@@ -1,8 +1,8 @@
 /* Common stylesheet included by each component who wants to use it. */
 
 plain-text.error {
-	background-color: Pink;
-	color: Black;
+    background: inherit;
+	color: Pink;
 	font-weight: normal;
 }
 plain-text.error.toggles:hover {

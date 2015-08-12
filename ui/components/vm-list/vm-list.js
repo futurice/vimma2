@@ -74,17 +74,17 @@
         behaviors: [VimmaBehaviors.Equal],
 
         properties: {
-            frag: {
-                type: String,
-                notify: true
-            },
-            _fragHead: String,
-
             // load destroyed or non-destroyed VMs
             destroyed: {
                 type: Boolean,
                 value: false,
                 observer: '_destroyedChanged'
+            },
+
+            vmData: {
+              type: Object,
+              notify: true,
+              observer: 'vmDataChanged'
             },
 
             expanded: {
@@ -157,6 +157,12 @@
                 type: Array,
                 computed: '_sort(_vms, _order)'
             }
+        },
+
+        vmDataChanged: function(newV, oldV) {
+          console.log('vmDataChanged',newV);
+          this.$.projectAjax.url = '/api/projects/'+newV.project;
+          this.$.projectAjax.generateRequest();
         },
 
         ready: function() {
@@ -296,19 +302,15 @@
         },
 
         _vmExpanded: function(ev) {
-            this.frag = ev.detail + '';
         },
         _vmCollapsed: function(ev) {
-            if (this._fragHead == ev.detail) {
-                this.frag = '';
-            }
         },
 
         _sayTopBarOne: function(destroyed) {
             if (destroyed) {
-                return 'destroyed VM';
+                return 'destroyed';
             }
-            return 'active VM';
+            return 'active';
         }
     });
 })();

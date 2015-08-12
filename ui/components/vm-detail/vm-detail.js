@@ -3,16 +3,14 @@ Polymer({
 
     behaviors: [VimmaBehaviors.Equal],
 
+    ready: function() {
+      this.fire('vm-detail-created', {});
+    },
+
     properties: {
         vmid: {
             type: Number,
             observer: '_vmidChanged'
-        },
-
-        // see <schedule-detail>.selectedViaFrag
-        selectedViaFrag: {
-            type: Boolean,
-            observer: '_selectedViaFragChanged'
         },
 
         _loadingToken: Object,  /* same logic as in <vm-list> */
@@ -65,12 +63,6 @@ Polymer({
     _vmidChanged: function(newV, oldV) {
         this._expanded = this.properties._expanded.value;
         this._reload();
-    },
-
-    _selectedViaFragChanged: function(newV, oldV) {
-        if (newV) {
-            this._expanded = true;
-        }
     },
 
     _reload: function() {

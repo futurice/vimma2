@@ -1,10 +1,9 @@
 <link rel="import" href="/static/bower_components/polymer/polymer.html">
-
 <link rel="import" href="/static/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/static/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/static/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/static/bower_components/paper-spinner/paper-spinner.html">
-<link rel="import" href="../equal-behavior/equal-behavior.html">
+
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../show-count/show-count.html">
@@ -12,116 +11,105 @@
 <link rel="import" href="../vm-detail/vm-detail.html">
 
 <dom-module id="vm-list">
-  <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="vm-list.css">
+<link rel="import" type="css" href="../../css/component-common.css">
+<link rel="import" type="css" href="vm-list.css">
+<template>
+  <vm-data-model id="vdm"></vm-data-model>
 
-  <template>
-    <vm-data-model id="vdm"></vm-data-model>
+  <iron-ajax
+    auto
+    id="vmAjax"
+    url="/api/vms/1/"
+    last-response="{{vmData}}">
+  </iron-ajax>
+  <div>{{vmData}}</div>
 
-    <div id="top-bar">
-      <template is="dom-if" if="[[_loading]]" restamp>
-        <paper-spinner active></paper-spinner>
-      </template>
+  <iron-ajax
+    id="projectAjax"
+    last-response="{{projectData}}">
+  </iron-ajax>
+  <div>proj:<!-- -->{{projectData.name}}</div>
 
-      <template is="dom-if" if="[[!_loading]]" restamp>
-        <template is="dom-if" if="[[!_error]]">
-          <div id="top-content">
-            <h1 on-click="_toggle" title="Expand/Collapse">
-              <iron-icon icon="[[_headingIcon]]"></iron-icon>
-              <show-count
-                n="[[_sortedVms.length]]"
-                one="[[_sayTopBarOne(destroyed)]]"
-                ></show-count>
-              <h1>
-          </div>
-        </template>
-
-        <paper-icon-button
-           id="reload"
-           icon="refresh"
-           title="Refresh"
-           on-click="reload"
-           ></paper-icon-button>
-      </template>
+  <div id="top-bar">
+    <div id="top-content">
+      <h1 on-click="_toggle" title="Expand/Collapse">
+        <iron-icon icon="[[_headingIcon]]"></iron-icon>
+        <span>[[_sortedVms.length]]<!-- --> <span>[[_sayTopBarOne(destroyed)]]</span></span>
+      </h1>
     </div>
 
-    <template is="dom-if" if="[[!_loading]]" restamp>
-      <template is="dom-if" if="[[_error]]">
-        <div>
-          <plain-text class="error" text="[[_error]]"></plain-text>
-        </div>
-      </template>
-    </template>
+    <paper-icon-button
+       id="reload"
+       icon="refresh"
+       title="Refresh"
+       on-click="reload">
+    </paper-icon-button>
+  </div>
 
-    <template is="dom-if" if="[[_showList]]" restamp>
-      <div id="table-head">
-        <!-- Dummy buttons to align the table header with the vm rows -->
-        <paper-icon-button
-          id="vm-expand"
-          icon="expand-more"
-          ></paper-icon-button>
-        <paper-icon-button
-          id="vm-refresh"
-          icon="refresh"
-          ></paper-icon-button>
+  <plain-text class="error" text="[[_error]]"></plain-text>
 
-        <span class="vborder"></span>
+  <div id="table-head">
+    <!-- Dummy buttons to align the table header with the vm rows -->
+    <paper-icon-button></paper-icon-button>
+    <paper-icon-button></paper-icon-button>
 
-        <span id="name" on-click="_sortByName" class$="[[_nameClass]]">
-          <span class="label">Name</span>
-          <iron-icon icon="[[_nameSortIcon]]" hidden$="[[!_nameSortIcon]]"
-            ></iron-icon>
-        </span>
+    <span class="vborder"></span>
 
-        <span class="vborder"></span>
+    <span id="name" on-click="_sortByName" class$="[[_nameClass]]">
+      <span class="label">Name</span>
+      <iron-icon icon="[[_nameSortIcon]]" hidden$="[[!_nameSortIcon]]">
+      </iron-icon>
+    </span>
 
-        <span id="state"
-          title="Power state"
-          on-click="_sortByState"
-          class$="[[_stateClass]]">
-          <iron-icon icon="power-settings-new"></iron-icon>
-          <span class="label"></span> <!-- spacer -->
-          <iron-icon icon="[[_stateSortIcon]]" hidden$="[[!_stateSortIcon]]"
-            ></iron-icon>
-        </span>
+    <span class="vborder"></span>
 
-        <span class="vborder"></span>
+    <span id="state"
+      title="Power state"
+      on-click="_sortByState"
+      class$="[[_stateClass]]">
+      <iron-icon icon="power-settings-new"></iron-icon>
+      <span class="label"></span> <!-- spacer -->
+      <iron-icon icon="[[_stateSortIcon]]" hidden$="[[!_stateSortIcon]]">
+      </iron-icon>
+    </span>
 
-        <span id="project" on-click="_sortByProject" class$="[[_projectClass]]">
-          <span class="label">Project</span>
-          <iron-icon icon="[[_projectSortIcon]]" hidden$="[[!_projectSortIcon]]"
-            ></iron-icon>
-        </span>
+    <span class="vborder"></span>
 
-        <span class="vborder"></span>
+    <span id="project" on-click="_sortByProject" class$="[[_projectClass]]">
+      <span class="label">Project</span>
+      <iron-icon icon="[[_projectSortIcon]]" hidden$="[[!_projectSortIcon]]">
+      </iron-icon>
+    </span>
 
-        <span id="expiry-date" on-click="_sortByExpiry"
-          class$="[[_expiryClass]]">
-          <span class="label">Expiry date</span>
-          <iron-icon icon="[[_expirySortIcon]]" hidden$="[[!_expirySortIcon)]]"
-            ></iron-icon>
-        </span>
+    <span class="vborder"></span>
 
-        <span class="vborder"></span>
+    <span id="expiry-date" on-click="_sortByExpiry" class$="[[_expiryClass]]">
+      <span class="label">Expiry date</span>
+      <iron-icon icon="[[_expirySortIcon]]" hidden$="[[!_expirySortIcon)]]">
+      </iron-icon>
+    </span>
 
-        <paper-icon-button
-          id="vm-reboot"
-          icon="power-settings-new"></paper-icon-button>
-        <paper-icon-button
-          id="vm-destroy"
-          icon="delete"
-          ></paper-icon-button>
-      </div>
+    <span class="vborder"></span>
 
-      <template is="dom-repeat" items="[[_sortedVms]]">
-        <vm-detail
-          vmid="[[item.vm.id]]"
-          on-vm-expanded="_vmExpanded"
-          on-vm-collapsed="_vmCollapsed"
-          ></vm-detail>
-      </template>
-    </template>
+    <paper-icon-button
+      id="vm-reboot"
+      icon="power-settings-new">
+    </paper-icon-button>
+    <paper-icon-button
+      id="vm-destroy"
+      icon="delete">
+    </paper-icon-button>
+  </div>
+
+  <template is="dom-repeat" items="[[_sortedVms]]">
+    <vm-detail
+      vmid="[[item.vm.id]]"
+      on-vm-expanded="_vmExpanded"
+      on-vm-collapsed="_vmCollapsed">
+    </vm-detail>
   </template>
+
+</template>
 </dom-module>
 
 <script src="vm-list.js"></script>

@@ -11,7 +11,7 @@ from vimma.views import (
     VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
     VMViewSet, DummyVMViewSet, AWSVMViewSet,
     FirewallRuleViewSet, AWSFirewallRuleViewSet,
-    AuditViewSet, PowerLogViewSet, ExpirationViewSet, VMExpirationViewSet,
+    AuditViewSet, PowerLogViewSet, VMExpirationViewSet,
     FirewallRuleExpirationViewSet,
     index, base_js, test,
     create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
@@ -36,7 +36,6 @@ router.register(r'dummyvms', DummyVMViewSet, 'dummyvm')
 router.register(r'awsvm', AWSVMViewSet, 'awsvm')
 router.register(r'audit', AuditViewSet, 'audit')
 router.register(r'powerlog', PowerLogViewSet, 'powerlog')
-router.register(r'expiration', ExpirationViewSet, 'expiration')
 router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')
 router.register(r'firewallruleexpiration', FirewallRuleExpirationViewSet,
         'firewallruleexpiration')

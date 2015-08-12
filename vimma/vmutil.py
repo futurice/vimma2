@@ -16,6 +16,7 @@ from vimma.models import (
 from vimma.util import (
     can_do, retry_in_transaction,
     vm_at_now, discard_expired_schedule_override,
+    get_import
 )
 import vimma.vmtype.dummy, vimma.vmtype.aws
 
@@ -63,19 +64,15 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
         sched_override_tstamp = (now.timestamp() +
                 settings.VM_CREATION_OVERRIDE_SECS)
 
+        expire_dt = now + datetime.timedelta(seconds=settings.DEFAULT_VM_EXPIRY_SECS)
+
+        vmexp = VMExpiration.objects.create(expires_at=expire_dt)
         vm = VM.objects.create(provider=prov, project=project,
                 schedule=schedule, sched_override_state=True,
                 sched_override_tstamp=sched_override_tstamp,
-                comment=comment, created_by=user)
+                comment=comment, created_by=user, expiration=vmexp)
         vm.full_clean()
         vm_id = vm.id
-
-        expire_dt = now + datetime.timedelta(
-                seconds=settings.DEFAULT_VM_EXPIRY_SECS)
-        expiration = Expiration.objects.create(type=Expiration.TYPE_VM,
-                expires_at=expire_dt)
-        expiration.full_clean()
-        VMExpiration.objects.create(expiration=expiration, vm=vm).full_clean()
 
         t = prov.type
         if t == Provider.TYPE_DUMMY:
@@ -317,15 +314,9 @@ def dispatch_all_expiration_notifications():
     """
     aud.debug('Check which Expiration items need a notification')
     with aud.ctx_mgr():
-        def read():
-            return list(map(lambda e: e.id, Expiration.objects.filter(
-                grace_end_action_performed=False)))
-        ids = retry_in_transaction(read)
-        for x in ids:
-            # don't allow a single item to break the loop (in some corner case).
-            # Make a separate task for each instead of handling
-            # all in this task.
-            dispatch_expiration_notification.delay(x)
+        for model in Expiration.implementations():
+            for match in model.objects.filter(grace_end_action_performed=False):
+                dispatch_expiration_notification.delay(model, match.pk)
 
 @app.task
 def dispatch_expiration_notification(exp_id):
@@ -348,26 +339,19 @@ def dispatch_all_expiration_grace_end_actions():
     """
     aud.debug('Check which Expiration items need a grace-end action')
     with aud.ctx_mgr():
-        def read():
-            return list(map(lambda e: e.id, Expiration.objects.filter(
-                grace_end_action_performed=False)))
-        ids = retry_in_transaction(read)
-        for x in ids:
-            # don't allow a single item to break the loop (in some corner case).
-            # Make a separate task for each instead of handling
-            # all in this task.
-            dispatch_expiration_grace_end_action.delay(x)
+        for model in Expiration.implementations():
+            for match in model.objects.filter(grace_end_action_performed=False):
+                dispatch_expiration_grace_end_action.delay(model, match.pk)
 
 @app.task
-def dispatch_expiration_grace_end_action(exp_id):
+def dispatch_expiration_grace_end_action(model, exp_id):
     """
     Check the Expiration item and perform the grace end action if needed.
     """
     aud.debug('Checking if Expiration id ' + str(exp_id) +
             ' needs a grace-end action')
-
     with aud.ctx_mgr():
-        c = vimma.expiry.get_controller(exp_id)
+        c = vimma.expiry.get_controller(model, exp_id)
         if c.needs_grace_end_action():
             c.perform_grace_end_action()
 

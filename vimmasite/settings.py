@@ -133,4 +133,4 @@ del secs_in_day
 try:
     from local_settings import *
 except Exception as e:
-    print("No local_settings configured")
+    pass

@@ -157,6 +157,7 @@ class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
 class VMSerializer(serializers.ModelSerializer):
     class Meta:
         model = VM
+        depth = 1
 
 class VMViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VMSerializer
@@ -265,49 +266,6 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
             return PowerLog.objects.filter(vm__project__id__in=prj_ids)
 
 
-class ExpirationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Expiration
-        # explicitly list the fields to include:
-        # vmexpiration, firewallruleexpiration
-        fields = ('id', 'expires_at', 'last_notification',
-                'grace_end_action_performed',
-                'vmexpiration', 'firewallruleexpiration')
-
-class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ExpirationSerializer
-
-    def get_vm_Q(self):
-        """
-        Return the queryfilter for Expirations of type vm.
-        """
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return Q(type=Expiration.TYPE_VM)
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return Q(type=Expiration.TYPE_VM,
-                vmexpiration__vm__project__id__in=prj_ids)
-
-    def get_firewallrule_Q(self):
-        """
-        Return the queryfilter for Expirations of type vm.
-        """
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return Q(type=Expiration.TYPE_FIREWALL_RULE)
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return Q(type=Expiration.TYPE_FIREWALL_RULE,
-                firewallruleexpiration__firewallrule__vm__project__id__in=prj_ids)
-
-    def get_queryset(self):
-        return Expiration.objects.filter(self.get_vm_Q() |
-                self.get_firewallrule_Q())
-
-
 class VMExpirationSerializer(serializers.ModelSerializer):
     class Meta:
         model = VMExpiration
@@ -331,6 +289,7 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 class FirewallRuleExpirationSerializer(serializers.ModelSerializer):
     class Meta:
         model = FirewallRuleExpiration
+        depth = 2
 
 class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FirewallRuleExpirationSerializer
@@ -350,8 +309,12 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class FirewallRuleSerializer(serializers.ModelSerializer):
+    expiration = FirewallRuleExpirationSerializer()
+
     class Meta:
         model = FirewallRule
+        fields = ('id','vm','expiration',)
+        depth = 1
 
 class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FirewallRuleSerializer
@@ -371,6 +334,7 @@ class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
 class AWSFirewallRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AWSFirewallRule
+        depth = 2
 
 class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSFirewallRuleSerializer

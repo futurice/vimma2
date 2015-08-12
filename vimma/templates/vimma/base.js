@@ -34,9 +34,6 @@ var indexUrl = '{% url "index" %}',
             '{% url "vmexpiration-detail" 0 %}'),
     vimmaApiFirewallRuleExpirationList =
         '{% url "firewallruleexpiration-list" %}',
-    vimmaApiExpirationList = '{% url "expiration-list" %}',
-    vimmaApiExpirationDetailRoot = apiDetailRootUrl(
-            '{% url "expiration-detail" 0 %}'),
     vimmaApiFirewallRuleList = '{% url "firewallrule-list" %}',
     vimmaApiAWSFirewallRuleList = '{% url "awsfirewallrule-list" %}',
     vimmaApiAWSFirewallRuleDetailRoot = apiDetailRootUrl(

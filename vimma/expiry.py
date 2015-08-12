@@ -36,17 +36,10 @@ def needs_notification(expires_at, last_notification, notif_intervals):
     return notif_intervals[0] <= now_secs
 
 
-def get_controller(expiration_id):
+def get_controller(model, expiration_id):
     def call():
-        e = Expiration.objects.get(id=expiration_id)
-        if e.type == Expiration.TYPE_VM:
-            return VMExpirationController(expiration_id)
-        elif e.type == Expiration.TYPE_FIREWALL_RULE:
-            return FirewallRuleExpirationController(expiration_id)
-        else:
-            raise Exception("Can't find Controller " +
-                    "for Expiration object " + str(expiration_id) +
-                    " of type " + e.type)
+        e = model.objects.get(id=expiration_id)
+        return get_import(*e.controller)(expiration_id)
 
     return retry_in_transaction(call)
 

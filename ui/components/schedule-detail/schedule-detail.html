@@ -68,12 +68,14 @@
           error-message="The name may not be empty">
         </paper-input>
 
-        <label for="tz-select">Time Zone</label>
-        <select id="tz-select" name="timezone" on-change="timezoneSelected">
-          <template is="dom-repeat" items="[[timezones.results]]">
-            <option value="{{item.id}}" selected$="[[_equal(item.id, schedule.timezone)]]">[[item.name]]</option>
-          </template>
-        </select>
+        <div style="margin: 20px 0px 20px 0px;">
+          <label for="tz-select">Time Zone</label>
+          <select id="tz-select" name="timezone" on-change="timezoneSelected">
+            <template is="dom-repeat" items="[[timezones.results]]">
+              <option value="{{item.id}}" selected$="[[_equal(item.id, schedule.timezone)]]">[[item.name]]</option>
+            </template>
+          </select>
+        </div>
 
         <matrix-editor value="{{schedule.matrix}}"></matrix-editor>
 
@@ -83,15 +85,17 @@
           Using this schedule requires special permissions
         </label>
 
-        <paper-button id="save" raised on-click="submitForm">
-          <iron-icon icon="save"></iron-icon>
-          Save
-        </paper-button>
+        <div style="margin: 20px 0px 20px 0px;">
+          <paper-button id="save" raised on-click="submitForm">
+            <iron-icon icon="save"></iron-icon>
+            Save
+          </paper-button>
 
-        <paper-button id="discard" raised on-click="_discardChanges">
-          <iron-icon icon="undo"></iron-icon>
-          Undo changes
-        </paper-button>
+          <paper-button id="discard" raised on-click="_discardChanges">
+            <iron-icon icon="undo"></iron-icon>
+            Undo local changes
+          </paper-button>
+        </div>
 
       </form>
       </div>
