@@ -1,5 +1,9 @@
 sudo: true
 
+env:
+  global:
+    - DOCKER_BACKEND_FS=host
+
 branches:
   only:
     - master
