@@ -1,47 +1,8 @@
-language: python
-python:
-  - "3.4"
-env:
-  global:
-    - PYTHONPATH=config
-  matrix:
-    - TRAVIS_DB=sqlite
-    - TRAVIS_DB=postgresql
-
-addons:
-  postgresql: "9.3"
+sudo: true
 
 install:
-  # Jan 2015: travis-ci runs Ubuntu 12.04 64bit which doesn't have chromedriver
-  - wget -P /tmp http://chromedriver.storage.googleapis.com/2.12/chromedriver_linux64.zip
-  - sudo unzip /tmp/chromedriver_linux64.zip -d /usr/bin
-  - sudo chmod +rx /usr/bin/chromedriver
-
-  # Jun 2014: Google Chrome hangs when run by ‘wct’ with ‘--no-sandbox’.
-  ## Install Google Chrome: web-component-tester doesn't detect Chromium
-  #- wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-  #- sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main " > /etc/apt/sources.list.d/google.list'
-  #- sudo apt-get update
-  #- sudo apt-get install -y google-chrome-stable
-  ## On Travis-CI, Chromium and Google Chrome can't run without ‘--no-sandbox’.
-  ## We can't tell web-component-tester to add this flag, so force it instead:
-  #- mkdir travis-bin
-  #- echo -e '#!/usr/bin/env bash\n'`which google-chrome`' --no-sandbox "$@"' >travis-bin/google-chrome
-  #- cat travis-bin/google-chrome
-  #- chmod +x travis-bin/google-chrome
-  #- echo -e '#!/usr/bin/env bash\n'`which google-chrome-stable`' --no-sandbox "$@"' >travis-bin/google-chrome-stable
-  #- cat travis-bin/google-chrome-stable
-  #- chmod +x travis-bin/google-chrome-stable
-  #- PATH=`pwd`/travis-bin:$PATH
-
-  - cp config/local_settings.py.travis config/local_settings.py
-  - pip install -r requirements.txt
-  - psql -c 'create database vimma;' -U postgres
-
-  - npm install
-  - PATH=`pwd`/node_modules/.bin:$PATH
-  - ./scripts/bower-reset.py
+  - curl -sLo - http://j.mp/install-travis-docker | sh -xe
 
 script:
-  - xvfb-run ./vimmasite/manage.py test vimma --settings=test_settings --noinput
-  - xvfb-run wct vimmasite/vimma/static/vimma/components/test/
+  - ./run 'docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres'
+  - ./run 'docker build -t test -f docker/dev/Dockerfile . && docker run --name vimma -e DB_USER=postgres -e DB_HOST=postgres -e DB_PASSWORD=mysecretpassword --link postgres:postgres test && xvfb-run python manage.py test vimma --noinput && xvfb-run node_modules/.bin/wct vimma/static/vimma/components/test/'
