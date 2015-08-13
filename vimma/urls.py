@@ -7,9 +7,9 @@ from rest_framework import routers
 from vimma.views import (
     UserViewSet,
     TimeZoneViewSet, ScheduleViewSet, ProjectViewSet,
-    ProviderViewSet, DummyProviderViewSet, AWSProviderViewSet,
-    VMConfigViewSet, DummyVMConfigViewSet, AWSVMConfigViewSet,
-    VMViewSet, DummyVMViewSet, AWSVMViewSet,
+    DummyProviderViewSet, AWSProviderViewSet,
+    DummyVMConfigViewSet, AWSVMConfigViewSet,
+    DummyVMViewSet, AWSVMViewSet,
     FirewallRuleViewSet, AWSFirewallRuleViewSet,
     AuditViewSet, PowerLogViewSet, VMExpirationViewSet,
     FirewallRuleExpirationViewSet,
@@ -25,15 +25,16 @@ router.register(r'users', UserViewSet)
 router.register(r'timezones', TimeZoneViewSet)
 router.register(r'schedules', ScheduleViewSet)
 router.register(r'projects', ProjectViewSet, 'project')
-router.register(r'providers', ProviderViewSet)
+
 router.register(r'dummyproviders', DummyProviderViewSet)
 router.register(r'awsproviders', AWSProviderViewSet)
-router.register(r'vmconfigs', VMConfigViewSet, 'vmconfig')
+
 router.register(r'dummyvmconfigs', DummyVMConfigViewSet)
 router.register(r'awsvmconfigs', AWSVMConfigViewSet)
-router.register(r'vms', VMViewSet, 'vm')
+
 router.register(r'dummyvms', DummyVMViewSet, 'dummyvm')
 router.register(r'awsvm', AWSVMViewSet, 'awsvm')
+
 router.register(r'audit', AuditViewSet, 'audit')
 router.register(r'powerlog', PowerLogViewSet, 'powerlog')
 router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')

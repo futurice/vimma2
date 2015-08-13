@@ -1,27 +1,15 @@
 from django.db import models, transaction
 
-class DummyProvider(models.Model):
-    """
-    Type-specific info for a Provider of type Provider.TYPE_DUMMY.
-    """
-    provider = models.OneToOneField('vimma.Provider', on_delete=models.PROTECT)
+from vimma.models import VM, VMConfig, Provider
 
-    def __str__(self):
-        return self.provider.name
+class DummyProvider(Provider):
+    pass
 
+class DummyVMConfig(VMConfig):
+    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT)
 
-class DummyVMConfig(models.Model):
-    """
-    Type-specific info for a VMConfig of type Provider.TYPE_DUMMY.
-    """
-    vmconfig = models.OneToOneField('vimma.VMConfig', on_delete=models.PROTECT)
-
-
-class DummyVM(models.Model):
-    """
-    Type-specific data for a VM of type Provider.TYPE_DUMMY.
-    """
-    vm = models.OneToOneField('vimma.VM', on_delete=models.PROTECT)
+class DummyVM(VM):
+    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT)
 
     name = models.CharField(max_length=50)
 

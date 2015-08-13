@@ -139,6 +139,9 @@ class Provider(models.Model):
                 self.default = True
             super().save(*args, **kwargs)
 
+    class Meta:
+        abstract = True
+
 
 class VMConfig(models.Model):
     """
@@ -148,12 +151,13 @@ class VMConfig(models.Model):
     specific to the provider's type is in a model linked via a one-to-one
     field.
     """
-    provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
-    name = models.CharField(max_length=50, unique=True)
+    provider = "PARENT IMPLEMENTS: models.ForeignKey(Provider, on_delete=models.PROTECT)"
     # The default schedule for this VM config. Users are allowed to choose this
     # schedule for VMs made from this config, even if the schedule itself
     # requires additional permissions.
     default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+
+    name = models.CharField(max_length=50, unique=True)
     # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
     is_special = models.BooleanField(default=False)
     # flag showing which VMConfig is the default one for its provider,
@@ -175,9 +179,13 @@ class VMConfig(models.Model):
                 self.default = True
             super().save(*args, **kwargs)
 
+    class Meta:
+        abstract = True
 
 
 class FirewallRule(models.Model):
+    expiration = models.OneToOneField('vimma.FirewallRuleExpiration', on_delete=models.CASCADE)
+
     def is_special(self):
         return False
 
@@ -187,10 +195,12 @@ class VM(models.Model):
     A virtual machine. This model holds only the data common for all VMs from
     any provider.
     """
-    provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
-    project = models.ForeignKey(Project, on_delete=models.PROTECT)
+    provider = "PARENT IMPLEMENTS models.ForeignKey(Provider, on_delete=models.PROTECT)"
+    project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-    firewallrules = models.ManyToManyField(FirewallRule, blank=True)
+    audit = models.ForeignKey('vimma.Audit', on_delete=models.CASCADE, null=True, blank=True)
+    expiration = models.OneToOneField('vimma.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)
+    firewallrules = models.ManyToManyField('vimma.FirewallRule', blank=True)
 
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
@@ -200,8 +210,8 @@ class VM(models.Model):
     # User-entered text about this vm
 
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL, related_name='created_vms')
+    created_by = models.ForeignKey('vimma.User', null=True, blank=True,
+            on_delete=models.SET_NULL, related_name='%(class)s_created_vms')
     comment = models.CharField(max_length=200, blank=True)
 
     # When the VM status was updated from the remote provider. The status
@@ -211,10 +221,16 @@ class VM(models.Model):
 
     # First a user requests destruction
     destroy_request_at = models.DateTimeField(blank=True, null=True)
-    destroy_request_by = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL, related_name='destroy_requested_vms')
+    destroy_request_by = models.ForeignKey('vimma.User', null=True, blank=True,
+            on_delete=models.SET_NULL, related_name='%(class)s_destroy_requested_vms')
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        abstract = True
 
 
 class PowerLog(models.Model):
@@ -224,7 +240,6 @@ class PowerLog(models.Model):
     If you're not sure what the vm's state is (e.g. you encountered an error
     while checking it) don't create a PowerLog object.
     """
-    vm = models.ForeignKey(VM, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     # True → ON, False → OFF. Can't be None, so the value must be explicit.
     powered_on = models.BooleanField(default=None)
@@ -254,11 +269,9 @@ class Expiration(models.Model):
 
 class VMExpiration(Expiration):
     controller = ('vimma.expiry', 'VMExpirationController')
-    vm = models.OneToOneField(VM, on_delete=models.CASCADE, related_name="expiration")
 
 class FirewallRuleExpiration(Expiration):
     controller = ('vimma.expiry', 'FirewallRuleExpirationController')
-    firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE, related_name="expiration")
 
 class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -291,8 +304,6 @@ class Audit(models.Model):
 
     # Objects this audit message is related to, if any
     user = models.ForeignKey('vimma.User', null=True, blank=True,
-            on_delete=models.SET_NULL)
-    vm = models.ForeignKey('vimma.VM', null=True, blank=True,
             on_delete=models.SET_NULL)
 
 

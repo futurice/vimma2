@@ -19,8 +19,8 @@ from vimma.actions import Actions
 from vimma.audit import Auditor
 import vimma.expiry
 from vimma.models import (
-    Schedule, TimeZone, Project, Provider,
-    VMConfig, User, VM,
+    Schedule, TimeZone, Project,
+    User, VM,
     Audit, PowerLog, Expiration, VMExpiration,
     FirewallRule, FirewallRuleExpiration,
 )
@@ -97,16 +97,6 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         return user.projects
 
 
-class ProviderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Provider
-
-class ProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ProviderSerializer
-    queryset = Provider.objects.all()
-    filter_backends = (filters.OrderingFilter,)
-    ordering = ('name',)
-
 class DummyProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = DummyProvider
@@ -118,24 +108,13 @@ class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
 class AWSProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = AWSProvider
-        fields = ('id', 'provider', 'route_53_zone')
+        fields = ('id', 'route_53_zone')
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSProviderSerializer
     queryset = AWSProvider.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('provider',)
-
-
-class VMConfigSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VMConfig
-
-class VMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = VMConfigSerializer
-    queryset = VMConfig.objects.all()
-    filter_backends = (filters.OrderingFilter,)
-    ordering = ('name',)
+    filter_fields = ('id',)
 
 class DummyVMConfigSerializer(serializers.ModelSerializer):
     class Meta:
@@ -153,33 +132,10 @@ class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSVMConfigSerializer
     queryset = AWSVMConfig.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vmconfig',)
+    filter_fields = ('id',)
 
 
 class VMSerializer(serializers.ModelSerializer):
-    vm = serializers.SerializerMethodField()
-    config = serializers.SerializerMethodField()
-    provider = serializers.SerializerMethodField()
-
-    def get_vm(self, obj):
-        return DummyVMSerializer(getattr(obj, '{}vm'.format(obj.provider.type))).data
-
-    def get_config(self, obj):
-        configs = obj.provider.vmconfig_set.all()
-        rels = []
-        for k in configs:
-            d = VMConfigSerializer(k).data
-            specific_vm_config = getattr(k, '{}vmconfig'.format(obj.provider.type))
-            d.update(DummyVMConfigSerializer(specific_vm_config).data)
-            rels.append(d)
-        return rels
-
-    def get_provider(self, obj):
-        d = ProviderSerializer(obj.provider).data
-        specific_vm_provider = getattr(obj.provider, '{}provider'.format(obj.provider.type))
-        d.update(DummyProviderSerializer(specific_vm_provider).data)
-        return d
-
     class Meta:
         model = VM
         depth = 1
@@ -206,11 +162,12 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 class DummyVMSerializer(serializers.ModelSerializer):
     class Meta:
         model = DummyVM
+        depth = 1
 
 class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DummyVMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vm',)
+    filter_fields = ('id',)
 
     def get_queryset(self):
         user = self.request.user
@@ -229,7 +186,7 @@ class AWSVMSerializer(serializers.ModelSerializer):
 class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSVMSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vm', 'name')
+    filter_fields = ('name',)
 
     def get_queryset(self):
         user = self.request.user
@@ -248,7 +205,7 @@ class AuditSerializer(serializers.ModelSerializer):
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AuditSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('vm', 'user')
+    filter_fields = ('user')
     ordering = ('-timestamp')
 
     def get_queryset(self):
@@ -278,7 +235,7 @@ class PowerLogSerializer(serializers.ModelSerializer):
 class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PowerLogSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('vm',)
+    filter_fields = ('id',)
     ordering = ('-timestamp',)
 
     def get_queryset(self):
@@ -298,7 +255,7 @@ class VMExpirationSerializer(serializers.ModelSerializer):
 class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VMExpirationSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vm',)
+    filter_fields = ('id',)
 
     def get_queryset(self):
         user = self.request.user
@@ -338,13 +295,13 @@ class FirewallRuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FirewallRule
-        fields = ('id','vm','expiration',)
+        fields = ('id','expiration',)
         depth = 1
 
 class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FirewallRuleSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('vm',)
+    filter_fields = ('id',)
 
     def get_queryset(self):
         user = self.request.user
@@ -431,6 +388,9 @@ def create_vm(request):
             status.HTTP_405_METHOD_NOT_ALLOWED)
 
     body = json.loads(request.read().decode('utf-8'))
+
+    # TODO: type inormation provided by client for AWS/Dummy/..
+    config_type = DummyConfig
 
     try:
         prj = Project.objects.get(id=body['project'])

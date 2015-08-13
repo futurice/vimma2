@@ -5,11 +5,10 @@ import logging
 import ipaddress
 import re
 
-class AWSVMConfig(models.Model):
-    """
-    Type-specific info for a VMConfig of type Provider.TYPE_AWS.
-    """
-    vmconfig = models.OneToOneField('vimma.VMConfig', on_delete=models.PROTECT)
+from vimma.models import VM, VMConfig, Provider
+
+class AWSVMConfig(VMConfig, models.Model):
+    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT)
 
     regions = sorted([
         'ap-northeast-1',
@@ -47,11 +46,7 @@ class AWSVMConfig(models.Model):
         return '{}, {} ({})'.format(self.ami_id, self.instance_type,
                 self.vmconfig.name)
 
-class AWSProvider(models.Model):
-    """
-    Type-specific info for a Provider of type Provider.TYPE_AWS.
-    """
-    provider = models.OneToOneField('vimma.Provider', on_delete=models.PROTECT)
+class AWSProvider(Provider, models.Model):
     # these must not be exposed via the API
     access_key_id = models.CharField(max_length=100, blank=True)
     access_key_secret = models.CharField(max_length=100, blank=True)
@@ -82,12 +77,8 @@ def aws_vm_name_validator(val):
         raise ValidationError(('Invalid AWS VM name ‘{}’, ' +
                 'must be alphanumeric and dashes (-).').format(val))
 
-class AWSVM(models.Model):
-    """
-    Type-specific data for a VM of type Provider.TYPE_AWS.
-    """
-
-    vm = models.OneToOneField('vimma.VM', on_delete=models.PROTECT)
+class AWSVM(VM, models.Model):
+    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT)
 
     # Free-form text, shown to the user. Stores the VM state reported by AWS.
     # Synced regularly by the update tasks.
