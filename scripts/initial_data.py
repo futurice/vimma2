@@ -3,8 +3,10 @@ import django
 django.setup()
 
 from vimma.models import (TimeZone, Schedule, Role, Permission, Project,
-    User, Provider, DummyProvider, AWSProvider,
-    VMConfig, DummyVMConfig, AWSVMConfig,)
+    User, Provider, VMConfig,)
+from aws.models import AWSProvider, AWSVMConfig
+from dummy.models import DummyProvider, DummyVMConfig
+
 from vimma.perms import Perms, ALL_PERMS
 from vimma.util import create_vimma_user
 

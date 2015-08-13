@@ -18,13 +18,15 @@ from vimma.actions import Actions
 from vimma import expiry
 from vimma.models import (
     Permission, Role, Project, TimeZone, Schedule,
-    Provider, DummyProvider, AWSProvider,
-    VMConfig, DummyVMConfig, AWSVMConfig,
-    User, VM, DummyVM, AWSVM,
-    Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
-    FirewallRule, AWSFirewallRule,
+    Provider, VMConfig, User, VM,
+    Audit, PowerLog, Expiration, VMExpiration,
+    FirewallRule, FirewallRuleExpiration,
 )
 from vimma.perms import ALL_PERMS, Perms
+
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM
+from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
+
 
 
 # Django validation doesn't run automatically when saving objects.
@@ -2654,8 +2656,9 @@ class CreateDeleteFirewallRuleTests(TestCase):
                 data=json.dumps({'vmid': vm.id, 'data': None}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        fw_rule = FirewallRule.objects.create(vm=vm)
-        fw_rule.full_clean()
+        fw_rule = FirewallRule.objects.create()
+        vm.firewallrules.add(fw_rule)
+
         response = self.client.post(delete_url,
                 content_type='application/json',
                 data=json.dumps({'id': fw_rule.id}))
@@ -3158,17 +3161,15 @@ class ExpirationTests(TestCase):
         vm_expD = VMExpiration.objects.create(expires_at=now, vm=vmD)
         vm_expS = VMExpiration.objects.create(expires_at=now, vm=vmS)
 
-        fw_rule_D = FirewallRule.objects.create(vm=vmD)
-        fw_rule_D.full_clean()
-        fw_rule_S = FirewallRule.objects.create(vm=vmS)
-        fw_rule_S.full_clean()
+        fw_rule_D = FirewallRule.objects.create()
+        vmD.firewallrules.add(fw_rule_D)
+        fw_rule_S = FirewallRule.objects.create()
+        vmS.firewallrules.add(fw_rule_S)
 
         fw_expD = FirewallRuleExpiration.objects.create(
                 expires_at=now, firewallrule=fw_rule_D)
-        fw_expD.full_clean()
         fw_expS = FirewallRuleExpiration.objects.create(
                 expires_at=now, firewallrule=fw_rule_S)
-        fw_expS.full_clean()
 
         def check_user_sees(username, vm_exp_id_set, fw_rule_exp_id_set):
             """

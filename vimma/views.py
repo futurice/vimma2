@@ -19,12 +19,14 @@ from vimma.actions import Actions
 from vimma.audit import Auditor
 import vimma.expiry
 from vimma.models import (
-    Schedule, TimeZone, Project, Provider, DummyProvider, AWSProvider,
-    VMConfig, DummyVMConfig, AWSVMConfig,
-    User, VM, DummyVM, AWSVM,
-    Audit, PowerLog, Expiration, VMExpiration, FirewallRuleExpiration,
-    FirewallRule, AWSFirewallRule,
+    Schedule, TimeZone, Project, Provider,
+    VMConfig, User, VM,
+    Audit, PowerLog, Expiration, VMExpiration,
+    FirewallRule, FirewallRuleExpiration,
 )
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM
+from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
+
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
         retry_in_transaction,
@@ -155,6 +157,29 @@ class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class VMSerializer(serializers.ModelSerializer):
+    vm = serializers.SerializerMethodField()
+    config = serializers.SerializerMethodField()
+    provider = serializers.SerializerMethodField()
+
+    def get_vm(self, obj):
+        return DummyVMSerializer(getattr(obj, '{}vm'.format(obj.provider.type))).data
+
+    def get_config(self, obj):
+        configs = obj.provider.vmconfig_set.all()
+        rels = []
+        for k in configs:
+            d = VMConfigSerializer(k).data
+            specific_vm_config = getattr(k, '{}vmconfig'.format(obj.provider.type))
+            d.update(DummyVMConfigSerializer(specific_vm_config).data)
+            rels.append(d)
+        return rels
+
+    def get_provider(self, obj):
+        d = ProviderSerializer(obj.provider).data
+        specific_vm_provider = getattr(obj.provider, '{}provider'.format(obj.provider.type))
+        d.update(DummyProviderSerializer(specific_vm_provider).data)
+        return d
+
     class Meta:
         model = VM
         depth = 1
@@ -439,7 +464,8 @@ def create_vm(request):
         vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
                 request.user.id)
         return HttpResponse()
-    except:
+    except Exception as e:
+        print(e)
         lines = traceback.format_exception_only(*sys.exc_info()[:2])
         msg = ''.join(lines)
         aud.error(msg, user_id=request.user.id)

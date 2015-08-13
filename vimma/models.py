@@ -4,9 +4,6 @@ from django.db import models, transaction
 from django.conf import settings
 import json
 import logging
-import re
-import ipaddress
-
 
 class Permission(models.Model):
     """
@@ -143,47 +140,6 @@ class Provider(models.Model):
             super().save(*args, **kwargs)
 
 
-class DummyProvider(models.Model):
-    """
-    Type-specific info for a Provider of type Provider.TYPE_DUMMY.
-    """
-    provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return self.provider.name
-
-
-class AWSProvider(models.Model):
-    """
-    Type-specific info for a Provider of type Provider.TYPE_AWS.
-    """
-    provider = models.OneToOneField(Provider, on_delete=models.PROTECT)
-    # these must not be exposed via the API
-    access_key_id = models.CharField(max_length=100, blank=True)
-    access_key_secret = models.CharField(max_length=100, blank=True)
-    ssh_key_name = models.CharField(max_length=50, blank=True)
-    # 'example.com.'
-    route_53_zone = models.CharField(max_length=100, blank=True)
-    # Optional security group added to every vm, in addition to the vm's
-    # individual security group.
-    default_security_group_id = models.CharField(max_length=50, blank=True)
-    # The ID of the VPC in which to create VMs. A random subnet will be chosen
-    # at VM creation time.
-    vpc_id = models.CharField(max_length=50)
-    # User data (e.g. a script) provided to the AWS Instances. Python Template
-    # https://docs.python.org/3/library/string.html#format-string-syntax
-    # given the ‘vm’ keyword argument. E.g.:
-    # """#!/usr/bin/env bash
-    #   echo VM NAME {vm.awsvm.name} >/test
-    #   echo region {vm.provider.awsprovider.route_53_zone} >>/test
-    #   echo {{curly braces}} >>/test
-    # """
-    user_data = models.TextField(blank=True)
-
-    def __str__(self):
-        return '{} ({})'.format(self.provider.name, self.route_53_zone)
-
-
 class VMConfig(models.Model):
     """
     A VM Configuration for a Provider. A provider may have several of these.
@@ -220,65 +176,21 @@ class VMConfig(models.Model):
             super().save(*args, **kwargs)
 
 
-class DummyVMConfig(models.Model):
-    """
-    Type-specific info for a VMConfig of type Provider.TYPE_DUMMY.
-    """
-    vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
 
-
-class AWSVMConfig(models.Model):
-    """
-    Type-specific info for a VMConfig of type Provider.TYPE_AWS.
-    """
-    vmconfig = models.OneToOneField(VMConfig, on_delete=models.PROTECT)
-
-    regions = sorted([
-        'ap-northeast-1',
-        'ap-southeast-1',
-        'ap-southeast-2',
-        'cn-north-1',
-        'eu-central-1',
-        'eu-west-1',
-        'sa-east-1',
-        'us-east-1',
-        'us-gov-west-1',
-        'us-west-1'
-        'us-west-2',
-    ])
-    REGION_CHOICES = ((r, r) for r in regions)
-    region = models.CharField(max_length=20, choices=REGION_CHOICES)
-
-    # Amazon Machine Image ID
-    ami_id = models.CharField(max_length=50, blank=True)
-    instance_type = models.CharField(max_length=50, blank=True)
-
-    # The default root device size in GB for VMs made from this config.
-    root_device_size = models.IntegerField()
-
-    # Not including ‘io1’ for now because ‘The parameter iops must be specified
-    # for io1 volumes’.
-    VOLUME_TYPE_CHOICES = (
-        ('standard', 'Magnetic'),
-        ('gp2', 'SSD'),
-    )
-    root_device_volume_type = models.CharField(max_length=20,
-            choices=VOLUME_TYPE_CHOICES, default=VOLUME_TYPE_CHOICES[0][0])
-
-    def __str__(self):
-        return '{}, {} ({})'.format(self.ami_id, self.instance_type,
-                self.vmconfig.name)
+class FirewallRule(models.Model):
+    def is_special(self):
+        return False
 
 
 class VM(models.Model):
     """
     A virtual machine. This model holds only the data common for all VMs from
-    any provider. Additional data specific to the provider's type is in a model
-    linked via a one-to-one field.
+    any provider.
     """
     provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+    firewallrules = models.ManyToManyField(FirewallRule, blank=True)
 
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
@@ -303,144 +215,6 @@ class VM(models.Model):
             on_delete=models.SET_NULL, related_name='destroy_requested_vms')
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
-
-
-class DummyVM(models.Model):
-    """
-    Type-specific data for a VM of type Provider.TYPE_DUMMY.
-    """
-    vm = models.OneToOneField(VM, on_delete=models.PROTECT)
-    name = models.CharField(max_length=50)
-
-    # Free-form text, meant to be read by the user. Simulates Vimma's local
-    # copy of the remote machine state, synced regularly by the update tasks.
-    status = models.CharField(max_length=50, blank=True)
-
-    # these fields simulate the machine state, managed remotely by the Provider
-    destroyed = models.BooleanField(default=False)
-    poweredon = models.BooleanField(default=False)
-
-
-def aws_vm_name_validator(val):
-    if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
-        raise ValidationError(('Invalid AWS VM name ‘{}’, ' +
-                'must be alphanumeric and dashes (-).').format(val))
-
-
-class AWSVM(models.Model):
-    """
-    Type-specific data for a VM of type Provider.TYPE_AWS.
-    """
-    vm = models.OneToOneField(VM, on_delete=models.PROTECT)
-    # Free-form text, shown to the user. Stores the VM state reported by AWS.
-    # Synced regularly by the update tasks.
-    state = models.CharField(max_length=100, blank=True)
-    # AWS fields:
-    name = models.CharField(max_length=50, validators=[aws_vm_name_validator])
-    region = models.CharField(max_length=20)
-    security_group_id = models.CharField(max_length=50, blank=True)
-    reservation_id = models.CharField(max_length=50, blank=True)
-    instance_id = models.CharField(max_length=50, blank=True)
-    # public IP address
-    ip_address = models.CharField(max_length=50, blank=True)
-    private_ip_address = models.CharField(max_length=50, blank=True)
-
-    # Destruction happens using several asynchronous tasks, which mark these
-    # fields when they succeed. When all fields are True we can mark the parent
-    # .vm model as destroyed.
-    instance_terminated = models.BooleanField(default=False)
-    security_group_deleted = models.BooleanField(default=False)
-
-
-class FirewallRule(models.Model):
-    """
-    The base model for all firewall rules, with type-specific submodels.
-    """
-    vm = models.ForeignKey(VM, on_delete=models.CASCADE)
-
-    def is_special(self):
-        """
-        Whether this rule is special (i.e. not regular).
-
-        This method should be called inside a transaction (for ACID behavior).
-        """
-        t = self.vm.provider.type
-        if t == Provider.TYPE_AWS:
-            return self.awsfirewallrule.is_special()
-        else:
-            # unknown provider type
-            return True
-
-
-class AWSFirewallRule(models.Model):
-    """
-    AWS Firewall Rule.
-    """
-    firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE)
-
-    # ip_protocol, from_port, to_port and cidr_ip correspond to
-    # AWS call params.
-
-    PROTO_TCP = 'tcp'
-    PROTO_UDP = 'udp'
-    IP_PROTOCOL_CHOICES = (
-        (PROTO_TCP, 'TCP'),
-        (PROTO_UDP, 'UDP'),
-    )
-    ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
-
-    from_port = models.PositiveIntegerField()
-    to_port = models.PositiveIntegerField()
-    cidr_ip = models.CharField(max_length=50)
-
-    def is_special(self):
-        """
-        Same as FirewallRule.is_special.
-        """
-        net = ipaddress.IPv4Network(self.cidr_ip, strict=False)
-        trusted_nets = map(lambda net: ipaddress.IPv4Network(net), settings.TRUSTED_NETWORKS)
-        for trusted_net in trusted_nets:
-            # if net is fully contained in a trusted_net, flag rule as non-special
-            if trusted_net.overlaps(net) and trusted_net.prefixlen <= net.prefixlen:
-                return False
-        if net.num_addresses > 256:
-            return True
-        return False
-
-class Audit(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-
-    # Imitating https://docs.python.org/3/library/logging.html#logging-levels
-    # Sorting level names lexicographically to query by min_level in the API.
-    DEBUG = '1-DEBUG'
-    INFO = '2-INFO'
-    WARNING = '3-WARNING'
-    ERROR = '4-ERROR'
-    LEVEL_CHOICES = (
-        (DEBUG, 'DEBUG'),
-        (INFO, 'INFO'),
-        (WARNING, 'WARNING'),
-        (ERROR, 'ERROR'),
-    )
-    # corresponding logging.X level from the standard library
-    STD_LEVEL = {
-        DEBUG: logging.DEBUG,
-        INFO: logging.INFO,
-        WARNING: logging.WARNING,
-        ERROR: logging.ERROR,
-    }
-    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
-
-    # Constant used outside this class, e.g. to trim longer text before
-    # creating an Audit object.
-    TEXT_MAX_LENGTH=4096
-    text = models.CharField(max_length=TEXT_MAX_LENGTH)
-
-    # Objects this audit message is related to, if any
-    user = models.ForeignKey(User, null=True, blank=True,
-            on_delete=models.SET_NULL)
-    vm = models.ForeignKey(VM, null=True, blank=True,
-            on_delete=models.SET_NULL)
 
 
 class PowerLog(models.Model):
@@ -485,3 +259,40 @@ class VMExpiration(Expiration):
 class FirewallRuleExpiration(Expiration):
     controller = ('vimma.expiry', 'FirewallRuleExpirationController')
     firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE, related_name="expiration")
+
+class Audit(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # Imitating https://docs.python.org/3/library/logging.html#logging-levels
+    # Sorting level names lexicographically to query by min_level in the API.
+    DEBUG = '1-DEBUG'
+    INFO = '2-INFO'
+    WARNING = '3-WARNING'
+    ERROR = '4-ERROR'
+    LEVEL_CHOICES = (
+        (DEBUG, 'DEBUG'),
+        (INFO, 'INFO'),
+        (WARNING, 'WARNING'),
+        (ERROR, 'ERROR'),
+    )
+    # corresponding logging.X level from the standard library
+    STD_LEVEL = {
+        DEBUG: logging.DEBUG,
+        INFO: logging.INFO,
+        WARNING: logging.WARNING,
+        ERROR: logging.ERROR,
+    }
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+
+    # Constant used outside this class, e.g. to trim longer text before
+    # creating an Audit object.
+    TEXT_MAX_LENGTH=4096
+    text = models.CharField(max_length=TEXT_MAX_LENGTH)
+
+    # Objects this audit message is related to, if any
+    user = models.ForeignKey('vimma.User', null=True, blank=True,
+            on_delete=models.SET_NULL)
+    vm = models.ForeignKey('vimma.VM', null=True, blank=True,
+            on_delete=models.SET_NULL)
+
+

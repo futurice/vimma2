@@ -59,16 +59,16 @@ RUN chown app /opt/app
 
 ADD docker/dev/requirements.txt /opt/app/
 ADD docker/dev/package.json /opt/app/
-ADD docker/dev/bower.json /opt/app/static/
-RUN chown -R app static/
+ADD docker/dev/bower.json /opt/static/
+RUN chown -R app /opt/static/
 
 RUN pip3 install -r requirements.txt
 
 USER app
 
 RUN npm install
-RUN mkdir -p /opt/app/static/bower_components
-RUN cd static/ && /opt/app/node_modules/.bin/bower install
+RUN mkdir -p /opt/static/bower_components
+RUN cd /opt/static/ && /opt/app/node_modules/.bin/bower install
 
 ADD docker/dev/supervisord.conf /etc/supervisor/supervisord.conf
 ADD docker/dev/nginx.conf /etc/nginx/

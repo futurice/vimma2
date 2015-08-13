@@ -11,11 +11,9 @@ import traceback
 from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
-    VM,
-    AWSVMConfig, AWSVM,
-    FirewallRule, AWSFirewallRule,
-    Expiration, FirewallRuleExpiration,
+    VM, FirewallRule, Expiration, FirewallRuleExpiration,
 )
+from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule
 from vimma.util import retry_in_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
 

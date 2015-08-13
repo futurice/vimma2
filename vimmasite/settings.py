@@ -11,6 +11,10 @@ TEMPLATE_DEBUG = DEBUG
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 SECRET_KEY = os.getenv('SECRET_KEY', '')
 
+ADMINS = (
+    'jussi.vaihia@futurice.com',
+)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -31,6 +35,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'vimma',
+    'dummy',
+    'aws',
+
     'rest_framework',
     'django_extensions',
 )
@@ -38,6 +45,7 @@ INSTALLED_APPS = (
 STATICFILES_DIRS = DEFAULT_SETTINGS.STATICFILES_DIRS
 if DEBUG:
     STATICFILES_DIRS = STATICFILES_DIRS + (
+        os.path.join(BASE_DIR, '..', 'static/'),
         os.path.join(BASE_DIR, 'ui'),
         '/usr/local/lib/python3.4/dist-packages/django/contrib/admin/static/',
         '/usr/local/lib/python3.4/dist-packages/rest_framework/static/',

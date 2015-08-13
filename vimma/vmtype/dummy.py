@@ -3,10 +3,9 @@ from django.utils.timezone import utc
 
 from vimma.audit import Auditor
 from vimma.celery import app
-from vimma.models import (
-    VM,
-    DummyVM,
-)
+from vimma.models import VM
+from dummy.models import DummyVM
+
 from vimma.util import retry_in_transaction, set_vm_status_updated_at_now
 import vimma.vmutil
 
