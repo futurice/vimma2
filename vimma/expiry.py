@@ -161,7 +161,7 @@ class VMExpirationController(ExpirationController):
 
     def _do_notify(self):
         def read():
-            return = VMExpiration.objects.get(id=self.exp_id).vm.id
+            return VMExpiration.objects.get(id=self.exp_id).vm.id
         vm_id = retry_in_transaction(read)
         vimma.vmutil.expiration_notify.delay(vm_id)
 
@@ -186,8 +186,7 @@ class VMExpirationController(ExpirationController):
 
     def _do_perform_grace_action(self):
         def read():
-            exp = VMExpiration.objects.get(id=self.exp_id)
-            return exp.vm.id
+            return VMExpiration.objects.get(id=self.exp_id).vm.id
         vm_id = retry_in_transaction(read)
         vimma.vmutil.expiration_grace_action.delay(vm_id)
 

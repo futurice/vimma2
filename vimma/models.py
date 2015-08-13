@@ -51,35 +51,6 @@ if settings.REMOTE_USER_ENABLED:
     User._meta.get_field('password').null = True
     User._meta.get_field('password').blank = True
 
-
-class Expiration(models.Model):
-    """
-    An item that expires.
-
-    At certain intervals (before and after the expiration date) notifications
-    are sent. It stores when the latest one was sent.
-    There is a grace period after the expiration date, then a ‘grace end’
-    action is performed. It stores whether this ran.
-    ExpirationController implements the features.
-    """
-    expires_at = models.DateTimeField()
-    # when the most recent notification was sent
-    last_notification = models.DateTimeField(blank=True, null=True)
-    grace_end_action_performed = models.BooleanField(default=False)
-
-    @classmethod
-    def implementations(cls):
-        return Expiration.__subclasses__()
-
-    class Meta:
-        abstract = True
-
-class VMExpiration(Expiration):
-    controller = ('vimma.expiry', 'VMExpirationController')
-
-class FirewallRuleExpiration(Expiration):
-    controller = ('vimma.expiry', 'FirewallRuleExpirationController')
-
 class TimeZone(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -308,7 +279,6 @@ class VM(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.PROTECT)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-    expiration = models.ForeignKey(VMExpiration, on_delete=models.CASCADE, null=True, blank=True)
 
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
@@ -387,7 +357,6 @@ class FirewallRule(models.Model):
     The base model for all firewall rules, with type-specific submodels.
     """
     vm = models.ForeignKey(VM, on_delete=models.CASCADE)
-    expiration = models.ForeignKey(FirewallRuleExpiration, on_delete=models.CASCADE, null=True, blank=True)
 
     def is_special(self):
         """
@@ -485,3 +454,34 @@ class PowerLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     # True → ON, False → OFF. Can't be None, so the value must be explicit.
     powered_on = models.BooleanField(default=None)
+
+
+class Expiration(models.Model):
+    """
+    An item that expires.
+
+    At certain intervals (before and after the expiration date) notifications
+    are sent. It stores when the latest one was sent.
+    There is a grace period after the expiration date, then a ‘grace end’
+    action is performed. It stores whether this ran.
+    ExpirationController implements the features.
+    """
+    expires_at = models.DateTimeField()
+    # when the most recent notification was sent
+    last_notification = models.DateTimeField(blank=True, null=True)
+    grace_end_action_performed = models.BooleanField(default=False)
+
+    @classmethod
+    def implementations(cls):
+        return Expiration.__subclasses__()
+
+    class Meta:
+        abstract = True
+
+class VMExpiration(Expiration):
+    controller = ('vimma.expiry', 'VMExpirationController')
+    vm = models.OneToOneField(VM, on_delete=models.CASCADE, related_name="expiration")
+
+class FirewallRuleExpiration(Expiration):
+    controller = ('vimma.expiry', 'FirewallRuleExpirationController')
+    firewallrule = models.OneToOneField(FirewallRule, on_delete=models.CASCADE, related_name="expiration")

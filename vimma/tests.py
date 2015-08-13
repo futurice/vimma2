@@ -2191,10 +2191,7 @@ class OverrideScheduleTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         expire_dt = now + datetime.timedelta(minutes=1)
-        exp = Expiration.objects.create(type=Expiration.TYPE_VM,
-                expires_at=expire_dt)
-        exp.full_clean()
-        VMExpiration.objects.create(expiration=exp, vm=vm).full_clean()
+        exp = VMExpiration.objects.create(vm=vm, expires_at=expire_dt)
         del now
 
         def check_overrides():
@@ -2412,9 +2409,7 @@ class SetExpirationTests(TestCase):
         future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
         future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
         past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
-        exp = Expiration.objects.create(type=Expiration.TYPE_VM,
-                expires_at=now)
-        vm_exp = VMExpiration.objects.create(expiration=exp, vm=vm)
+        exp = VMExpiration.objects.create(expires_at=now, vm=vm)
 
         url = reverse('setExpiration')
 
@@ -2423,7 +2418,7 @@ class SetExpirationTests(TestCase):
             Check that exp_id expires at timestamp.
             """
             self.assertEqual(
-                int(Expiration.objects.get(id=exp_id).expires_at.timestamp()),
+                int(VMExpiration.objects.get(id=exp_id).expires_at.timestamp()),
                 timestamp)
 
         checkExpiration(exp.id, now_ts)
@@ -2516,9 +2511,7 @@ class SetExpirationTests(TestCase):
         future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
         future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
         past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
-        exp = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
-                expires_at=now)
-        fw_exp = FirewallRuleExpiration.objects.create(expiration=exp,
+        exp = FirewallRuleExpiration.objects.create(expires_at=now,
                 firewallrule=fw_rule)
 
         url = reverse('setExpiration')
@@ -2528,7 +2521,7 @@ class SetExpirationTests(TestCase):
             Check that exp_id expires at timestamp.
             """
             self.assertEqual(
-                int(Expiration.objects.get(id=exp_id).expires_at.timestamp()),
+                int(FirewallRuleExpiration.objects.get(id=exp_id).expires_at.timestamp()),
                 timestamp)
 
         checkExpiration(exp.id, now_ts)
@@ -3162,44 +3155,28 @@ class ExpirationTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
-        exp_vmD = Expiration.objects.create(type=Expiration.TYPE_VM,
-                expires_at=now)
-        exp_vmD.full_clean()
-        vm_expD = VMExpiration.objects.create(expiration=exp_vmD, vm=vmD)
-        vm_expD.full_clean()
-        exp_vmS = Expiration.objects.create(type=Expiration.TYPE_VM,
-                expires_at=now)
-        exp_vmS.full_clean()
-        vm_expS = VMExpiration.objects.create(expiration=exp_vmS, vm=vmS)
-        vm_expS.full_clean()
+        vm_expD = VMExpiration.objects.create(expires_at=now, vm=vmD)
+        vm_expS = VMExpiration.objects.create(expires_at=now, vm=vmS)
 
         fw_rule_D = FirewallRule.objects.create(vm=vmD)
         fw_rule_D.full_clean()
         fw_rule_S = FirewallRule.objects.create(vm=vmS)
         fw_rule_S.full_clean()
 
-        exp_fwD = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
-                expires_at=now)
-        exp_fwD.full_clean()
         fw_expD = FirewallRuleExpiration.objects.create(
-                expiration=exp_fwD, firewallrule=fw_rule_D)
+                expires_at=now, firewallrule=fw_rule_D)
         fw_expD.full_clean()
-        exp_fwS = Expiration.objects.create(type=Expiration.TYPE_FIREWALL_RULE,
-                expires_at=now)
-        exp_fwS.full_clean()
         fw_expS = FirewallRuleExpiration.objects.create(
-                expiration=exp_fwS, firewallrule=fw_rule_S)
+                expires_at=now, firewallrule=fw_rule_S)
         fw_expS.full_clean()
 
-        def check_user_sees(username, exp_id_set, vm_exp_id_set,
-                fw_rule_exp_id_set):
+        def check_user_sees(username, vm_exp_id_set, fw_rule_exp_id_set):
             """
             Check that username sees all expirations, vm expirations
             and firewall rule expirations in the sets and nothing else.
             """
             self.assertTrue(self.client.login(username=username, password='-'))
             for (view_name, id_set) in (
-                    ('expiration-list', exp_id_set),
                     ('vmexpiration-list', vm_exp_id_set),
                     ('firewallruleexpiration-list', fw_rule_exp_id_set),
                     ):
@@ -3208,14 +3185,9 @@ class ExpirationTests(TestCase):
                 items = response.data['results']
                 self.assertEqual({x['id'] for x in items}, id_set)
 
-        check_user_sees('Fry', {exp_vmD.id, exp_fwD.id}, {vm_expD.id},
-                {fw_expD.id})
-        check_user_sees('Hubert',
-                {exp_vmD.id, exp_fwD.id, exp_vmS.id, exp_fwS.id},
-                {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
-        check_user_sees('Bender',
-                {exp_vmD.id, exp_fwD.id, exp_vmS.id, exp_fwS.id},
-                {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
+        check_user_sees('Fry', {vm_expD.id}, {fw_expD.id})
+        check_user_sees('Hubert', {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
+        check_user_sees('Bender', {vm_expD.id, vm_expS.id}, {fw_expD.id, fw_expS.id})
 
         # Test Filtering
 
@@ -3253,7 +3225,6 @@ class ExpirationTests(TestCase):
 
         self.assertTrue(self.client.login(username='Fry', password='-'))
         for (view_root, arg) in (
-                ('expiration', exp_vmD.id),
                 ('vmexpiration', vm_expD.id),
                 ('firewallruleexpiration', fw_expD.id),
                 ):

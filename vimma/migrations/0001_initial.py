@@ -2,12 +2,12 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import django.utils.timezone
 import vimma.models
 import django.db.models.deletion
-from django.conf import settings
 import django.core.validators
+import django.utils.timezone
 import django.contrib.auth.models
+from django.conf import settings
 
 
 class Migration(migrations.Migration):
@@ -20,23 +20,23 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='User',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('password', models.CharField(verbose_name='password', max_length=128)),
+                ('last_login', models.DateTimeField(verbose_name='last login', blank=True, null=True)),
                 ('is_superuser', models.BooleanField(help_text='Designates that this user has all permissions without explicitly assigning them.', default=False, verbose_name='superuser status')),
-                ('username', models.CharField(validators=[django.core.validators.RegexValidator('^[\\w.@+-]+$', 'Enter a valid username. This value may contain only letters, numbers and @/./+/-/_ characters.', 'invalid')], max_length=30, error_messages={'unique': 'A user with that username already exists.'}, unique=True, help_text='Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only.', verbose_name='username')),
-                ('first_name', models.CharField(max_length=30, blank=True, verbose_name='first name')),
-                ('last_name', models.CharField(max_length=30, blank=True, verbose_name='last name')),
-                ('email', models.EmailField(max_length=254, blank=True, verbose_name='email address')),
+                ('username', models.CharField(unique=True, verbose_name='username', help_text='Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only.', error_messages={'unique': 'A user with that username already exists.'}, validators=[django.core.validators.RegexValidator('^[\\w.@+-]+$', 'Enter a valid username. This value may contain only letters, numbers and @/./+/-/_ characters.', 'invalid')], max_length=30)),
+                ('first_name', models.CharField(verbose_name='first name', max_length=30, blank=True)),
+                ('last_name', models.CharField(verbose_name='last name', max_length=30, blank=True)),
+                ('email', models.EmailField(verbose_name='email address', max_length=254, blank=True)),
                 ('is_staff', models.BooleanField(help_text='Designates whether the user can log into this admin site.', default=False, verbose_name='staff status')),
                 ('is_active', models.BooleanField(help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', default=True, verbose_name='active')),
                 ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('groups', models.ManyToManyField(related_name='user_set', help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_query_name='user', to='auth.Group', blank=True, verbose_name='groups')),
+                ('groups', models.ManyToManyField(help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', verbose_name='groups', to='auth.Group', blank=True, related_query_name='user', related_name='user_set')),
             ],
             options={
-                'abstract': False,
-                'verbose_name_plural': 'users',
                 'verbose_name': 'user',
+                'verbose_name_plural': 'users',
+                'abstract': False,
             },
             managers=[
                 ('objects', django.contrib.auth.models.UserManager()),
@@ -45,18 +45,18 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Audit',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('timestamp', models.DateTimeField(db_index=True, auto_now_add=True)),
-                ('level', models.CharField(choices=[('1-DEBUG', 'DEBUG'), ('2-INFO', 'INFO'), ('3-WARNING', 'WARNING'), ('4-ERROR', 'ERROR')], max_length=20)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
+                ('level', models.CharField(max_length=20, choices=[('1-DEBUG', 'DEBUG'), ('2-INFO', 'INFO'), ('3-WARNING', 'WARNING'), ('4-ERROR', 'ERROR')])),
                 ('text', models.CharField(max_length=4096)),
-                ('user', models.ForeignKey(blank=True, null=True, to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.SET_NULL)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=django.db.models.deletion.SET_NULL)),
             ],
         ),
         migrations.CreateModel(
             name='AWSFirewallRule',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('ip_protocol', models.CharField(choices=[('tcp', 'TCP'), ('udp', 'UDP')], max_length=10)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('ip_protocol', models.CharField(max_length=10, choices=[('tcp', 'TCP'), ('udp', 'UDP')])),
                 ('from_port', models.PositiveIntegerField()),
                 ('to_port', models.PositiveIntegerField()),
                 ('cidr_ip', models.CharField(max_length=50)),
@@ -65,7 +65,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AWSProvider',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('access_key_id', models.CharField(max_length=100, blank=True)),
                 ('access_key_secret', models.CharField(max_length=100, blank=True)),
                 ('ssh_key_name', models.CharField(max_length=50, blank=True)),
@@ -78,7 +78,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AWSVM',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('state', models.CharField(max_length=100, blank=True)),
                 ('name', models.CharField(validators=[vimma.models.aws_vm_name_validator], max_length=50)),
                 ('region', models.CharField(max_length=20)),
@@ -94,24 +94,24 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AWSVMConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('region', models.CharField(choices=[('ap-northeast-1', 'ap-northeast-1'), ('ap-southeast-1', 'ap-southeast-1'), ('ap-southeast-2', 'ap-southeast-2'), ('cn-north-1', 'cn-north-1'), ('eu-central-1', 'eu-central-1'), ('eu-west-1', 'eu-west-1'), ('sa-east-1', 'sa-east-1'), ('us-east-1', 'us-east-1'), ('us-gov-west-1', 'us-gov-west-1'), ('us-west-1us-west-2', 'us-west-1us-west-2')], max_length=20)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('region', models.CharField(max_length=20, choices=[('ap-northeast-1', 'ap-northeast-1'), ('ap-southeast-1', 'ap-southeast-1'), ('ap-southeast-2', 'ap-southeast-2'), ('cn-north-1', 'cn-north-1'), ('eu-central-1', 'eu-central-1'), ('eu-west-1', 'eu-west-1'), ('sa-east-1', 'sa-east-1'), ('us-east-1', 'us-east-1'), ('us-gov-west-1', 'us-gov-west-1'), ('us-west-1us-west-2', 'us-west-1us-west-2')])),
                 ('ami_id', models.CharField(max_length=50, blank=True)),
                 ('instance_type', models.CharField(max_length=50, blank=True)),
                 ('root_device_size', models.IntegerField()),
-                ('root_device_volume_type', models.CharField(choices=[('standard', 'Magnetic'), ('gp2', 'SSD')], max_length=20, default='standard')),
+                ('root_device_volume_type', models.CharField(default='standard', max_length=20, choices=[('standard', 'Magnetic'), ('gp2', 'SSD')])),
             ],
         ),
         migrations.CreateModel(
             name='DummyProvider',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
             ],
         ),
         migrations.CreateModel(
             name='DummyVM',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('name', models.CharField(max_length=50)),
                 ('status', models.CharField(max_length=50, blank=True)),
                 ('destroyed', models.BooleanField(default=False)),
@@ -121,22 +121,23 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DummyVMConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
             ],
         ),
         migrations.CreateModel(
             name='FirewallRule',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
             ],
         ),
         migrations.CreateModel(
             name='FirewallRuleExpiration',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('expires_at', models.DateTimeField()),
-                ('last_notification', models.DateTimeField(blank=True, null=True)),
+                ('last_notification', models.DateTimeField(null=True, blank=True)),
                 ('grace_end_action_performed', models.BooleanField(default=False)),
+                ('firewallrule', models.OneToOneField(to='vimma.FirewallRule', related_name='expiration')),
             ],
             options={
                 'abstract': False,
@@ -145,32 +146,32 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Permission',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=100)),
             ],
         ),
         migrations.CreateModel(
             name='PowerLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('timestamp', models.DateTimeField(db_index=True, auto_now_add=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('powered_on', models.BooleanField(default=None)),
             ],
         ),
         migrations.CreateModel(
             name='Project',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=100)),
                 ('email', models.EmailField(max_length=254)),
             ],
         ),
         migrations.CreateModel(
             name='Provider',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=50, unique=True)),
-                ('type', models.CharField(choices=[('dummy', 'Dummy'), ('aws', 'Amazon Web Services')], max_length=20)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=50)),
+                ('type', models.CharField(max_length=20, choices=[('dummy', 'Dummy'), ('aws', 'Amazon Web Services')])),
                 ('max_override_seconds', models.BigIntegerField(default=0)),
                 ('is_special', models.BooleanField(default=False)),
                 ('default', models.BooleanField(default=False)),
@@ -179,16 +180,16 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Role',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=100)),
                 ('permissions', models.ManyToManyField(to='vimma.Permission')),
             ],
         ),
         migrations.CreateModel(
             name='Schedule',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=50, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=50)),
                 ('matrix', models.TextField(validators=[vimma.models.schedule_matrix_validator])),
                 ('is_special', models.BooleanField(default=False)),
             ],
@@ -196,30 +197,33 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TimeZone',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=100)),
             ],
         ),
         migrations.CreateModel(
             name='VM',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('sched_override_state', models.NullBooleanField(default=None)),
-                ('sched_override_tstamp', models.BigIntegerField(blank=True, null=True)),
+                ('sched_override_tstamp', models.BigIntegerField(null=True, blank=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('comment', models.CharField(max_length=200, blank=True)),
-                ('status_updated_at', models.DateTimeField(blank=True, null=True)),
-                ('destroy_request_at', models.DateTimeField(blank=True, null=True)),
-                ('destroyed_at', models.DateTimeField(blank=True, null=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, to=settings.AUTH_USER_MODEL, related_name='created_vms', on_delete=django.db.models.deletion.SET_NULL)),
-                ('destroy_request_by', models.ForeignKey(blank=True, null=True, to=settings.AUTH_USER_MODEL, related_name='destroy_requested_vms', on_delete=django.db.models.deletion.SET_NULL)),
+                ('status_updated_at', models.DateTimeField(null=True, blank=True)),
+                ('destroy_request_at', models.DateTimeField(null=True, blank=True)),
+                ('destroyed_at', models.DateTimeField(null=True, blank=True)),
+                ('created_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_vms')),
+                ('destroy_request_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=django.db.models.deletion.SET_NULL, related_name='destroy_requested_vms')),
+                ('project', models.ForeignKey(to='vimma.Project', on_delete=django.db.models.deletion.PROTECT)),
+                ('provider', models.ForeignKey(to='vimma.Provider', on_delete=django.db.models.deletion.PROTECT)),
+                ('schedule', models.ForeignKey(to='vimma.Schedule', on_delete=django.db.models.deletion.PROTECT)),
             ],
         ),
         migrations.CreateModel(
             name='VMConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
-                ('name', models.CharField(max_length=50, unique=True)),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=50)),
                 ('is_special', models.BooleanField(default=False)),
                 ('default', models.BooleanField(default=False)),
                 ('default_schedule', models.ForeignKey(to='vimma.Schedule', on_delete=django.db.models.deletion.PROTECT)),
@@ -229,34 +233,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='VMExpiration',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('expires_at', models.DateTimeField()),
-                ('last_notification', models.DateTimeField(blank=True, null=True)),
+                ('last_notification', models.DateTimeField(null=True, blank=True)),
                 ('grace_end_action_performed', models.BooleanField(default=False)),
+                ('vm', models.OneToOneField(to='vimma.VM', related_name='expiration')),
             ],
             options={
                 'abstract': False,
             },
-        ),
-        migrations.AddField(
-            model_name='vm',
-            name='expiration',
-            field=models.ForeignKey(blank=True, null=True, to='vimma.VMExpiration'),
-        ),
-        migrations.AddField(
-            model_name='vm',
-            name='project',
-            field=models.ForeignKey(to='vimma.Project', on_delete=django.db.models.deletion.PROTECT),
-        ),
-        migrations.AddField(
-            model_name='vm',
-            name='provider',
-            field=models.ForeignKey(to='vimma.Provider', on_delete=django.db.models.deletion.PROTECT),
-        ),
-        migrations.AddField(
-            model_name='vm',
-            name='schedule',
-            field=models.ForeignKey(to='vimma.Schedule', on_delete=django.db.models.deletion.PROTECT),
         ),
         migrations.AddField(
             model_name='schedule',
@@ -267,11 +252,6 @@ class Migration(migrations.Migration):
             model_name='powerlog',
             name='vm',
             field=models.ForeignKey(to='vimma.VM'),
-        ),
-        migrations.AddField(
-            model_name='firewallrule',
-            name='expiration',
-            field=models.ForeignKey(blank=True, null=True, to='vimma.FirewallRuleExpiration'),
         ),
         migrations.AddField(
             model_name='firewallrule',
@@ -316,7 +296,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='audit',
             name='vm',
-            field=models.ForeignKey(blank=True, null=True, to='vimma.VM', on_delete=django.db.models.deletion.SET_NULL),
+            field=models.ForeignKey(to='vimma.VM', null=True, blank=True, on_delete=django.db.models.deletion.SET_NULL),
         ),
         migrations.AddField(
             model_name='user',
@@ -331,6 +311,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='user_permissions',
-            field=models.ManyToManyField(related_name='user_set', help_text='Specific permissions for this user.', related_query_name='user', to='auth.Permission', blank=True, verbose_name='user permissions'),
+            field=models.ManyToManyField(help_text='Specific permissions for this user.', verbose_name='user permissions', to='auth.Permission', blank=True, related_query_name='user', related_name='user_set'),
         ),
     ]
