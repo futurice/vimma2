@@ -15,7 +15,6 @@
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../user-name/user-name.html">
-<link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
 <link rel="import" href="aws-vm-basic-details.html">
 <link rel="import" href="aws-vm-advanced-details.html">
@@ -26,250 +25,239 @@
 <link rel="import" type="css" href="vm-detail.css">
 
 <template>
-  <vm-data-model id="vdm"></vm-data-model>
+  <iron-ajax
+    auto
+    id="vmAjax"
+    url="[[_vmUrl(vmid)]]"
+    loading="{{loading}}"
+    last-response="{{vm}}">
+  </iron-ajax>
 
-  <template is="dom-if" if="[[_loading]]" restamp>
+  <template is="dom-if" if="[[loading]]">
     <paper-spinner active></paper-spinner>
   </template>
 
-  <template is="dom-if" if="[[!_loading]]" restamp>
-    <template is="dom-if" if="[[_error]]" restamp>
+  <template is="dom-if" if="[[!loading]]">
+    <div>
+      <plain-text class="error" text="[[_error]]"></plain-text>
+    </div>
+
+    <div id="summary">
+      <paper-icon-button
+        id="expand"
+        icon="[[_getShowHideIcon(_expanded)]]"
+        title="Show/hide details"
+        on-click="_toggle"
+        ></paper-icon-button>
+
       <paper-icon-button
          id="reload"
          icon="refresh"
          title="Refresh"
          on-click="_reload"
          ></paper-icon-button>
-      <div>
-        <plain-text class="error" text="[[_error]]"></plain-text>
-      </div>
-    </template>
 
-    <template is="dom-if" if="[[!_error]]">
-      <template is="dom-if" if="[[_actionError]]">
-        <plain-text class="error" text="[[_actionError]]"></plain-text>
-      </template>
+      <span class="vborder"></span>
+      <span
+        id="smr-name"
+        on-tap="_toggle"
+        on-track="_summaryTrack"
+        >[[getName()]]</span>
+      <span class="vborder"></span>
+      <span
+        id="smr-state"
+        on-tap="_toggle"
+        on-track="_summaryTrack"
+        >
+        <iron-icon
+          icon="[[_getStateIcon(vm)]]"
+          title="[[_getStateName(vm)]]"
+          class$="[[_getStateClass(vm)]]"
+          ></iron-icon>
+      </span>
+      <span class="vborder"></span>
+      <span
+        id="smr-project"
+        on-tap="_toggle"
+        on-track="_summaryTrack"
+        >[[_getProjectName(vm)]]</span>
+      <span class="vborder"></span>
+      <span
+        id="smr-expiry"
+        on-tap="_toggle"
+        on-track="_summaryTrack"
+        class$="[[_getExpiryClass(vm)]]"
+        >
+        <local-date
+          date-string="[[getExpiryDate()]]"
+          hide-millis
+          ></local-date>
+      </span>
+      <span class="vborder"></span>
 
-      <div id="summary">
-        <paper-icon-button
-          id="expand"
-          icon="[[_getShowHideIcon(_expanded)]]"
-          title="Show/hide details"
-          on-click="_toggle"
-          ></paper-icon-button>
-        <paper-icon-button
-           id="reload"
-           icon="refresh"
-           title="Refresh"
-           on-click="_reload"
-           ></paper-icon-button>
+      <paper-icon-button
+        id="reboot"
+        icon="power-settings-new"
+        title="Reboot…"
+        on-click="_reboot"
+        ></paper-icon-button>
+      <paper-icon-button
+        id="destroy"
+        icon="delete"
+        title="Destroy…"
+        on-click="_destroy"
+        ></paper-icon-button>
+    </div>
 
-        <span class="vborder"></span>
-        <span
-          id="smr-name"
-          on-tap="_toggle"
-          on-track="_summaryTrack"
-          >[[_getName(_vm)]]</span>
-        <span class="vborder"></span>
-        <span
-          id="smr-state"
-          on-tap="_toggle"
-          on-track="_summaryTrack"
+    <template is="dom-if" if="[[_expanded]]" restamp>
+      <div id="details">
+        <h3
+          class="section-toggle"
+          on-click="_toggleBasicDetails"
+          title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]"
           >
           <iron-icon
-            icon="[[_getStateIcon(_vm)]]"
-            title="[[_getStateName(_vm)]]"
-            class$="[[_getStateClass(_vm)]]"
-            ></iron-icon>
-        </span>
-        <span class="vborder"></span>
-        <span
-          id="smr-project"
-          on-tap="_toggle"
-          on-track="_summaryTrack"
-          >[[_getProjectName(_vm)]]</span>
-        <span class="vborder"></span>
-        <span
-          id="smr-expiry"
-          on-tap="_toggle"
-          on-track="_summaryTrack"
-          class$="[[_getExpiryClass(_vm)]]"
+            icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
+          Details
+        </h3>
+        <template is="dom-if" if="[[_showBasicDetails]]" restamp>
+          <template is="dom-if"
+            if="[[_any(vm.destroy_request_at, vm.destroyed_at)]]"
+            restamp>
+            <div id="destruction-details">
+              Destruction requested
+              <template is="dom-if" if="[[vm.destroy_request_at]]"
+                restamp>
+                on
+                <local-date
+                  date-string="[[vm.destroy_request_at]]"
+                  hide-millis></local-date>
+              </template>
+              <template is="dom-if" if="[[vm.destroy_request_by]]"
+                restamp>
+                by
+                <user-name userid="[[vm.destroy_request_by]]"
+                  ></user-name>
+              </template>
+              <br>
+              <template is="dom-if" if="[[vm.destroyed_at]]" restamp>
+                Destruction completed on
+                <local-date
+                  date-string="[[vm.destroyed_at]]"
+                  hide-millis></local-date>.
+              </template>
+              <template is="dom-if" if="[[!vm.destroyed_at]]">
+                Destruction has not succeeded yet.
+              </template>
+            </div>
+          </template>
+
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'dummy')]]">
+            <dummy-vm-basic-details vm="[[vm]]"></dummy-vm-basic-details>
+          </template>
+
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'aws')]]">
+            <aws-vm-basic-details vm="[[vm]]"></aws-vm-basic-details>
+          </template>
+
+          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
+            Unknown VM type: <span>[[vm.provider.type]]</span>.
+          </template>
+        </template>
+
+        <h3
+          class="section-toggle"
+          on-click="_toggleScheduleAndExpiry"
+          title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]"
           >
-          <local-date
-            date-string="[[_getExpiryDate(_vm)]]"
-            hide-millis
-            ></local-date>
-        </span>
-        <span class="vborder"></span>
+          <iron-icon
+            icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
+          Schedule and Expiration
+        </h3>
+        <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
+          <vm-schedule vmid="[[vmid]]"></vm-schedule>
+          <override-schedule vmid="[[vmid]]"></override-schedule>
+          <expiration-item
+            expid="[[vm.expiration.id]]"
+            ></expiration-item>
+        </template>
 
-        <paper-icon-button
-          id="reboot"
-          icon="power-settings-new"
-          title="Reboot…"
-          on-click="_reboot"
-          ></paper-icon-button>
-        <paper-icon-button
-          id="destroy"
-          icon="delete"
-          title="Destroy…"
-          on-click="_destroy"
-          ></paper-icon-button>
+        <h3
+          class="section-toggle"
+          on-click="_toggleFirewallRules"
+          title$="[[_getSectionTooltip(_showFirewallRules, 'Firewall Rules')]]"
+          >
+          <iron-icon
+            icon="[[_getSectionIcon(_showFirewallRules)]]"></iron-icon>
+          Firewall Rules
+        </h3>
+        <template is="dom-if" if="[[_showFirewallRules]]" restamp>
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'dummy')]]">
+            Dummy VMs have no firewall rules.
+          </template>
+
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'aws')]]">
+            <aws-firewall-rules vmid="[[vm.id]]"></aws-firewall-rules>
+          </template>
+
+          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
+            Unknown VM type: <span>[[vm.provider.type]]</span>.
+          </template>
+        </template>
+
+        <h3
+          class="section-toggle"
+          on-click="_toggleAdvancedDetails"
+          title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]"
+          >
+          <iron-icon
+            icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
+          Advanced Details
+        </h3>
+        <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'dummy')]]">
+            Dummy VMs have no advanced details.
+          </template>
+
+          <template is="dom-if" restamp
+            if="[[_equal(vm.provider.type, 'aws')]]">
+            <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
+          </template>
+
+          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
+            Unknown VM type: <span>[[vm.provider.type]]</span>.
+          </template>
+        </template>
+
+        <h3
+          class="section-toggle"
+          on-click="_toggleLogs"
+          title$="[[_getSectionTooltip(_showLogs, 'logs')]]"
+          >
+          <iron-icon icon="[[_getSectionIcon(_showLogs)]]"></iron-icon>
+          Logs
+        </h3>
+        <template is="dom-if" if="[[_showLogs]]" restamp>
+          <audit-display vmid="[[vm.id]]"></audit-display>
+        </template>
+
+        <h3
+          class="section-toggle"
+          on-click="_togglePowerLog"
+          title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]"
+          >
+          <iron-icon icon="[[_getSectionIcon(_showPowerLog)]]"></iron-icon>
+          Power Chart
+        </h3>
+        <template is="dom-if" if="[[_showPowerLog]]" restamp>
+          <power-log vmid="[[vm.id]]"></power-log>
+        </template>
       </div>
-
-      <template is="dom-if" if="[[_expanded]]" restamp>
-        <div id="details">
-          <h3
-            class="section-toggle"
-            on-click="_toggleBasicDetails"
-            title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]"
-            >
-            <iron-icon
-              icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
-            Details
-          </h3>
-          <template is="dom-if" if="[[_showBasicDetails]]" restamp>
-            <template is="dom-if"
-              if="[[_any(_vm.vm.destroy_request_at, _vm.vm.destroyed_at)]]"
-              restamp>
-              <div id="destruction-details">
-                Destruction requested
-                <template is="dom-if" if="[[_vm.vm.destroy_request_at]]"
-                  restamp>
-                  on
-                  <local-date
-                    date-string="[[_vm.vm.destroy_request_at]]"
-                    hide-millis></local-date>
-                </template>
-                <template is="dom-if" if="[[_vm.vm.destroy_request_by]]"
-                  restamp>
-                  by
-                  <user-name userid="[[_vm.vm.destroy_request_by]]"
-                    ></user-name>
-                </template>
-                <br>
-                <template is="dom-if" if="[[_vm.vm.destroyed_at]]" restamp>
-                  Destruction completed on
-                  <local-date
-                    date-string="[[_vm.vm.destroyed_at]]"
-                    hide-millis></local-date>.
-                </template>
-                <template is="dom-if" if="[[!_vm.vm.destroyed_at]]">
-                  Destruction has not succeeded yet.
-                </template>
-              </div>
-            </template>
-
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'dummy')]]">
-              <dummy-vm-basic-details vm="[[_vm]]"></dummy-vm-basic-details>
-            </template>
-
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'aws')]]">
-              <aws-vm-basic-details vm="[[_vm]]"></aws-vm-basic-details>
-            </template>
-
-            <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
-              Unknown VM type: <span>[[_vm.provider.type]]</span>.
-            </template>
-          </template>
-
-          <h3
-            class="section-toggle"
-            on-click="_toggleScheduleAndExpiry"
-            title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]"
-            >
-            <iron-icon
-              icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
-            Schedule and Expiration
-          </h3>
-          <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
-            <vm-schedule vmid="[[vmid]]"></vm-schedule>
-            <override-schedule vmid="[[vmid]]"></override-schedule>
-            <expiration-item
-              expid="[[_vm.expiration.id]]"
-              ></expiration-item>
-          </template>
-
-          <h3
-            class="section-toggle"
-            on-click="_toggleFirewallRules"
-            title$="[[_getSectionTooltip(_showFirewallRules, 'Firewall Rules')]]"
-            >
-            <iron-icon
-              icon="[[_getSectionIcon(_showFirewallRules)]]"></iron-icon>
-            Firewall Rules
-          </h3>
-          <template is="dom-if" if="[[_showFirewallRules]]" restamp>
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'dummy')]]">
-              Dummy VMs have no firewall rules.
-            </template>
-
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'aws')]]">
-              <aws-firewall-rules vmid="[[_vm.vm.id]]"></aws-firewall-rules>
-            </template>
-
-            <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
-              Unknown VM type: <span>[[_vm.provider.type]]</span>.
-            </template>
-          </template>
-
-          <h3
-            class="section-toggle"
-            on-click="_toggleAdvancedDetails"
-            title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]"
-            >
-            <iron-icon
-              icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
-            Advanced Details
-          </h3>
-          <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'dummy')]]">
-              Dummy VMs have no advanced details.
-            </template>
-
-            <template is="dom-if" restamp
-              if="[[_equal(_vm.provider.type, 'aws')]]">
-              <aws-vm-advanced-details vm="[[_vm]]"></aws-vm-advanced-details>
-            </template>
-
-            <template is="dom-if" if="[[_unknownVMType(_vm.provider.type)]]">
-              Unknown VM type: <span>[[_vm.provider.type]]</span>.
-            </template>
-          </template>
-
-          <h3
-            class="section-toggle"
-            on-click="_toggleLogs"
-            title$="[[_getSectionTooltip(_showLogs, 'logs')]]"
-            >
-            <iron-icon icon="[[_getSectionIcon(_showLogs)]]"></iron-icon>
-            Logs
-          </h3>
-          <template is="dom-if" if="[[_showLogs]]" restamp>
-            <audit-display vmid="[[_vm.vm.id]]"></audit-display>
-          </template>
-
-          <h3
-            class="section-toggle"
-            on-click="_togglePowerLog"
-            title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]"
-            >
-            <iron-icon icon="[[_getSectionIcon(_showPowerLog)]]"></iron-icon>
-            Power Chart
-          </h3>
-          <template is="dom-if" if="[[_showPowerLog]]" restamp>
-            <power-log vmid="[[_vm.vm.id]]"></power-log>
-          </template>
-        </div>
-      </template>
-
-      <template is="dom-if" if="[[_actionInFlight]]" restamp>
-        <loading-overlay></loading-overlay>
-      </template>
     </template>
   </template>
 </template>

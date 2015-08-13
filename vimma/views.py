@@ -160,6 +160,11 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DummyVMSerializer(serializers.ModelSerializer):
+    isOn = serializers.SerializerMethodField()
+
+    def get_isOn(self, obj):
+        return obj.isOn()
+
     class Meta:
         model = DummyVM
         depth = 1
@@ -180,6 +185,7 @@ class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AWSVMSerializer(serializers.ModelSerializer):
+    isOn = serializers.SerializerMethodField('isOn')
     class Meta:
         model = AWSVM
 
@@ -205,7 +211,7 @@ class AuditSerializer(serializers.ModelSerializer):
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AuditSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('user')
+    filter_fields = ('user',)
     ordering = ('-timestamp')
 
     def get_queryset(self):

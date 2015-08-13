@@ -20,3 +20,6 @@ class DummyVM(VM):
     # these fields simulate the machine state, managed remotely by the Provider
     destroyed = models.BooleanField(default=False)
     poweredon = models.BooleanField(default=False)
+
+    def isOn(self, state=None):
+        return self.poweredon

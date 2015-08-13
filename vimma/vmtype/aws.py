@@ -365,14 +365,7 @@ def _update_vm_status_impl(vm_id):
 
     set_vm_status_updated_at_now(vm_id)
 
-    on_states = {'pending', 'running', 'stopping', 'shutting-down'}
-    off_states = {'stopped', 'terminated'}
-    powered_on = (True if new_state in on_states
-            else False if new_state in off_states
-            else None)
-    if type(powered_on) is not bool:
-        aud.info('Unknown vm state ‘{}’'.format(new_state), vm_id=vm_id)
-        return
+    powered_on = AWSVM().isOn(new_state)
     vimma.vmutil.power_log(vm_id, powered_on)
     if new_state != 'terminated':
         vimma.vmutil.switch_on_off(vm_id, powered_on)

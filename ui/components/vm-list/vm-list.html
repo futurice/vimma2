@@ -7,7 +7,6 @@
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../show-count/show-count.html">
-<link rel="import" href="../vm-data-model/vm-data-model.html">
 <link rel="import" href="../vm-detail/vm-detail.html">
 
 <dom-module id="vm-list">
@@ -18,22 +17,15 @@
   <iron-ajax
     auto
     id="vmAjax"
-    url="/api/vms/1/"
-    last-response="{{vmData}}">
+    url="/api/dummyvms/"
+    last-response="{{dummyvms}}">
   </iron-ajax>
-  <div>{{vmData}}</div>
-
-  <iron-ajax
-    id="projectAjax"
-    last-response="{{projectData}}">
-  </iron-ajax>
-  <div>proj:<!-- -->{{projectData.name}}</div>
 
   <div id="top-bar">
     <div id="top-content">
       <h1 on-click="_toggle" title="Expand/Collapse">
         <iron-icon icon="[[_headingIcon]]"></iron-icon>
-        <span>[[_sortedVms.length]]<!-- --> <span>[[_sayTopBarOne(destroyed)]]</span></span>
+        <span>[[dummyvms.results.length]]<!-- --> <span>[[_sayTopBarOne(destroyed)]]</span></span>
       </h1>
     </div>
 
@@ -100,9 +92,9 @@
     </paper-icon-button>
   </div>
 
-  <template is="dom-repeat" items="[[_sortedVms]]">
+  <template is="dom-repeat" items="[[dummyvms.results]]">
     <vm-detail
-      vmid="[[item.vm.id]]"
+      vmid="[[item.id]]"
       on-vm-expanded="_vmExpanded"
       on-vm-collapsed="_vmCollapsed">
     </vm-detail>

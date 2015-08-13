@@ -7,6 +7,10 @@ Polymer({
       this.fire('vm-detail-created', {});
     },
 
+    _vmUrl: function(vmid) {
+      return '/api/dummyvms/'+vmid+'/';
+    },
+
     properties: {
         vmid: {
             type: Number,
@@ -16,7 +20,7 @@ Polymer({
         _loadingToken: Object,  /* same logic as in <vm-list> */
         _loading: Boolean,
         _error: String, // empty string if no error
-        _vm: Object,    // the VM data model
+        vm: Object,    // the VM data model
 
         // User action
         _actionInFlight: {
@@ -90,7 +94,7 @@ Polymer({
             this._loading = false;
         }).bind(this);
 
-        this.$.vdm.loadVM(this.vmid, success, fail);
+        //this.$.vdm.loadVM(this.vmid, success, fail);
     },
 
     _getShowHideIcon: function(expanded) {
@@ -101,11 +105,11 @@ Polymer({
     },
 
     /* Call VMModel methods (we can't do it in the template directly). */
-    _getExpiryDate: function(vm) {
-        return vm.getExpiryDate();
+    getExpiryDate: function() {
+        return this.vm.expires_at;
     },
     _getExpiryClass: function(vm) {
-        var d = new Date(vm.getExpiryDate()).valueOf(),
+        var d = new Date(this.getExpiryDate()).valueOf(),
             now = new Date().valueOf(),
             soon = d - now < 1000*60*60*24*30;
         if (d < now) {
@@ -116,35 +120,35 @@ Polymer({
         }
         return '';
     },
-    _getName: function(vm) {
-        return vm.getName();
+    getName: function(vm) {
+      return this.vm.name;
     },
-    _getProjectName: function(vm) {
-        return vm.getProjectName();
+    _getProjectName: function() {
+        return this.vm.project.name;
     },
-    _getStateName: function(vm) {
-        if (vm.isDestroyed()) {
+    _getStateName: function() {
+        if (this.vm.destroyed_at !== null) {
             return 'Destroyed';
         }
-        if (vm.isOn()) {
+        if (this.vm.isOn) {
             return 'Powered ON';
         }
         return 'Powered OFF';
     },
-    _getStateIcon: function(vm) {
-        if (vm.isDestroyed()) {
+    _getStateIcon: function() {
+        if (this.vm.destroyed_at !== null) {
             return 'delete';
         }
-        if (vm.isOn()) {
+        if (this.vm.isOn) {
             return 'check-circle';
         }
         return 'remove-circle';
     },
-    _getStateClass: function(vm) {
-        if (vm.isDestroyed()) {
+    _getStateClass: function() {
+        if (this.vm.destroyed_at !== null) {
             return 'destroyed';
         }
-        if (vm.isOn()) {
+        if (this.vm.isOn) {
             return 'powered-on';
         }
         return 'powered-off';
@@ -152,7 +156,7 @@ Polymer({
 
     _destroy: function(ev) {
         ev.stopPropagation();
-        if (!confirm('Destroy VM: ‘' + this._vm.getName() + '’?')) {
+        if (!confirm('Destroy VM: ‘' + this.getName() + '’?')) {
             return;
         }
 
@@ -182,7 +186,7 @@ Polymer({
 
     _reboot: function(ev) {
         ev.stopPropagation();
-        if (!confirm('Reboot VM: ‘' + this._vm.getName() + '’?')) {
+        if (!confirm('Reboot VM: ‘' + this.getName() + '’?')) {
             return;
         }
 

@@ -99,6 +99,15 @@ class AWSVM(VM, models.Model):
     instance_terminated = models.BooleanField(default=False)
     security_group_deleted = models.BooleanField(default=False)
 
+    def isOn(self, state=None):
+        new_state = state or self.state
+        on_states = {'pending', 'running', 'stopping', 'shutting-down'}
+        off_states = {'stopped', 'terminated'}
+        powered_on = (True if new_state in on_states
+                else False if new_state in off_states
+                else None)
+        return powered_on
+
 
 class AWSFirewallRule(models.Model):
     # ip_protocol, from_port, to_port and cidr_ip correspond to
