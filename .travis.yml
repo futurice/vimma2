@@ -1,10 +1,5 @@
 sudo: true
 
-env:
-  global:
-    - DOCKER_BACKEND_FS=host
-    - DOCKER_STORAGE_DRIVER=devicemapper
-
 branches:
   only:
     - master
