@@ -26,7 +26,7 @@ Polymer({
         _providersUrl: {
             type: String,
             readOnly: true,
-            value: vimmaApiProviderList
+            value: '/TODO/ENDPOINT/BASED/ON/TYPE/'
         },
         _providersLoading: Boolean,
         _providersErr: String,
@@ -39,7 +39,7 @@ Polymer({
         _vmcfgsUrl: {
             type: String,
             readOnly: true,
-            value: vimmaApiVMConfigList
+            value: '/TODO/ENDPOINT/BASED/ON/TYPE/'
         },
         _vmcfgsLoading: Boolean,
         _vmcfgsErr: String,

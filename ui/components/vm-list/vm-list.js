@@ -193,7 +193,7 @@
                 this._loading = false;
             }).bind(this);
 
-            this.$.vdm.loadAllVMs(this.destroyed, success, fail);
+            //this.$.vdm.loadAllVMs(this.destroyed, success, fail);
         },
 
         _destroyedChanged: function(newV, oldV) {

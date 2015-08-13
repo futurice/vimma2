@@ -226,6 +226,10 @@ class VM(models.Model):
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
 
+    @classmethod
+    def implementations(cls):
+        return VM.__subclasses__()
+
     def __str__(self):
         return self.name
 

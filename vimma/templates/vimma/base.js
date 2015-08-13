@@ -11,20 +11,13 @@ var indexUrl = '{% url "index" %}',
     vimmaApiUserList = '{% url "user-list" %}',
     vimmaApiUserDetailRoot = apiDetailRootUrl(
             '{% url "user-detail" 0 %}'),
-    vimmaApiVMList = '{% url "vm-list" %}',
-    vimmaApiVMDetailRoot = apiDetailRootUrl(
-            '{% url "vm-detail" 0 %}'),
     vimmaApiDummyVMDetailRoot = apiDetailRootUrl(
             '{% url "dummyvm-detail" 0 %}'),
     vimmaApiAWSVMDetailRoot = apiDetailRootUrl(
             '{% url "awsvm-detail" 0 %}'),
-    vimmaApiProviderList = '{% url "provider-list" %}',
-    vimmaApiProviderDetailRoot = apiDetailRootUrl(
-            '{% url "provider-detail" 0 %}'),
     vimmaApiAWSProviderList = '{% url "awsprovider-list" %}',
     vimmaApiAWSProviderDetailRoot = apiDetailRootUrl(
             '{% url "awsprovider-detail" 0 %}'),
-    vimmaApiVMConfigList = '{% url "vmconfig-list" %}',
     vimmaApiAWSVMConfigList = '{% url "awsvmconfig-list" %}',
     vimmaApiAWSVMConfigDetailRoot = apiDetailRootUrl(
             '{% url "awsvmconfig-detail" 0 %}'),
