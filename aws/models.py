@@ -44,7 +44,7 @@ class AWSVMConfig(VMConfig, models.Model):
 
     def __str__(self):
         return '{}, {} ({})'.format(self.ami_id, self.instance_type,
-                self.vmconfig.name)
+                self.name)
 
 class AWSProvider(Provider, models.Model):
     # these must not be exposed via the API
@@ -70,7 +70,7 @@ class AWSProvider(Provider, models.Model):
     user_data = models.TextField(blank=True)
 
     def __str__(self):
-        return '{} ({})'.format(self.provider.name, self.route_53_zone)
+        return '{} ({})'.format(self.name, self.route_53_zone)
 
 def aws_vm_name_validator(val):
     if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
