@@ -4,8 +4,8 @@ Polymer({
     behaviors: [VimmaBehaviors.Equal],
 
     properties: {
-        vmid: {
-            type: Number,
+        vm: {
+            type: Object,
             observer: '_vmidChanged'
         },
 
@@ -32,38 +32,9 @@ Polymer({
     },
 
     _vmidChanged: function(newV, oldV) {
-        this._reload();
     },
 
     _reload: function() {
-        var token = {};
-        this._loadingToken = token;
-        this._loading = true;
-        this._actionErr = '';
-        this._actionInFlight = false;
-
-        var fail = (function(err) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._loadErr = err;
-            this._loading = false;
-        }).bind(this);
-
-        var success = (function(resArr) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._vm = resArr[0];
-            this._loadErr = '';
-            this._loading = false;
-
-            this._showNewOverride = this.properties._showNewOverride.value;
-        }).bind(this);
-
-        apiGet([vimmaApiVMDetailRoot + this.vmid + '/'], success, fail);
     },
 
     _toggleNewOverride: function() {

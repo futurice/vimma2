@@ -42,6 +42,7 @@
         },
 
         _computeDate: function(epochMillis, dateString) {
+            if(!dateString) { return null; }
             var val = 0;
             if (epochMillis !== null) {
                 val = epochMillis;
@@ -52,6 +53,7 @@
         },
 
         _computeLocal: function(date, hideMillis) {
+            if(!date) { return null; }
             var dateStr = [date.getFullYear(), date.getMonth() + 1,
                 date.getDate()].map(function(n) {
                     return padInt(n, 2);
@@ -70,6 +72,7 @@
         },
 
         _computeIso: function(date) {
+            if(!date) { return null; }
             return date.toISOString();
         }
     });

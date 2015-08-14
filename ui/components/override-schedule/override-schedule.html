@@ -13,119 +13,94 @@
 <link rel="import" href="../plain-text/plain-text.html">
 
 <dom-module id="override-schedule">
-  <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="override-schedule.css">
+<link rel="import" type="css" href="../../css/component-common.css">
+<link rel="import" type="css" href="override-schedule.css">
+<template>
+  <plain-text class="error" text="[[_loadErr]]"></plain-text>
+  <plain-text class="error" text="[[_actionErr]]"></plain-text>
 
-  <template>
-    <template is="dom-if" if="[[_loading]]" restamp>
-      <paper-spinner active></paper-spinner>
-    </template>
-
-    <template is="dom-if" if="[[!_loading]]" restamp>
-      <template is="dom-if" if="[[_loadErr]]">
-        <paper-icon-button
-          id="reload"
-          icon="refresh"
-          title="Reload"
-          on-click="_reload"
-          ></paper-icon-button>
-        <plain-text class="error" text="[[_loadErr]]"></plain-text>
-      </template>
-
-      <template is="dom-if" if="[[!_loadErr]]" restamp>
-        <template is="dom-if" if="[[_actionErr]]">
-          <div>
-            <plain-text class="error" text="[[_actionErr]]"></plain-text>
-          </div>
-        </template>
-
-        <template is="dom-if" if="[[_null(_vm.sched_override_state)]]">
-          The schedule is not overridden.
-        </template>
-        <template is="dom-if" if="[[!_null(_vm.sched_override_state)]]" restamp>
-          The schedule is overridden to Powered
-          <template is="dom-if" if="[[_vm.sched_override_state]]">
-            ON
-          </template>
-          <template is="dom-if" if="[[!_vm.sched_override_state]]">
-            OFF
-          </template>
-          until
-          <local-date
-            epoch-millis="[[_secs2millis(_vm.sched_override_tstamp)]]"
-            hide-millis
-            ></local-date>.
-
-          <paper-icon-button
-            id="clear-override"
-            icon="delete"
-            title="Remove the override"
-            on-click="_clearOverride"
-            ></paper-icon-button>
-        </template>
-
-        <template is="dom-if" if="[[!_showNewOverride]]">
-          <div>
-            <paper-button
-              id="show-new-override"
-              raised
-              title="Replace any existing schedule override"
-              on-click="_toggleNewOverride"
-              >
-              <iron-icon icon="schedule"></iron-icon>
-              New Override
-            </paper-button>
-          </div>
-        </template>
-
-        <template is="dom-if" if="[[_showNewOverride]]" restamp>
-          <table id="new-override">
-            <caption><h3>Override the schedule</h3></caption>
-            <tr>
-              <td><label>Keep the VM:</label></td>
-              <td>
-                <paper-toggle-button checked="{{_newOverride}}">
-                </paper-toggle-button>
-                <span>[[_getNewOverrideLabel(_newOverride)]]</span>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <paper-input
-                  label="For this many minutes"
-                  type="number"
-                  value="{{_durationMins}}"
-                  ></paper-input>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <paper-button
-                  id="apply-new-override"
-                  raised
-                  on-click="_setNewOverride"
-                  >
-                  <iron-icon icon="schedule"></iron-icon>
-                  Apply
-                </paper-button>
-                <paper-button
-                  id="hide-new-override"
-                  raised
-                  on-click="_toggleNewOverride"
-                  >
-                  <iron-icon icon="cancel"></iron-icon>
-                  Cancel
-                </paper-button>
-              </td>
-            </tr>
-          </table>
-        </template>
-        <template is="dom-if" if="[[_actionInFlight]]" restamp>
-          <loading-overlay></loading-overlay>
-        </template>
-      </template>
-    </template>
+  <template is="dom-if" if="[[_null(_vm.sched_override_state)]]">
+    The schedule is not overridden.
   </template>
+  <template is="dom-if" if="[[!_null(_vm.sched_override_state)]]" restamp>
+    The schedule is overridden to Powered
+    <template is="dom-if" if="[[_vm.sched_override_state]]">
+      ON
+    </template>
+    <template is="dom-if" if="[[!_vm.sched_override_state]]">
+      OFF
+    </template>
+    until
+    <local-date
+      epoch-millis="[[_secs2millis(_vm.sched_override_tstamp)]]"
+      hide-millis
+      ></local-date>.
+
+    <paper-icon-button
+      id="clear-override"
+      icon="delete"
+      title="Remove the override"
+      on-click="_clearOverride"
+      ></paper-icon-button>
+  </template>
+
+  <template is="dom-if" if="[[!_showNewOverride]]">
+    <div>
+      <paper-button
+        id="show-new-override"
+        raised
+        title="Replace any existing schedule override"
+        on-click="_toggleNewOverride">
+        <iron-icon icon="schedule"></iron-icon>
+        New Override
+      </paper-button>
+    </div>
+  </template>
+
+  <template is="dom-if" if="[[_showNewOverride]]" restamp>
+    <table id="new-override">
+      <caption><h3>Override the schedule</h3></caption>
+      <tr>
+        <td><label>Keep the VM:</label></td>
+        <td>
+          <paper-toggle-button checked="{{_newOverride}}">
+          </paper-toggle-button>
+          <span>[[_getNewOverrideLabel(_newOverride)]]</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <paper-input
+            label="For this many minutes"
+            type="number"
+            value="{{_durationMins}}"
+            ></paper-input>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <paper-button
+            id="apply-new-override"
+            raised
+            on-click="_setNewOverride"
+            >
+            <iron-icon icon="schedule"></iron-icon>
+            Apply
+          </paper-button>
+          <paper-button
+            id="hide-new-override"
+            raised
+            on-click="_toggleNewOverride"
+            >
+            <iron-icon icon="cancel"></iron-icon>
+            Cancel
+          </paper-button>
+        </td>
+      </tr>
+    </table>
+  </template>
+
+</template>
 </dom-module>
 
 <script src="override-schedule.js"></script>

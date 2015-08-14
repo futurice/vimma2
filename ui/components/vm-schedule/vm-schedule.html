@@ -9,56 +9,45 @@
 <link rel="import" href="../plain-text/plain-text.html">
 
 <dom-module id="vm-schedule">
-  <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="vm-schedule.css">
+<link rel="import" type="css" href="../../css/component-common.css">
+<link rel="import" type="css" href="vm-schedule.css">
+<template>
+  <iron-ajax
+    auto
+    id="schedules"
+    url="[[scheduleUrl()]]"
+    loading="{{loading}}"
+    last-response="{{schedules}}">
+  </iron-ajax>
 
-  <template>
-    <template is="dom-if" if="[[_loading]]" restamp>
-      <paper-spinner active></paper-spinner>
-    </template>
+  <paper-icon-button
+    id="reload"
+    icon="refresh"
+    title="Reload"
+    on-click="_reload">
+  </paper-icon-button>
+  <plain-text class="error" text="[[_loadErr]]"></plain-text>
 
-    <template is="dom-if" if="[[!_loading]]" restamp>
-      <template is="dom-if" if="[[_loadErr]]">
-        <paper-icon-button
-          id="reload"
-          icon="refresh"
-          title="Reload"
-          on-click="_reload"
-          ></paper-icon-button>
-        <plain-text class="error" text="[[_loadErr]]"></plain-text>
-      </template>
-
-      <template is="dom-if" if="[[!_loadErr]]">
-        <template is="dom-if" if="[[_actionErr]]">
-          <div>
-            <plain-text class="error" text="[[_actionErr]]"></plain-text>
-          </div>
-        </template>
-
-        <label for="schedule">Schedule:</label>
-        <select id="schedule" on-change="_scheduleChanged">
-          <template is="dom-repeat" items="[[_schedules]]">
-            <option
-              selected$="[[_equal(item.id, _newSchedId)]]"
-              >[[item.name]]</option>
-          </template>
-        </select>
-
-        <paper-icon-button
-          id="save"
-          icon="save"
-          title="Save"
-          on-click="_save"
-          disabled$="[[!_unsavedChanges]]"
-          class$="[[_getButtonClass(_unsavedChanges)]]"
-          ></paper-icon-button>
-
-        <template is="dom-if" if="[[_actionInFlight]]" restamp>
-          <loading-overlay></loading-overlay>
-        </template>
-      </template>
-    </template>
+  <template is="dom-if" if="[[_actionErr]]">
+    <plain-text class="error" text="[[_actionErr]]"></plain-text>
   </template>
+
+  <label for="schedule">Schedule:</label>
+  <select id="schedule" on-change="_scheduleChanged">
+    <template is="dom-repeat" items="[[schedules.results]]">
+      <option selected$="[[_equal(item.id, vm.schedule.id)]]">[[item.name]]</option>
+    </template>
+  </select>
+
+  <paper-icon-button
+    id="save"
+    icon="save"
+    title="Save"
+    on-click="_save"
+    disabled$="[[!_unsavedChanges]]"
+    class$="[[_getButtonClass(_unsavedChanges)]]">
+  </paper-icon-button>
+</template>
 </dom-module>
 
 <script src="vm-schedule.js"></script>

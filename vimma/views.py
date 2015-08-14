@@ -108,7 +108,7 @@ class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
 class AWSProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = AWSProvider
-        fields = ('id', 'route_53_zone')
+        fields = ('id', 'route_53_zone',)
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSProviderSerializer
@@ -339,18 +339,13 @@ class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
         return AWSFirewallRule.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)
 
+@login_required_or_forbidden
+def index(request):
+    return render(request, 'vimma/index.html')
+
 aws_firewall_rule_protocol_choices_json = json.dumps([
     {'value': c[0], 'label': c[1]}
     for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
-
-
-@login_required_or_forbidden
-def index(request):
-    """
-    Homepage.
-    """
-    return render(request, 'vimma/index.html')
-
 
 @login_required_or_forbidden
 def base_js(request):

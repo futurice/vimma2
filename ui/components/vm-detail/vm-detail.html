@@ -135,9 +135,7 @@
               </template>
               <template is="dom-if" if="[[vm.destroy_request_by]]"
                 restamp>
-                by
-                <user-name userid="[[vm.destroy_request_by]]"
-                  ></user-name>
+                by <span>[[vm.destroy_request_by.username]]</span>
               </template>
               <br>
               <template is="dom-if" if="[[vm.destroyed_at]]" restamp>
@@ -154,7 +152,7 @@
 
           <template is="dom-if" restamp
             if="[[_equal(vm.provider.type, 'dummy')]]">
-            <dummy-vm-basic-details vm="[[vm]]"></dummy-vm-basic-details>
+            <dummy-vm-basic-details vm="[[vm]]" foo="joe-bob"></dummy-vm-basic-details>
           </template>
 
           <template is="dom-if" restamp
@@ -177,11 +175,10 @@
           Schedule and Expiration
         </h3>
         <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
-          <vm-schedule vmid="[[vmid]]"></vm-schedule>
-          <override-schedule vmid="[[vmid]]"></override-schedule>
-          <expiration-item
-            expid="[[vm.expiration.id]]"
-            ></expiration-item>
+          <vm-schedule vm="[[vm]]"></vm-schedule>
+          <override-schedule vm="[[vm]]"></override-schedule>
+          <expiration-item expid="[[vm.expiration.id]]">
+          </expiration-item>
         </template>
 
         <h3

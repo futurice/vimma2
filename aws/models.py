@@ -94,8 +94,7 @@ class AWSVM(VM, models.Model):
     private_ip_address = models.CharField(max_length=50, blank=True)
 
     # Destruction happens using several asynchronous tasks, which mark these
-    # fields when they succeed. When all fields are True we can mark the parent
-    # .vm model as destroyed.
+    # fields when they succeed. When all fields are True we can mark the model as destroyed.
     instance_terminated = models.BooleanField(default=False)
     security_group_deleted = models.BooleanField(default=False)
 

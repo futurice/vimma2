@@ -4,62 +4,50 @@
 <link rel="import" href="../user-name/user-name.html">
 
 <dom-module id="dummy-vm-basic-details">
-  <link rel="import" type="css" href="../../css/component-common.css">
-  <link rel="import" type="css" href="detail-tables.css">
+<link rel="import" type="css" href="../../css/component-common.css">
+<link rel="import" type="css" href="detail-tables.css">
 
-  <template>
-    <div class="item">
-      <table>
-        <tr>
-          <td>Name</td>
-          <td>[[_getName(vm)]]</td>
-        </tr>
-        <tr>
-          <td>Provider state</td>
-          <td>[[vm.dummy_vm.status]]</td>
-        </tr>
-        <tr>
-          <td>Last status check</td>
-          <td>
-            <template is="dom-if" if="[[vm.vm.status_updated_at]]" restamp>
-              <local-date date-string="[[vm.vm.status_updated_at]]" hide-millis
-                ></local-date>
-            </template>
-            <template is="dom-if" if="[[!vm.vm.status_updated_at]]">
-              –
-            </template>
-          </td>
-        </tr>
-      </table>
-    </div>
+<template>
+  <div class="item">
+    <table>
+      <tr>
+        <td>Name</td>
+        <td>[[vm.name]]</td>
+      </tr>
+      <tr>
+        <td>Provider state</td>
+        <td>[[vm.dummy_vm.status]]</td>
+      </tr>
+      <tr>
+        <td>Last status check</td>
+        <td>
+          <local-date date-string="[[vm.status_updated_at]]" hide-millis>
+          </local-date>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-    <div class="item">
-      <table>
-        <tr>
-          <td>Comment</td>
-          <td>[[vm.vm.comment]]</td>
-        </tr>
-        <tr>
-          <td>Created by</td>
-          <td>
-            <template is="dom-if" if="[[vm.vm.created_by]]" restamp>
-              <user-name userid="[[vm.vm.created_by]]"></user-name>
-            </template>
-            <template is="dom-if" if="[[!vm.vm.created_by]]">
-              –
-            </template>
-          </td>
-        </tr>
-        <tr>
-          <td>Created at</td>
-          <td>
-            <local-date date-string="[[vm.vm.created_at]]"
-              hide-millis></local-date>
-          </td>
-        </tr>
-      </table>
-    </div>
-  </template>
+  <div class="item">
+    <table>
+      <tr>
+        <td>Comment</td>
+        <td>[[vm.comment]]</td>
+      </tr>
+      <tr>
+        <td>Created by</td>
+        <td>[[vm.created_by.username]]</td>
+      </tr>
+      <tr>
+        <td>Created at</td>
+        <td>
+          <local-date date-string="[[vm.created_at]]" hide-millis>
+          </local-date>
+        </td>
+      </tr>
+    </table>
+  </div>
+</template>
 </dom-module>
 
 <script src="dummy-vm-basic-details.js"></script>

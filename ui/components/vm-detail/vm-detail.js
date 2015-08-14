@@ -70,31 +70,6 @@ Polymer({
     },
 
     _reload: function() {
-        var token = {};
-        this._loadingToken = token;
-        this._loading = true;
-        this._actionError = '';
-
-        var success = (function(vm) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._vm = vm;
-            this._error = '';
-            this._loading = false;
-        }).bind(this);
-
-        var fail = (function(err) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._error = err;
-            this._loading = false;
-        }).bind(this);
-
-        //this.$.vdm.loadVM(this.vmid, success, fail);
     },
 
     _getShowHideIcon: function(expanded) {
@@ -120,7 +95,7 @@ Polymer({
         }
         return '';
     },
-    getName: function(vm) {
+    getName: function() {
       return this.vm.name;
     },
     _getProjectName: function() {
