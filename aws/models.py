@@ -46,7 +46,7 @@ class AWSVMConfig(VMConfig, models.Model):
         return '{}, {} ({})'.format(self.ami_id, self.instance_type,
                 self.name)
 
-class AWSProvider(Provider, models.Model):
+class AWSProvider(Provider):
     # these must not be exposed via the API
     access_key_id = models.CharField(max_length=100, blank=True)
     access_key_secret = models.CharField(max_length=100, blank=True)

@@ -106,9 +106,14 @@ class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DummyProvider.objects.all()
 
 class AWSProviderSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    def get_full_name(self, obj):
+        return '{} {}'.format(obj.name, obj.route_53_zone)
+
     class Meta:
         model = AWSProvider
-        fields = ('id', 'route_53_zone',)
+        fields = ('id', 'name', 'full_name', 'route_53_zone',)
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSProviderSerializer

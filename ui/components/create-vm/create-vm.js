@@ -10,40 +10,34 @@ Polymer({
             observer: '_expandedChanged'
         },
 
-        _prjsUrl: {
+        projectsUrl: {
             type: String,
             readOnly: true,
             value: vimmaApiProjectList
         },
-        _prjsLoading: Boolean,
-        _prjsErr: String,
-        _prjs: {
+        projects: {
             type: Array,
-            observer: '_prjsChanged'
+            observer: 'projectsChanged'
         },
         _selPrj: Object,
 
-        _providersUrl: {
+        providersUrl: {
             type: String,
             readOnly: true,
-            value: '/TODO/ENDPOINT/BASED/ON/TYPE/'
+            value: vimmaApiDummyProviderList
         },
-        _providersLoading: Boolean,
-        _providersErr: String,
-        _providers: {
+        providers: {
             type: Array,
             observer: '_providersChanged'
         },
         _selProvider: Object,
 
-        _vmcfgsUrl: {
+        configsUrl: {
             type: String,
             readOnly: true,
-            value: '/TODO/ENDPOINT/BASED/ON/TYPE/'
+            value: vimmaApiDummyVMConfigList
         },
-        _vmcfgsLoading: Boolean,
-        _vmcfgsErr: String,
-        _vmcfgs: Array,
+        configs: Array,
         _vmcfgsForProvider: {
             type: Array,
             computed: '_computeVmCfgsForProvider(_vmcfgs, _selProvider)',
@@ -125,16 +119,17 @@ Polymer({
         return '';
     },
 
-    _prjsChanged: function(newV, oldV) {
+    projectsChanged: function(newV, oldV) {
         this._selPrj = newV[0];
     },
-    _prjSelected: function(ev) {
+    projectSelected: function(ev) {
         this._selPrj = this._prjs[ev.target.selectedIndex];
     },
 
     _providersChanged: function(newV, oldV) {
-        this._selProvider = newV[0];
-        newV.forEach(function(p) {
+        console.log("providersChanged",newV);
+        //this._selProvider = newV[0];
+        newV.results.forEach(function(p) {
             if (p.default) {
                 this._selProvider = p;
             }
