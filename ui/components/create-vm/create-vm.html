@@ -116,8 +116,7 @@
           <td>
             <select id="schedule" on-change="_scheduleSelected">
               <template is="dom-repeat" items="[[schedules.results]]">
-                <option selected$="[[_equal(item, _selSchedule)]]"
-                  >[[item.name]]</option>
+                <option selected$="[[_equal(item, _selSchedule)]]">[[item.name]]</option>
               </template>
             </select>
           </td>
