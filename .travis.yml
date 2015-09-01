@@ -1,12 +1,14 @@
-sudo: true
+sudo: required
+
+services:
+  - docker
 
 branches:
   only:
     - master
 
-install:
-  - curl -sLo - http://j.mp/install-travis-docker | sh -xe
-
 script:
-  - ./run 'docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres'
-  - ./run 'docker build -t test -f docker/dev/Dockerfile . && docker run --name vimma -e DB_USER=postgres -e DB_HOST=postgres -e DB_PASSWORD=mysecretpassword --link postgres:postgres test && xvfb-run python manage.py test vimma --noinput && xvfb-run node_modules/.bin/wct vimma/static/vimma/components/test/'
+  - docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+  - docker build -t test -f docker/dev/Dockerfile . && docker run --name vimma -e DB_USER=postgres -e DB_HOST=postgres -e DB_PASSWORD=mysecretpassword --link postgres:postgres test && xvfb-run python manage.py test vimma --noinput && xvfb-run node_modules/.bin/wct vimma/static/vimma/components/test/
+
+
