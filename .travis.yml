@@ -1,34 +1,13 @@
-language: python
-python:
-  - "3.4"
-env:
-  global:
-    - PYTHONPATH=config
-  matrix:
-    - TRAVIS_DB=sqlite
-    - TRAVIS_DB=postgresql
+sudo: required
+
+services:
+  - docker
+
+script:
+  - docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+  - docker build -t test -f docker/dev/Dockerfile . && docker run --name vimma -e DB_USER=postgres -e DB_HOST=postgres -e DB_PASSWORD=mysecretpassword --link postgres:postgres test && xvfb-run python manage.py test vimma --noinput && xvfb-run node_modules/.bin/wct vimma/static/vimma/components/test/
 
 branches:
   only:
     - master
 
-addons:
-  postgresql: "9.3"
-
-install:
-  # Jan 2015: travis-ci runs Ubuntu 12.04 64bit which doesn't have chromedriver
-  - wget -P /tmp http://chromedriver.storage.googleapis.com/2.12/chromedriver_linux64.zip
-  - sudo unzip /tmp/chromedriver_linux64.zip -d /usr/bin
-  - sudo chmod +rx /usr/bin/chromedriver
-
-  - cp config/local_settings.py.travis config/local_settings.py
-  - pip install -r requirements.txt
-  - psql -c 'create database vimma;' -U postgres
-
-  - npm install
-  - PATH=`pwd`/node_modules/.bin:$PATH
-  - ./scripts/bower-reset.py
-
-script:
-  - xvfb-run ./vimmasite/manage.py test vimma --settings=test_settings --noinput
-  - xvfb-run wct vimmasite/vimma/static/vimma/components/test/
