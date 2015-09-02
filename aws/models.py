@@ -109,7 +109,7 @@ class AWSVM(VM, models.Model):
         return powered_on
 
     def controller(self):
-        return AWSVMController(vm=self.vm)
+        return AWSVMController(vm=self)
 
 class AWSFirewallRule(models.Model):
     # ip_protocol, from_port, to_port and cidr_ip correspond to

@@ -14,12 +14,9 @@ from vimma.models import (
     VM, FirewallRule, Expiration, FirewallRuleExpiration,
 )
 from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule
-from vimma.util import retry_in_transaction, set_vm_status_updated_at_now
-import vimma.vmutil
-
+from vimma.util import retry_in_transaction
 
 aud = Auditor(__name__)
-
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
     """

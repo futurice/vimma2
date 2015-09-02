@@ -6,14 +6,14 @@ from vimma.celery import app
 from vimma.models import VM
 from dummy.models import DummyVM
 
-from vimma.util import retry_in_transaction, set_vm_status_updated_at_now
+from vimma.util import retry_in_transaction
 import vimma.vmutil
 
 
 aud = Auditor(__name__)
 
 
-def create_vm(vm, data, user_id):
+def create_vm(vm, data, user_id, *args, **kwargs):
     """
     Create a dummy VM, linking to parent ‘vm’, from ‘data’ → (vm, callables)
 
@@ -137,7 +137,7 @@ def update_vm_status(vm_id):
         if destroyed:
             poweredon = False
 
-        set_vm_status_updated_at_now(vm_id)
+        vm.controller().set_vm_status_updated_at_now()
 
         vm.controller().power_log(poweredon)
         if not destroyed:

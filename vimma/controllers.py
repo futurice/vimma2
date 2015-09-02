@@ -1,4 +1,5 @@
 from vimma.util import schedule_at_tstamp
+from vimma.celery import app
 
 class VMController():
     """
@@ -127,6 +128,12 @@ class VMController():
                 self.vm.sched_override_tstamp >= now):
             return self.vm.sched_override_state
         return schedule_at_tstamp(self.vm.schedule, now)
+
+    @app.task
+    def expiration_notify(self):
+        aud.warning('Notify of VM expiration on ' + str(exp_date),
+                vm_id=self.vm.pk)
+        return self.vm.expiration.expires_at
 
 class DummyVMController(VMController):
     """

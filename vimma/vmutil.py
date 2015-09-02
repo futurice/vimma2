@@ -15,8 +15,6 @@ from vimma.models import (
 )
 from vimma.util import (
     can_do, retry_in_transaction,
-    discard_expired_schedule_override,
-    get_import
 )
 import vimma.vmtype.dummy, vimma.vmtype.aws
 
@@ -54,8 +52,7 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
             vmconfig=vmconfig, project=project, schedule=schedule,
             comment=comment, data=data),
         user_id=user_id)
-    # The transaction guarantees that if the vmtype.* call fails, the generic
-    # VM object won't be present in the DB.
+
     callables = []
     with transaction.atomic():
         prov = vmconfig.provider
@@ -72,17 +69,7 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
                 sched_override_tstamp=sched_override_tstamp,
                 comment=comment, created_by=user, expiration=vmexp)
         vm.full_clean()
-        vm_id = vm.id
-
-        t = prov.type
-        if t == Provider.TYPE_DUMMY:
-            dvm, callables = vimma.vmtype.dummy.create_vm(vm, data, user_id)
-        elif t == Provider.TYPE_AWS:
-            awsvm, callables = vimma.vmtype.aws.create_vm(vmconfig, vm, data,
-                    user_id)
-        else:
-            raise ValueError('Unknown provider type “{}”'.format(prov.type))
-
+        vm, callables = vm.controller().create_vm(data=data, user_id=user_id, vmconfig=vmconfig)
     for c in callables:
         c()
     return vm_id
@@ -98,25 +85,10 @@ def update_all_vms_status():
     """
     aud.debug('Update status of all non-destroyed VMs')
     for model in VM.implementations():
-        vm = model.objects.filter(destroyed_at=None)
-        aud.debug('Request status update', vm_id=vm.pk)
-        vm.controller().update_status()
-
-
-
-
-@app.task
-def expiration_notify(vm_id):
-    """
-    Notify of vm expiration.
-    """
-    with aud.ctx_mgr(vm_id=vm_id):
-        def read():
-            vm = VM.objects.get(id=vm_id)
-            return vm.expiration.expires_at
-        exp_date = retry_in_transaction(read)
-        aud.warning('Notify of VM expiration on ' + str(exp_date),
-                vm_id=vm_id)
+        vms = model.objects.filter(destroyed_at=None)
+        for vm in vms:
+            aud.debug('Request status update', vm_id=vm.pk)
+            vm.controller().update_status()
 
 
 @app.task
