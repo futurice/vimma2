@@ -324,27 +324,13 @@ def terminate_instance(self, vm_id, user_id=None):
 
 @app.task
 def update_vm_status(vm_id):
-    with aud.ctx_mgr(vm_id=vm_id):
-        _update_vm_status_impl(vm_id)
+    vm = AWSVM.objects.get(id=vm_id)
 
-def _update_vm_status_impl(vm_id):
-    """
-    The implementation for the similarly named task.
-    """
-    def read_data():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        return aws_vm.id, aws_vm.instance_id
-    aws_vm_id, inst_id = retry_in_transaction(read_data)
-
-    if not inst_id:
-        aud.warning('missing instance_id', vm_id=vm_id)
-        return
-
-    conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-    instances = conn.get_only_instances(instance_ids=[inst_id])
+    conn = ec2_connect_to_aws_vm_region(vm.pk)
+    instances = conn.get_only_instances(instance_ids=[vm.pk])
     if len(instances) != 1:
         aud.warning('AWS returned {} instances, expected 1'.format(
-            len(instances)), vm_id=vm_id)
+            len(instances)), vm_id=vm.pk)
         new_state = 'Error'
         new_ip_address = None
         new_private_ip_address = None
@@ -354,21 +340,18 @@ def _update_vm_status_impl(vm_id):
         new_ip_address = inst.ip_address
         new_private_ip_address = inst.private_ip_address
 
-    def write_data():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
-        aws_vm.state = new_state
-        aws_vm.ip_address = new_ip_address or ''
-        aws_vm.private_ip_address = new_private_ip_address or ''
-        aws_vm.save()
-    retry_in_transaction(write_data)
+    vm.state = new_state
+    vm.ip_address = new_ip_address or ''
+    vm.private_ip_address = new_private_ip_address or ''
+    vm.save()
     aud.debug('Update state ‘{}’'.format(new_state), vm_id=vm_id)
 
-    set_vm_status_updated_at_now(vm_id)
+    vm.controller().set_vm_status_updated_at_now()
 
     powered_on = AWSVM().isOn(new_state)
-    vimma.vmutil.power_log(vm_id, powered_on)
+    vm.controller().power_log(powered_on)
     if new_state != 'terminated':
-        vimma.vmutil.switch_on_off(vm_id, powered_on)
+        vm.controller().switch_on_off(powered_on)
 
 
 @app.task(bind=True, max_retries=12, default_retry_delay=10)

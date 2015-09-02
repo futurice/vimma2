@@ -684,7 +684,7 @@ def override_schedule(request):
             return HttpResponse()
 
         # the update task triggers a power on/off if needed
-        vmutil.update_vm_status.delay(vm.id)
+        vm.controller().update_status()
 
         return HttpResponse()
     except:
@@ -748,7 +748,7 @@ def change_vm_schedule(request):
         # Just in case this lambda could cause retry_in_transaction(…)
         # to re-execute this function, don't run the lambda here but return it
         # to our caller.
-        return HttpResponse(), lambda: vmutil.update_vm_status.delay(vm_id)
+        return HttpResponse(), lambda: vm.controller().update_status()
 
     try:
         response, callback = retry_in_transaction(call)

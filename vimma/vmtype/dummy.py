@@ -139,6 +139,6 @@ def update_vm_status(vm_id):
 
         set_vm_status_updated_at_now(vm_id)
 
-        vimma.vmutil.power_log(vm_id, poweredon)
+        vm.controller().power_log(poweredon)
         if not destroyed:
             vimma.vmutil.switch_on_off(vm_id, poweredon)

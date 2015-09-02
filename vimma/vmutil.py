@@ -15,7 +15,7 @@ from vimma.models import (
 )
 from vimma.util import (
     can_do, retry_in_transaction,
-    vm_at_now, discard_expired_schedule_override,
+    discard_expired_schedule_override,
     get_import
 )
 import vimma.vmtype.dummy, vimma.vmtype.aws
@@ -88,123 +88,6 @@ def create_vm(vmconfig, project, schedule, comment, data, user_id):
     return vm_id
 
 
-def get_vm_controller(vm_id):
-    """
-    Return an instace of a VMController subclass, specific to the vm_id.
-    """
-    def get_prov_type():
-        return VM.objects.get(id=vm_id).provider.type
-    t = retry_in_transaction(get_prov_type)
-    if t == Provider.TYPE_DUMMY:
-        return DummyVMController(vm_id)
-    elif t == Provider.TYPE_AWS:
-        return AWSVMController(vm_id)
-    else:
-        raise ValueError('Unknown provider type “{}”'.format(t))
-
-
-class VMController():
-    """
-    Base class showing common VM operations.
-
-    Use get_vm_controller(…) to obtain a vm-type-specific instance.
-    """
-
-    def __init__(self, vm_id):
-        """
-        An instance of this class is specific to a VM id.
-        """
-        self.vm_id = vm_id
-
-    def power_on(self, user_id=None):
-        raise NotImplementedError()
-
-    def power_off(self, user_id=None):
-        raise NotImplementedError()
-
-    def reboot(self, user_id=None):
-        raise NotImplementedError()
-
-    def destroy(self, user_id=None):
-        raise NotImplementedError()
-
-    def update_status(self):
-        """
-        This method is responsible for the following actions (e.g. schedule
-        them as asynchronous tasks):
-        Get the VM status from the remote provider, save it in the Vimma DB and
-        mark the timestamp of this update.
-        Call power_log() to log the current power state (on or off).
-        Call switch_on_off() which turns the vm on or off if needed.
-        """
-        raise NotImplementedError()
-
-    def can_change_firewall_rules(self, user_id):
-        def call():
-            user = User.objects.get(id=user_id)
-            vm = VM.objects.get(id=self.vm_id)
-            return can_do(user, Actions.CREATE_VM_IN_PROJECT, vm.project)
-        return retry_in_transaction(call)
-
-    def create_firewall_rule(self, data, user_id=None):
-        """
-        Create a firewall rule with data specific to the vm type.
-        """
-        raise NotImplementedError()
-
-    def delete_firewall_rule(self, fw_rule_id, user_id=None):
-        raise NotImplementedError()
-
-
-class DummyVMController(VMController):
-    """
-    VMController for vms of type dummy.
-    """
-
-    def power_on(self, user_id=None):
-        vimma.vmtype.dummy.power_on_vm.delay(self.vm_id, user_id=user_id)
-
-    def power_off(self, user_id=None):
-        vimma.vmtype.dummy.power_off_vm.delay(self.vm_id, user_id=user_id)
-
-    def reboot(self, user_id=None):
-        vimma.vmtype.dummy.reboot_vm.delay(self.vm_id, user_id=user_id)
-
-    def destroy(self, user_id=None):
-        vimma.vmtype.dummy.destroy_vm.delay(self.vm_id, user_id=user_id)
-
-    def update_status(self):
-        vimma.vmtype.dummy.update_vm_status.delay(self.vm_id)
-
-
-class AWSVMController(VMController):
-    """
-    VMController for AWS vms.
-    """
-
-    def power_on(self, user_id=None):
-        vimma.vmtype.aws.power_on_vm.delay(self.vm_id, user_id=user_id)
-
-    def power_off(self, user_id=None):
-        vimma.vmtype.aws.power_off_vm.delay(self.vm_id, user_id=user_id)
-
-    def reboot(self, user_id=None):
-        vimma.vmtype.aws.reboot_vm.delay(self.vm_id, user_id=user_id)
-
-    def destroy(self, user_id=None):
-        vimma.vmtype.aws.destroy_vm.delay(self.vm_id, user_id=user_id)
-
-    def update_status(self):
-        vimma.vmtype.aws.update_vm_status.delay(self.vm_id)
-
-    def create_firewall_rule(self, data, user_id=None):
-        vimma.vmtype.aws.create_firewall_rule(self.vm_id, data,
-                user_id=user_id)
-
-    def delete_firewall_rule(self, fw_rule_id, user_id=None):
-        vimma.vmtype.aws.delete_firewall_rule(fw_rule_id, user_id=user_id)
-
-
 @app.task
 def update_all_vms_status():
     """
@@ -214,67 +97,12 @@ def update_all_vms_status():
     VM object.
     """
     aud.debug('Update status of all non-destroyed VMs')
-    with transaction.atomic():
-        vm_ids = map(lambda v: v.id, VM.objects.filter(destroyed_at=None))
-    for x in vm_ids:
-        # don't allow a single VM to break the loop, e.g. with missing
-        # foreign keys. Make a separate task for each instead of handling
-        # all in this task.
-        update_vm_status.delay(x)
+    for model in VM.implementations():
+        vm = model.objects.filter(destroyed_at=None)
+        aud.debug('Request status update', vm_id=vm.pk)
+        vm.controller().update_status()
 
 
-@app.task
-def update_vm_status(vm_id):
-    """
-    Check & update the status of the VM.
-    """
-    aud.debug('Request status update', vm_id=vm_id)
-
-    with aud.ctx_mgr(vm_id=vm_id):
-        get_vm_controller(vm_id).update_status()
-
-
-def power_log(vm_id, powered_on):
-    """
-    PowerLog the current vm state (ON/OFF).
-    """
-    def do_log():
-        vm = VM.objects.get(id=vm_id)
-        PowerLog.objects.create(vm=vm, powered_on=powered_on)
-
-    with aud.ctx_mgr(vm_id=vm_id):
-        if type(powered_on) is not bool:
-            raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
-                powered_on, type(powered_on), bool))
-
-        retry_in_transaction(do_log)
-
-
-def switch_on_off(vm_id, powered_on):
-    """
-    Power on/off the vm if needed.
-
-    powered_on must be a boolean showing the current vm state.
-    If the vm's power state should be different, a power_on or power_off task
-    is submitted.
-    """
-    with aud.ctx_mgr(vm_id=vm_id):
-        if type(powered_on) is not bool:
-            raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
-                powered_on, type(powered_on), bool))
-
-        # TODO: maybe move this to the update status task
-        # clean-up, but not required
-        discard_expired_schedule_override(vm_id)
-
-        new_power_state = vm_at_now(vm_id)
-        if powered_on is new_power_state:
-            return
-
-        if new_power_state:
-            get_vm_controller(vm_id).power_on()
-        else:
-            get_vm_controller(vm_id).power_off()
 
 
 @app.task

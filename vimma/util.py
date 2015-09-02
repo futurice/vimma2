@@ -134,68 +134,6 @@ def schedule_at_tstamp(schedule, tstamp):
     return json.loads(schedule.matrix)[row][col]
 
 
-def discard_expired_schedule_override(vm_id):
-    """
-    Remove schedule override, if it has expired, from vm_id.
-
-    This function must not be called inside a transaction.
-    """
-    def call():
-        """
-        Returns True if an expired override was discarded, else False.
-        """
-        now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
-        vm = VM.objects.get(id=vm_id)
-        if vm.sched_override_state == None:
-            return False
-        if vm.sched_override_tstamp >= now:
-            return False
-
-        vm.sched_override_state = None
-        vm.sched_override_tstamp = None
-        vm.save()
-        vm.full_clean()
-        return True
-
-    if retry_in_transaction(call):
-        aud.debug('Discarded expired schedule override', vm_id=vm_id)
-
-
-def vm_at_now(vm_id):
-    """
-    Return True/False if vm should be powered ON/OFF now.
-
-    If the VM has expired → OFF. Else if there's a schedule override, use that.
-    Else computed from the vm's schedule.
-    """
-    def call():
-        now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
-        vm = VM.objects.get(id=vm_id)
-
-        if now > vm.expiration.expires_at.timestamp():
-            return False
-
-        if (vm.sched_override_state != None and
-                vm.sched_override_tstamp >= now):
-            return vm.sched_override_state
-        return schedule_at_tstamp(vm.schedule, now)
-    return retry_in_transaction(call)
-
-
-def set_vm_status_updated_at_now(vm_id):
-    """
-    Set status_updated_at to now for vm_id.
-
-    This method must not be called inside a transaction.
-    """
-    def call():
-        now = datetime.datetime.utcnow().replace(tzinfo=utc)
-        vm = VM.objects.get(id=vm_id)
-        vm.status_updated_at = now
-        vm.full_clean()
-        vm.save()
-    retry_in_transaction(call)
-
 
 def retry_in_transaction(call, max_retries=5, start_delay_millis=100):
     """

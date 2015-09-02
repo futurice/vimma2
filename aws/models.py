@@ -6,6 +6,7 @@ import ipaddress
 import re
 
 from vimma.models import VM, VMConfig, Provider
+from vimma.controllers import AWSVMController
 
 class AWSVMConfig(VMConfig, models.Model):
     provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT)
@@ -107,6 +108,8 @@ class AWSVM(VM, models.Model):
                 else None)
         return powered_on
 
+    def controller(self):
+        return AWSVMController(vm=self.vm)
 
 class AWSFirewallRule(models.Model):
     # ip_protocol, from_port, to_port and cidr_ip correspond to
