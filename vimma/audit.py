@@ -60,8 +60,8 @@ class Auditor():
 
         try:
             text = '{}: {}'.format(self.name, msg)
-            #with transaction.atomic():
-            vm = VM.objects.get(id=vm_id) if vm_id else None
+            # TODO: VM INFORMATION
+            vm = None
             user = User.objects.get(id=user_id) if user_id else None
             Audit.objects.create(level=level, text=text,
                     vm=vm, user=user).full_clean()

@@ -9,13 +9,12 @@ from vimma.celery import app
 import vimma.expiry
 from vimma.models import (
     Provider, User,
-    Expiration, VMExpiration,
+    VM, Expiration, VMExpiration,
     FirewallRule,
 )
 from vimma.util import (
     can_do, retry_in_transaction,
 )
-import vimma.vmtype.dummy, vimma.vmtype.aws
 
 
 aud = Auditor(__name__)

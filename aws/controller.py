@@ -48,51 +48,30 @@ def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto EC2Connection to the given AWS VM's region.
     """
-    def read_data():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
-        aws_prov = aws_vm.vm.provider.awsprovider
-
-        return (aws_prov.access_key_id, aws_prov.access_key_secret,
-                aws_vm.region)
-    access_key_id, access_key_secret, region = retry_in_transaction(read_data)
-
-    return boto.ec2.connect_to_region(region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key_secret)
+    vm = AWSVM.objects.get(id=aws_vm_id)
+    return boto.ec2.connect_to_region(vm.region,
+            aws_access_key_id=vm.provider.access_key_id,
+            aws_secret_access_key=vm.provider.access_key_secret)
 
 
 def route53_connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto Route53Connection to the given AWS VM's region.
     """
-    def read_data():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
-        aws_prov = aws_vm.vm.provider.awsprovider
-
-        return (aws_prov.access_key_id, aws_prov.access_key_secret,
-                aws_vm.region)
-    access_key_id, access_key_secret, region = retry_in_transaction(read_data)
-
-    return boto.route53.connect_to_region(region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key_secret)
+    vm = AWSVM.objects.get(id=aws_vm_id)
+    return boto.route53.connect_to_region(vm.region,
+            aws_access_key_id=vm.provider.access_key_id,
+            aws_secret_access_key=vm.provider.access_key_secret)
 
 
 def vpc_connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto VPCConnection to the given AWS VM's region.
     """
-    def read_data():
-        aws_vm = AWSVM.objects.get(id=aws_vm_id)
-        aws_prov = aws_vm.vm.provider.awsprovider
-
-        return (aws_prov.access_key_id, aws_prov.access_key_secret,
-                aws_vm.region)
-    access_key_id, access_key_secret, region = retry_in_transaction(read_data)
-
-    return boto.vpc.connect_to_region(region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key_secret)
+    vm = AWSVM.objects.get(id=aws_vm_id)
+    return boto.vpc.connect_to_region(vm.region,
+            aws_access_key_id=vm.provider.access_key_id,
+            aws_secret_access_key=vm.provider.access_key_secret)
 
 
 def create_vm(vmconfig, vm, data, user_id):
@@ -142,42 +121,26 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
     # Make the API calls only once. Retrying failed DB transactions must only
     # include idempotent code, not the AWS API calls which create more VMs.
 
-    ssh_key_name, default_security_group_id, vpc_id = None, None, None
-    aws_vm_id, name = None, None
-    ami_id, instance_type, user_data = None, None, None
+    vm = AWSVM.objects.get(id=vm_id)
+    aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
 
-    def read_vars():
-        nonlocal ssh_key_name, default_security_group_id, vpc_id
-        nonlocal aws_vm_id, name
-        nonlocal ami_id, instance_type, user_data
-        aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
-        aws_prov = aws_vm_config.vmconfig.provider.awsprovider
-        vm = VM.objects.get(id=vm_id)
-        aws_vm = vm.awsvm
+    ssh_key_name = vm.provider.ssh_key_name
+    default_security_group_id = vm.provider.default_security_group_id
+    vpc_id = vm.provider.vpc_id
 
-        ssh_key_name = aws_prov.ssh_key_name
-        default_security_group_id = aws_prov.default_security_group_id
-        vpc_id = aws_prov.vpc_id
+    name = vm.name
+    ami_id = aws_vm_config.ami_id
+    instance_type = aws_vm_config.instance_type
 
-        aws_vm_id = aws_vm.id
-        name = aws_vm.name
-        ami_id = aws_vm_config.ami_id
-        instance_type = aws_vm_config.instance_type
+    user_data = vm.provider.user_data.format(vm=vm).encode('utf-8')
 
-        user_data = aws_prov.user_data.format(vm=vm).encode('utf-8')
-    retry_in_transaction(read_vars)
-
-    ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
+    ec2_conn = ec2_connect_to_aws_vm_region(vm.pk)
 
     security_group = ec2_conn.create_security_group(
             '{}-{}'.format(name, vm_id), 'Vimma-generated', vpc_id=vpc_id)
     sec_grp_id = security_group.id
 
-    def write_sec_grp():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm.security_group_id = sec_grp_id
-        aws_vm.save()
-    retry_in_transaction(write_sec_grp)
+    AWSVM.objects.filter(id=vm_id).update(security_group_id=sec_grp_id)
 
     security_group_ids = [sec_grp_id]
     if default_security_group_id:
@@ -235,48 +198,30 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
 
 @app.task
 def power_on_vm(vm_id, user_id=None):
-    def read_vars():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        return aws_vm_id, inst_id
-
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        aws_vm_id, inst_id = retry_in_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.start_instances(instance_ids=[inst_id])
-        aud.info('Started instance', vm_id=vm_id, user_id=user_id)
-        route53_add.delay(vm_id, user_id=user_id)
+        vm = AWSVM.objects.get(id=vm_id)
+        conn = ec2_connect_to_aws_vm_region(vm.pk)
+        conn.start_instances(instance_ids=[vm.instance_id])
+        aud.info('Started instance', vm_id=vm.pk, user_id=user_id)
+        route53_add.delay(vm.pk, user_id=user_id)
 
 
 @app.task
 def power_off_vm(vm_id, user_id=None):
-    def read_vars():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        return aws_vm_id, inst_id
-
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        aws_vm_id, inst_id = retry_in_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.stop_instances(instance_ids=[inst_id])
-        aud.info('Stopped instance', vm_id=vm_id, user_id=user_id)
+        vm = AWSVM.objects.get(id=vm_id)
+        conn = ec2_connect_to_aws_vm_region(vm.pk)
+        conn.stop_instances(instance_ids=[vm.instance_id])
+        aud.info('Stopped instance', vm_id=vm.pk, user_id=user_id)
 
 
 @app.task
 def reboot_vm(vm_id, user_id=None):
-    def read_vars():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        return aws_vm_id, inst_id
-
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        aws_vm_id, inst_id = retry_in_transaction(read_vars)
-        conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        conn.reboot_instances(instance_ids=[inst_id])
-        aud.info('Rebooted instance', vm_id=vm_id, user_id=user_id)
+        vm = AWSVM.objects.get(id=vm_id)
+        conn = ec2_connect_to_aws_vm_region(vm.pk)
+        conn.reboot_instances(instance_ids=[vm.instance_id])
+        aud.info('Rebooted instance', vm_id=vm.pk, user_id=user_id)
 
 
 @app.task
@@ -291,54 +236,32 @@ def destroy_vm(vm_id, user_id=None):
 
 @app.task(bind=True, max_retries=15, default_retry_delay=60)
 def delete_security_group(self, vm_id, user_id=None):
-    def read_vars():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        sec_grp_id = aws_vm.security_group_id
-        return aws_vm_id, sec_grp_id
-
-    def write_security_group_deleted():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm.security_group_deleted = True
-        aws_vm.full_clean()
-        aws_vm.save()
-        mark_vm_destroyed_if_needed(aws_vm)
-
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
-        aws_vm_id, sec_grp_id = retry_in_transaction(read_vars)
-        # check if the VM creation failed to create the security group
-        if sec_grp_id:
-            conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-            conn.delete_security_group(group_id=sec_grp_id)
-        retry_in_transaction(write_security_group_deleted)
-    aud.info('Deleted security group {}'.format(sec_grp_id), **aud_kw)
+        vm = AWSVM.objects.get(id=vm_id)
+        if vm.security_group_id:
+            conn = ec2_connect_to_aws_vm_region(vm.pk)
+            conn.delete_security_group(group_id=vm.security_group_id)
+        vm = AWSVM.objects.get(id=vm_id)
+        vm.security_group_deleted = True
+        vm.save()
+        mark_vm_destroyed_if_needed(vm)
+    aud.info('Deleted security group {}'.format(vm.security_group_id), **aud_kw)
 
 
 @app.task(bind=True, max_retries=30, default_retry_delay=10)
 def terminate_instance(self, vm_id, user_id=None):
-    def read_vars():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm_id = aws_vm.id
-        inst_id = aws_vm.instance_id
-        return aws_vm_id, inst_id
-
-    def write_instance_terminated():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm.instance_terminated = True
-        aws_vm.full_clean()
-        aws_vm.save()
-        mark_vm_destroyed_if_needed(aws_vm)
-
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'terminate instance', **aud_kw):
-        aws_vm_id, inst_id = retry_in_transaction(read_vars)
-        # check if the VM creation failed to create the instance
-        if inst_id:
-            conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-            conn.terminate_instances(instance_ids=[inst_id])
-        retry_in_transaction(write_instance_terminated)
-    aud.info('Terminated instance {}'.format(inst_id), **aud_kw)
+        vm = AWSVM.objects.get(id=vm_id)
+        if vm.instance_id:
+            conn = ec2_connect_to_aws_vm_region(vm.pk)
+            conn.terminate_instances(instance_ids=[vm.instance_id])
+        vm = AWSVM.objects.get(id=vm_id)
+        vm.instance_terminated = True
+        vm.save()
+        mark_vm_destroyed_if_needed(vm)
+    aud.info('Terminated instance {}'.format(vm.instance_id), **aud_kw)
 
 
 @app.task
@@ -381,35 +304,23 @@ def route53_add(self, vm_id, user_id=None):
     This task does 2 things (CNAME and A). If any fails, the entire task is
     retried.
     """
-    def read_vars():
-        vm = VM.objects.get(id=vm_id)
-        aws_vm = vm.awsvm
-        aws_vm_id = aws_vm.id
-        name = aws_vm.name
-        inst_id = aws_vm.instance_id
-
-        aws_prov = vm.provider.awsprovider
-        route_53_zone = aws_prov.route_53_zone
-        return aws_vm_id, name, inst_id, route_53_zone
-
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'add route53 cname', **aud_kw):
-        aws_vm_id, name, inst_id, route_53_zone = retry_in_transaction(
-                read_vars)
-        vm_cname = (name + '.' + route_53_zone).lower()
+        vm = AWSVM.objects.get(id=vm_id)
+        vm_cname = (vm.name + '.' + vm.provider.route_53_zone).lower()
 
-        ec2_conn = ec2_connect_to_aws_vm_region(aws_vm_id)
-        instances = ec2_conn.get_only_instances(instance_ids=[inst_id])
+        ec2_conn = ec2_connect_to_aws_vm_region(vm.pk)
+        instances = ec2_conn.get_only_instances(instance_ids=[vm.instance_id])
         if len(instances) != 1:
             aud.warning('AWS returned {} instances, expected 1'.format(
                 len(instances)), **aud_kw)
             self.retry()
         instance = instances[0]
 
-        r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
+        r53_conn = route53_connect_to_aws_vm_region(vm.pk)
         priv_zone, pub_zone = None, None
         for z in r53_conn.get_zones():
-            if z.name != route_53_zone:
+            if z.name != vm.provider.route_53_zone:
                 continue
             if z.config['PrivateZone'] == 'true':
                 priv_zone = z
@@ -420,7 +331,7 @@ def route53_add(self, vm_id, user_id=None):
             pub_dns_name = instance.public_dns_name
             if not pub_dns_name:
                 aud.warning('No public DNS name for instance {}'.format(
-                    inst_id), **aud_kw)
+                    vm.instance_id), **aud_kw)
                 self.retry()
 
             if pub_zone.get_cname(vm_cname, all=True):
@@ -431,14 +342,14 @@ def route53_add(self, vm_id, user_id=None):
                     comment='Vimma-generated')
             aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
         else:
-            aud.warning('No public DNS zone named ‘{}’'.format(route_53_zone),
+            aud.warning('No public DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
                     **aud_kw)
 
         if priv_zone:
             priv_ip = instance.private_ip_address
             if not priv_ip:
                 aud.warning('No private IP address for instance{}'.format(
-                    inst_id), **aud_kw)
+                    vm.instance_id), **aud_kw)
                 self.retry()
 
             if priv_zone.get_a(vm_cname, all=True):
@@ -449,7 +360,7 @@ def route53_add(self, vm_id, user_id=None):
             aud.info('Created A record ‘{}’ {}'.format(vm_cname, priv_ip),
                     **aud_kw)
         else:
-            aud.warning('No private DNS zone named ‘{}’'.format(route_53_zone),
+            aud.warning('No private DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
                     **aud_kw)
 
 
@@ -461,25 +372,15 @@ def route53_delete(self, vm_id, user_id=None):
     This task does 2 things (CNAME and A). If any fails, the entire task is
     retried.
     """
-    def read_vars():
-        vm = VM.objects.get(id=vm_id)
-        aws_vm = vm.awsvm
-        aws_vm_id = aws_vm.id
-        name = aws_vm.name
-
-        aws_prov = vm.provider.awsprovider
-        route_53_zone = aws_prov.route_53_zone
-        return aws_vm_id, name, route_53_zone
-
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete route53 cname', **aud_kw):
-        aws_vm_id, name, route_53_zone = retry_in_transaction(read_vars)
-        vm_cname = (name + '.' + route_53_zone).lower()
+        vm = AWSVM.objects.get(id=vm_id)
+        vm_cname = (vm.name + '.' + vm.provider.route_53_zone).lower()
 
-        r53_conn = route53_connect_to_aws_vm_region(aws_vm_id)
+        r53_conn = route53_connect_to_aws_vm_region(vm.pk)
         priv_zone, pub_zone = None, None
         for z in r53_conn.get_zones():
-            if z.name != route_53_zone:
+            if z.name != vm.provider.route_53_zone:
                 continue
             if z.config['PrivateZone'] == 'true':
                 priv_zone = z
@@ -494,7 +395,7 @@ def route53_delete(self, vm_id, user_id=None):
                 aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
                         **aud_kw)
         else:
-            aud.warning('No public DNS zone named ‘{}’'.format(route_53_zone),
+            aud.warning('No public DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
                     **aud_kw)
 
         if priv_zone:
@@ -505,20 +406,18 @@ def route53_delete(self, vm_id, user_id=None):
                 aud.warning('DNS A record ‘{}’ does not exist'.format(
                     vm_cname), **aud_kw)
         else:
-            aud.warning('No private DNS zone named ‘{}’'.format(route_53_zone),
+            aud.warning('No private DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
                     **aud_kw)
 
 
-def mark_vm_destroyed_if_needed(awsvm):
+def mark_vm_destroyed_if_needed(vm):
     """
     Mark the parent .vm model destroyed if the awsvm is destroyed, else no-op.
 
     This function may only be called inside a transaction.
     """
-    if awsvm.instance_terminated and awsvm.security_group_deleted:
-        vm = awsvm.vm
+    if vm.instance_terminated and vm.security_group_deleted:
         vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
-        vm.full_clean()
         vm.save()
 
 
@@ -533,9 +432,9 @@ def create_firewall_rule(vm_id, data, user_id=None):
     """
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
+            vm = AWSVM.objects.get(id=vm_id)
+            raise('TODO: FireWallRule(vm=vm) is deprecated')
             base_fw_rule = FirewallRule.objects.create(vm=vm)
-            base_fw_rule.full_clean()
 
             ip_protocol = data['ip_protocol']
             from_port, to_port = data['from_port'], data['to_port']
@@ -560,9 +459,8 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     expiration=expiration,
                     firewallrule=base_fw_rule).full_clean()
 
-            awsvm = vm.awsvm
-            conn = ec2_connect_to_aws_vm_region(awsvm.id)
-            conn.authorize_security_group(group_id=awsvm.security_group_id,
+            conn = ec2_connect_to_aws_vm_region(vm.id)
+            conn.authorize_security_group(group_id=vm.security_group_id,
                     ip_protocol=ip_protocol,
                     from_port=from_port,
                     to_port=to_port,
