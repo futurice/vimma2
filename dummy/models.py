@@ -1,7 +1,6 @@
 from django.db import models, transaction
 
 from vimma.models import VM, VMConfig, Provider
-from vimma.controllers import DummyVMController
 
 class DummyProvider(Provider):
     pass
@@ -26,4 +25,5 @@ class DummyVM(VM):
         return self.poweredon
 
     def controller(self):
+        from dummy.controller import DummyVMController
         return DummyVMController(vm=self)

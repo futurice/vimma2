@@ -8,9 +8,8 @@ from vimma.audit import Auditor
 from vimma.celery import app
 import vimma.expiry
 from vimma.models import (
-    Provider, VM, User,
+    Provider, User,
     Expiration, VMExpiration,
-    PowerLog,
     FirewallRule,
 )
 from vimma.util import (

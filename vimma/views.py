@@ -838,8 +838,9 @@ def create_firewall_rule(request):
     try:
         body = json.loads(request.read().decode('utf-8'))
         vm_id, data = body['vmid'], body['data']
+        vm = TODO_VM_CHOICE.objects.get(pk=vm_id)
         controller = vmutil.get_vm_controller(vm_id)
-        if not controller.can_change_firewall_rules(request.user.id):
+        if not vm.controller().can_change_firewall_rules(request.user):
             return get_http_json_err('You may not change firewall rules ' +
                     'for this VM', status.HTTP_403_FORBIDDEN)
 
@@ -847,7 +848,7 @@ def create_firewall_rule(request):
             # Don't create the firewall rule when running tests
             return HttpResponse()
 
-        controller.create_firewall_rule(data, user_id=request.user.id)
+        vm.controller().create_firewall_rule(data, user_id=request.user.id)
         return HttpResponse()
     except VM.DoesNotExist as e:
         return get_http_json_err('{}'.format(e),

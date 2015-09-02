@@ -32,12 +32,8 @@ class VMController():
         """
         raise NotImplementedError()
 
-    def can_change_firewall_rules(self, user_id):
-        def call():
-            user = User.objects.get(id=user_id)
-            vm = VM.objects.get(id=self.vm.pk)
-            return can_do(user, Actions.CREATE_VM_IN_PROJECT, vm.project)
-        return retry_in_transaction(call)
+    def can_change_firewall_rules(self, user):
+        return can_do(user, Actions.CREATE_VM_IN_PROJECT, self.vm.project)
 
     def create_firewall_rule(self, data, user_id=None):
         """
@@ -135,50 +131,3 @@ class VMController():
                 vm_id=self.vm.pk)
         return self.vm.expiration.expires_at
 
-class DummyVMController(VMController):
-    """
-    VMController for vms of type dummy.
-    """
-
-    def power_on(self, user_id=None):
-        vimma.vmtype.dummy.power_on_vm.delay(self.vm.pk, user_id=user_id)
-
-    def power_off(self, user_id=None):
-        vimma.vmtype.dummy.power_off_vm.delay(self.vm.pk, user_id=user_id)
-
-    def reboot(self, user_id=None):
-        vimma.vmtype.dummy.reboot_vm.delay(self.vm.pk, user_id=user_id)
-
-    def destroy(self, user_id=None):
-        vimma.vmtype.dummy.destroy_vm.delay(self.vm.pk, user_id=user_id)
-
-    def update_status(self):
-        vimma.vmtype.dummy.update_vm_status.delay(self.vm.pk)
-
-
-class AWSVMController(VMController):
-    """
-    VMController for AWS vms.
-    """
-
-    def power_on(self, user_id=None):
-        vimma.vmtype.aws.power_on_vm.delay(self.vm.pk, user_id=user_id)
-
-    def power_off(self, user_id=None):
-        vimma.vmtype.aws.power_off_vm.delay(self.vm.pk, user_id=user_id)
-
-    def reboot(self, user_id=None):
-        vimma.vmtype.aws.reboot_vm.delay(self.vm.pk, user_id=user_id)
-
-    def destroy(self, user_id=None):
-        vimma.vmtype.aws.destroy_vm.delay(self.vm.pk, user_id=user_id)
-
-    def update_status(self):
-        vimma.vmtype.aws.update_vm_status.delay(self.vm.pk)
-
-    def create_firewall_rule(self, data, user_id=None):
-        vimma.vmtype.aws.create_firewall_rule(self.vm.pk, data,
-                user_id=user_id)
-
-    def delete_firewall_rule(self, fw_rule_id, user_id=None):
-        vimma.vmtype.aws.delete_firewall_rule(fw_rule_id, user_id=user_id)

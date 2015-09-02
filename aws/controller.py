@@ -1,9 +1,10 @@
-import boto.ec2, boto.route53, boto.vpc
-import celery.exceptions
-import datetime
 from django.conf import settings
 from django.db import transaction
 from django.utils.timezone import utc
+
+import boto.ec2, boto.route53, boto.vpc
+import celery.exceptions
+import datetime
 import random
 import sys
 import traceback
@@ -11,12 +12,37 @@ import traceback
 from vimma.audit import Auditor
 from vimma.celery import app
 from vimma.models import (
-    VM, FirewallRule, Expiration, FirewallRuleExpiration,
+    FirewallRule, Expiration, FirewallRuleExpiration,
 )
-from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule
 from vimma.util import retry_in_transaction
+from vimma.controllers import VMController
+
+from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule
 
 aud = Auditor(__name__)
+
+class AWSVMController(VMController):
+    def power_on(self, user_id=None):
+        power_on_vm.delay(self.vm.pk, user_id=user_id)
+
+    def power_off(self, user_id=None):
+        power_off_vm.delay(self.vm.pk, user_id=user_id)
+
+    def reboot(self, user_id=None):
+        reboot_vm.delay(self.vm.pk, user_id=user_id)
+
+    def destroy(self, user_id=None):
+        destroy_vm.delay(self.vm.pk, user_id=user_id)
+
+    def update_status(self):
+        update_vm_status.delay(self.vm.pk)
+
+    def create_firewall_rule(self, data, user_id=None):
+        create_firewall_rule(self.vm.pk, data,
+                user_id=user_id)
+
+    def delete_firewall_rule(self, fw_rule_id, user_id=None):
+        delete_firewall_rule(fw_rule_id, user_id=user_id)
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
@@ -195,12 +221,8 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
     # Don't overwrite the DB with our stale field values (from before the API
     # calls). Instead, read&update the DB.
 
-    def update_db():
-        aws_vm = VM.objects.get(id=vm_id).awsvm
-        aws_vm.reservation_id = reservation.id
-        aws_vm.instance_id = inst_id
-        aws_vm.save()
-    retry_in_transaction(update_db)
+    AWSVM.objects.filter(id=vm_id).update(reservation_id=reservation.id,
+        instance_id=inst_id)
 
     if inst:
         inst.add_tags({
@@ -568,3 +590,4 @@ def delete_firewall_rule(fw_rule_id, user_id=None):
         fw_rule.delete()
 
     aud.info('Deleted a firewall rule', vm_id=vm_id, user_id=user_id)
+

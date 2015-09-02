@@ -3,14 +3,32 @@ from django.utils.timezone import utc
 
 from vimma.audit import Auditor
 from vimma.celery import app
-from vimma.models import VM
+from vimma.util import retry_in_transaction
+from vimma.controllers import VMController
+
 from dummy.models import DummyVM
 
-from vimma.util import retry_in_transaction
-import vimma.vmutil
-
-
 aud = Auditor(__name__)
+
+class DummyVMController(VMController):
+    """
+    VMController for vms of type dummy.
+    """
+
+    def power_on(self, user_id=None):
+        power_on_vm.delay(self.vm.pk, user_id=user_id)
+
+    def power_off(self, user_id=None):
+        power_off_vm.delay(self.vm.pk, user_id=user_id)
+
+    def reboot(self, user_id=None):
+        reboot_vm.delay(self.vm.pk, user_id=user_id)
+
+    def destroy(self, user_id=None):
+        destroy_vm.delay(self.vm.pk, user_id=user_id)
+
+    def update_status(self):
+        update_vm_status.delay(self.vm.pk)
 
 
 def create_vm(vm, data, user_id, *args, **kwargs):
@@ -26,7 +44,6 @@ def create_vm(vm, data, user_id, *args, **kwargs):
     the returned callables only after committing.
     """
     dummyVM = DummyVM.objects.create(vm=vm, name=data['name'])
-    dummyVM.full_clean()
 
     aud.info('Created VM', user_id=user_id, vm_id=vm.id)
 
@@ -141,4 +158,5 @@ def update_vm_status(vm_id):
 
         vm.controller().power_log(poweredon)
         if not destroyed:
-            vimma.vmutil.switch_on_off(vm_id, poweredon)
+            self.switch_on_off(vm_id, poweredon)
+
