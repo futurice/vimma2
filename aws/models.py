@@ -47,10 +47,12 @@ class AWSVMConfig(VMConfig, models.Model):
                 self.name)
 
 class AWSProvider(Provider):
-    # these must not be exposed via the API
+
+    # names of environment variables for actual lookups
     access_key_id = models.CharField(max_length=100, blank=True)
     access_key_secret = models.CharField(max_length=100, blank=True)
     ssh_key_name = models.CharField(max_length=50, blank=True)
+
     # 'example.com.'
     route_53_zone = models.CharField(max_length=100, blank=True)
     # Optional security group added to every vm, in addition to the vm's

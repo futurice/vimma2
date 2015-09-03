@@ -49,8 +49,8 @@ vmc1B,_ = DummyVMConfig.objects.get_or_create(provider=dummyprov, name='Config B
 # AWS
 awsprov,_ = AWSProvider.objects.get_or_create(
         name='AWS', type=Provider.TYPE_AWS, max_override_seconds=60*60,
-        access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        access_key_secret=os.getenv('AWS_ACCESS_KEY_SECRET'),
+        access_key_id='AWS_ACCESS_KEY_ID',
+        access_key_secret='AWS_ACCESS_KEY_SECRET',
         ssh_key_name=os.getenv('AWS_SSH_KEY_NAME'),
         route_53_zone=os.getenv('AWS_ROUTE_53_NAME'),
         default_security_group_id=os.getenv('AWS_DEFAULT_SECURITY_GROUP_ID'),

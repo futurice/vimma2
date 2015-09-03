@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.timezone import utc
 
-import boto.ec2, boto.route53, boto.vpc
+import boto.ec2, boto.route53, boto.vpc, os
 import celery.exceptions
 import datetime
 import random
@@ -56,8 +56,8 @@ def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.ec2.connect_to_region(vm.region,
-            aws_access_key_id=vm.provider.access_key_id,
-            aws_secret_access_key=vm.provider.access_key_secret)
+            aws_access_key_id=os.getenv(vm.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
 
 
 def route53_connect_to_aws_vm_region(aws_vm_id):
@@ -66,8 +66,8 @@ def route53_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.route53.connect_to_region(vm.region,
-            aws_access_key_id=vm.provider.access_key_id,
-            aws_secret_access_key=vm.provider.access_key_secret)
+            aws_access_key_id=os.getenv(vm.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
 
 
 def vpc_connect_to_aws_vm_region(aws_vm_id):
@@ -76,8 +76,8 @@ def vpc_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.vpc.connect_to_region(vm.region,
-            aws_access_key_id=vm.provider.access_key_id,
-            aws_secret_access_key=vm.provider.access_key_secret)
+            aws_access_key_id=os.getenv(vm.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
 
 
 def create_vm(vmconfig, vm, data, user_id):

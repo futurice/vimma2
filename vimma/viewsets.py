@@ -16,6 +16,10 @@ from vimma.util import (
         retry_in_transaction,
 )
 
+
+def default_fields(model):
+    return tuple([k.name for k in model._meta.fields])
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

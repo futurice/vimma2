@@ -5,10 +5,7 @@ from rest_framework.permissions import (
 
 from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
 
-from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet
-
-def default_fields(model):
-    return tuple([k.name for k in DummyProvider._meta.fields])
+from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, default_fields
 
 class DummyProviderSerializer(serializers.ModelSerializer):
     class Meta:

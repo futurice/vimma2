@@ -4,7 +4,7 @@ from rest_framework.permissions import (
 )
 
 from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
-from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet
+from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet, default_fields
 
 class AWSProviderSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
@@ -14,7 +14,7 @@ class AWSProviderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AWSProvider
-        fields = ('id', 'name', 'full_name', 'route_53_zone', 'config',)
+        fields = default_fields(AWSProvider)+('full_name','config',)
         depth = 1
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
