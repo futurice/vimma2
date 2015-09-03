@@ -24,8 +24,6 @@ from vimma.models import (
     Audit, Expiration, VMExpiration,
     FirewallRule, FirewallRuleExpiration,
 )
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
 
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
@@ -33,9 +31,9 @@ from vimma.util import (
 )
 from vimmasite.pagination import VimmaPagination
 
+from aws.models import AWSFirewallRule
 
 aud = Auditor(__name__)
-
 
 @login_required_or_forbidden
 def index(request):
@@ -44,6 +42,9 @@ def index(request):
 aws_firewall_rule_protocol_choices_json = json.dumps([
     {'value': c[0], 'label': c[1]}
     for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
+
+audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
+    for c in Audit.LEVEL_CHOICES])
 
 @login_required_or_forbidden
 def base_js(request):
@@ -150,7 +151,6 @@ def power_on_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not power on VMs in this project',
                 status.HTTP_403_FORBIDDEN)
-    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
@@ -193,7 +193,6 @@ def power_off_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not power off VMs in this project',
                 status.HTTP_403_FORBIDDEN)
-    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests
@@ -236,7 +235,6 @@ def reboot_vm(request):
             Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, vm.project):
         return get_http_json_err('You may not reboot VMs in this project',
                 status.HTTP_403_FORBIDDEN)
-    del vm
 
     if request.META['SERVER_NAME'] == "testserver":
         # Don't perform the action when running tests

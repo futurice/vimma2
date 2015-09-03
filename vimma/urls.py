@@ -9,23 +9,26 @@ from vimma.viewsets import (
     TimeZoneViewSet,
     ScheduleViewSet,
     ProjectViewSet,
+    FirewallRuleViewSet,
+    VMExpirationViewSet,
+    FirewallRuleExpirationViewSet,
+)
 
+from dummy.viewsets import (
     DummyProviderViewSet,
     DummyVMConfigViewSet,
     DummyVMViewSet,
     DummyAuditViewSet,
     DummyPowerLogViewSet,
+)
 
+from aws.viewsets import (
     AWSProviderViewSet,
     AWSVMConfigViewSet,
     AWSVMViewSet,
     AWSAuditViewSet,
     AWSPowerLogViewSet,
     AWSFirewallRuleViewSet,
-
-    FirewallRuleViewSet,
-    VMExpirationViewSet,
-    FirewallRuleExpirationViewSet,
 )
 
 from vimma.views import (

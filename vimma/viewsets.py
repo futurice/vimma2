@@ -15,8 +15,6 @@ from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
         retry_in_transaction,
 )
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,7 +27,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id', 'projects',)
 
-
 class TimeZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = TimeZone
@@ -39,7 +36,6 @@ class TimeZoneViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TimeZone.objects.all()
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
-
 
 class SchedulePermission(BasePermission):
     """
@@ -61,7 +57,6 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
-
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
@@ -77,123 +72,24 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
             return Project.objects.filter()
         return user.projects
 
-
-class DummyProviderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DummyProvider
-
-class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DummyProviderSerializer
-    queryset = DummyProvider.objects.all()
-
-class AWSProviderSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
-
-    def get_full_name(self, obj):
-        return '{} {}'.format(obj.name, obj.route_53_zone)
-
-    class Meta:
-        model = AWSProvider
-        fields = ('id', 'name', 'full_name', 'route_53_zone',)
-
-class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSProviderSerializer
-    queryset = AWSProvider.objects.all()
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('id',)
-
-class DummyVMConfigSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DummyVMConfig
-
-class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DummyVMConfigSerializer
-    queryset = DummyVMConfig.objects.all()
-
-class AWSVMConfigSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AWSVMConfig
-
-class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSVMConfigSerializer
-    queryset = AWSVMConfig.objects.all()
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('id',)
-
-
 class VMSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VM
-        depth = 1
-
-class VMViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = VMSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('project',)
-
-    def get_queryset(self):
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return VM.objects.filter()
-
-        # This also works, but Mihai doesn't know if it hides any traps, e.g.
-        # by comparing objects instead of integers:
-        #return VM.objects.filter(project__in=user.projects.filter())
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return VM.objects.filter(project__id__in=prj_ids)
-
-
-class DummyVMSerializer(serializers.ModelSerializer):
     isOn = serializers.SerializerMethodField()
 
     def get_isOn(self, obj):
         return obj.isOn()
 
-    class Meta:
-        model = DummyVM
-        depth = 1
-
-class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DummyVMSerializer
+class VMViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('id',)
+    filter_fields = ('project','name',)
 
     def get_queryset(self):
         user = self.request.user
+        model = self.serializer_class.Meta.model
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return DummyVM.objects.filter()
+            return model.objects.filter()
 
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return DummyVM.objects.filter(vm__project__id__in=prj_ids)
-
-
-class AWSVMSerializer(serializers.ModelSerializer):
-    isOn = serializers.SerializerMethodField('isOn')
-
-    class Meta:
-        model = AWSVM
-
-class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSVMSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('name',)
-
-    def get_queryset(self):
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return AWSVM.objects.filter()
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return AWSVM.objects.filter(vm__project__id__in=prj_ids)
-
-
-class DummyAuditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DummyAudit
+        prj_ids = [p.id for p in user.projects.all()]
+        return model.objects.filter(project__id__in=prj_ids)
 
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
@@ -216,24 +112,6 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(level__gte=min_lvl)
         return queryset
 
-class DummyAuditViewSet(AuditViewSet):
-    serializer_class = DummyAuditSerializer
-
-class AWSAuditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AWSAudit
-
-class AWSAuditViewSet(AuditViewSet):
-    serializer_class = AWSAuditSerializer
-
-audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
-    for c in Audit.LEVEL_CHOICES])
-
-
-class DummyPowerLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DummyPowerLog
-
 class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('vm',)
@@ -248,17 +126,6 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
             projects = user.projects.all()
             prj_ids = [p.id for p in projects]
             return model.objects.filter(vm__project__id__in=prj_ids)
-
-class DummyPowerLogViewSet(PowerLogViewSet):
-    serializer_class = DummyPowerLogSerializer
-
-class AWSPowerLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AWSPowerLog
-
-class AWSPowerLogViewSet(PowerLogViewSet):
-    serializer_class = AWSPowerLogSerializer
-
 
 class VMExpirationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -278,7 +145,6 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         projects = user.projects.all()
         prj_ids = [p.id for p in projects]
         return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
-
 
 class FirewallRuleExpirationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -300,7 +166,6 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         prj_ids = [p.id for p in projects]
         return FirewallRuleExpiration.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)
-
 
 class FirewallRuleSerializer(serializers.ModelSerializer):
     expiration = FirewallRuleExpirationSerializer()
@@ -324,23 +189,3 @@ class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
         prj_ids = [p.id for p in projects]
         return FirewallRule.objects.filter(vm__project__id__in=prj_ids)
 
-
-class AWSFirewallRuleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AWSFirewallRule
-        depth = 2
-
-class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSFirewallRuleSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('firewallrule',)
-
-    def get_queryset(self):
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return AWSFirewallRule.objects.filter()
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return AWSFirewallRule.objects.filter(
-                firewallrule__vm__project__id__in=prj_ids)
