@@ -2,7 +2,7 @@
   "name": "vimma",
   "private": true,
   "dependencies": {
-    "polymer": "Polymer/polymer#~1.0",
+    "polymer": "Polymer/polymer#~1.1",
     "iron-elements": "PolymerElements/iron-elements#1.0",
     "paper-elements": "PolymerElements/paper-elements#1.0",
     "jquery": "2.1.4",
