@@ -8,7 +8,7 @@ import re
 from vimma.models import VM, VMConfig, Provider, Audit, PowerLog
 
 class AWSVMConfig(VMConfig, models.Model):
-    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT)
+    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT, related_name="config")
 
     regions = sorted([
         'ap-northeast-1',

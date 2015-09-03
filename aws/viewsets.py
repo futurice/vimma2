@@ -14,7 +14,8 @@ class AWSProviderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AWSProvider
-        fields = ('id', 'name', 'full_name', 'route_53_zone',)
+        fields = ('id', 'name', 'full_name', 'route_53_zone', 'config',)
+        depth = 1
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSProviderSerializer

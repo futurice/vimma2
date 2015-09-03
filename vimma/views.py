@@ -26,8 +26,8 @@ from vimma.models import (
 )
 
 from vimma.util import (
-        can_do, login_required_or_forbidden, get_http_json_err,
-        retry_in_transaction,
+    can_do, login_required_or_forbidden, get_http_json_err,
+    retry_in_transaction,
 )
 from vimmasite.pagination import VimmaPagination
 

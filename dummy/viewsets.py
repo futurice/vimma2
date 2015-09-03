@@ -7,9 +7,14 @@ from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, Dumm
 
 from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet
 
+def default_fields(model):
+    return tuple([k.name for k in DummyProvider._meta.fields])
+
 class DummyProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = DummyProvider
+        fields = default_fields(DummyProvider)+('config',)
+        depth = 1
 
 class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DummyProviderSerializer
