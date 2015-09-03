@@ -229,6 +229,10 @@ class VM(models.Model):
     def implementations(cls):
         return VM.__subclasses__()
 
+    @classmethod
+    def choices(cls):
+        return {k().__class__.__name__.lower():k for k in VM.implementations()}
+
     def __str__(self):
         return self.name
 

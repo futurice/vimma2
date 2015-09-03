@@ -216,7 +216,7 @@ class DummyAuditSerializer(serializers.ModelSerializer):
 
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('user',)
+    filter_fields = ('user','vm',)
     ordering = ('-timestamp')
 
     def get_queryset(self):
@@ -255,7 +255,7 @@ class DummyPowerLogSerializer(serializers.ModelSerializer):
 
 class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('id',)
+    filter_fields = ('vm',)
     ordering = ('-timestamp',)
 
     def get_queryset(self):
@@ -401,6 +401,7 @@ def create_vm(request):
 
     JSON request body:
     {
+        type: string,
         project: int,
         vmconfig: int,
         schedule: int,
@@ -415,8 +416,7 @@ def create_vm(request):
 
     body = json.loads(request.read().decode('utf-8'))
 
-    # TODO: type inormation provided by client for AWS/Dummy/..
-    config_type = DummyConfig
+    vm = VM.choices()[body['type']]
 
     try:
         prj = Project.objects.get(id=body['project'])
@@ -446,16 +446,9 @@ def create_vm(request):
         # Don't create the VMs when running tests
         return HttpResponse()
 
-    try:
-        vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
-                request.user.id)
-        return HttpResponse()
-    except Exception as e:
-        print(e)
-        lines = traceback.format_exception_only(*sys.exc_info()[:2])
-        msg = ''.join(lines)
-        aud.error(msg, user_id=request.user.id)
-        return get_http_json_err(msg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+    vimma.vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
+            request.user.id)
+    return HttpResponse()
 
 
 @login_required_or_forbidden
