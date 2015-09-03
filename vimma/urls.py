@@ -4,7 +4,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from rest_framework import routers
 
-from vimma.views import (
+from vimma.viewsets import (
     UserViewSet,
     TimeZoneViewSet,
     ScheduleViewSet,
@@ -26,7 +26,9 @@ from vimma.views import (
     FirewallRuleViewSet,
     VMExpirationViewSet,
     FirewallRuleExpirationViewSet,
+)
 
+from vimma.views import (
     index, base_js, test,
     create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
     override_schedule, change_vm_schedule, set_expiration,
