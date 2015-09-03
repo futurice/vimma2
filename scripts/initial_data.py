@@ -40,7 +40,7 @@ sbiz,_ = Schedule.objects.get_or_create(name='8-17', timezone=tz_hki,
 
 # DUMMY
 dummyprov,_ = DummyProvider.objects.get_or_create(name='Dummy',
-        type=Provider.TYPE_DUMMY, max_override_seconds=60*60)
+        max_override_seconds=60*60)
 vmc1A,_ = DummyVMConfig.objects.get_or_create(provider=dummyprov, name='Config A',
         default_schedule=saon)
 vmc1B,_ = DummyVMConfig.objects.get_or_create(provider=dummyprov, name='Config B',
@@ -48,7 +48,7 @@ vmc1B,_ = DummyVMConfig.objects.get_or_create(provider=dummyprov, name='Config B
 
 # AWS
 awsprov,_ = AWSProvider.objects.get_or_create(
-        name='AWS', type=Provider.TYPE_AWS, max_override_seconds=60*60,
+        name='AWS', max_override_seconds=60*60,
         access_key_id='AWS_ACCESS_KEY_ID',
         access_key_secret='AWS_ACCESS_KEY_SECRET',
         ssh_key_name=os.getenv('AWS_SSH_KEY_NAME'),

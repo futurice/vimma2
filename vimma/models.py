@@ -104,20 +104,9 @@ class Provider(models.Model):
     """
     A provider of virtual machines.
 
-    This model holds fields common across all models. Additional data specific
-    to this provider's type (e.g. Amazon Web Services) is held in a linked
-    model via a one-to-one field.
-
-    E.g. each account at Amazon Web Services is a different Provider.
+    This abstract model holds fields common across all models.
     """
-    TYPE_DUMMY = 'dummy'
-    TYPE_AWS = 'aws'
-    TYPE_CHOICES = (
-        (TYPE_DUMMY, 'Dummy'),
-        (TYPE_AWS, 'Amazon Web Services'),
-    )
     name = models.CharField(max_length=50, unique=True)
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     # the maximum length of a schedule override which users may place on a VM
     max_override_seconds = models.BigIntegerField(default=0)
     # To create a VM from a Config belonging to a ‘special’ provider,
