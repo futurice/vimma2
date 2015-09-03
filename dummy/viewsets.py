@@ -36,7 +36,6 @@ class DummyVMSerializer(VMSerializer):
 class DummyVMViewSet(VMViewSet):
     serializer_class = DummyVMSerializer
 
-
 class DummyAuditSerializer(serializers.ModelSerializer):
     class Meta:
         model = DummyAudit

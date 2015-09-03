@@ -4,7 +4,7 @@ from rest_framework.permissions import (
 )
 
 from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
-from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet
+from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet
 
 class AWSProviderSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
@@ -60,17 +60,5 @@ class AWSFirewallRuleSerializer(serializers.ModelSerializer):
         model = AWSFirewallRule
         depth = 2
 
-class AWSFirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
+class AWSFirewallRuleViewSet(FirewallRuleViewSet):
     serializer_class = AWSFirewallRuleSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('firewallrule',)
-
-    def get_queryset(self):
-        user = self.request.user
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return AWSFirewallRule.objects.filter()
-
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return AWSFirewallRule.objects.filter(
-                firewallrule__vm__project__id__in=prj_ids)

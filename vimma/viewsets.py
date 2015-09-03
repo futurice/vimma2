@@ -158,13 +158,14 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        model = self.serializer_class.Meta.model
 
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return FirewallRuleExpiration.objects.filter()
+            return model.objects.filter()
 
         projects = user.projects.all()
         prj_ids = [p.id for p in projects]
-        return FirewallRuleExpiration.objects.filter(
+        return model.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)
 
 class FirewallRuleSerializer(serializers.ModelSerializer):
@@ -182,10 +183,11 @@ class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        model = self.serializer_class.Meta.model
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return FirewallRule.objects.filter()
+            return model.objects.filter()
 
         projects = user.projects.all()
         prj_ids = [p.id for p in projects]
-        return FirewallRule.objects.filter(vm__project__id__in=prj_ids)
+        return model.objects.filter(vm__project__id__in=prj_ids)
 
