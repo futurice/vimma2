@@ -39,10 +39,10 @@ INSTALLED_APPS = (
     'aws',
 
     'rest_framework',
-    #'django_extensions',
+    'django_extensions',
 )
 
-STATICFILES_DIRS = DEFAULT_SETTINGS.STATICFILES_DIRS
+STATICFILES_DIRS = list(DEFAULT_SETTINGS.STATICFILES_DIRS)
 if DEBUG:
     STATICFILES_DIRS = STATICFILES_DIRS + [
         os.path.join(BASE_DIR, '..', 'static/'),

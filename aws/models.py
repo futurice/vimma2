@@ -5,7 +5,7 @@ import logging
 import ipaddress
 import re
 
-from vimma.models import VM, VMConfig, Provider
+from vimma.models import VM, VMConfig, Provider, Audit, PowerLog
 
 class AWSVMConfig(VMConfig, models.Model):
     provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT)
@@ -140,4 +140,8 @@ class AWSFirewallRule(models.Model):
             return True
         return False
 
+class AWSAudit(Audit, models.Model):
+    vm = models.ForeignKey('aws.AWSVM', related_name="audit")
 
+class AWSPowerLog(PowerLog, models.Model):
+    vm = models.ForeignKey('aws.AWSVM', related_name="powerlog")

@@ -6,13 +6,27 @@ from rest_framework import routers
 
 from vimma.views import (
     UserViewSet,
-    TimeZoneViewSet, ScheduleViewSet, ProjectViewSet,
-    DummyProviderViewSet, AWSProviderViewSet,
-    DummyVMConfigViewSet, AWSVMConfigViewSet,
-    DummyVMViewSet, AWSVMViewSet,
-    FirewallRuleViewSet, AWSFirewallRuleViewSet,
-    AuditViewSet, PowerLogViewSet, VMExpirationViewSet,
+    TimeZoneViewSet,
+    ScheduleViewSet,
+    ProjectViewSet,
+
+    DummyProviderViewSet,
+    DummyVMConfigViewSet,
+    DummyVMViewSet,
+    DummyAuditViewSet,
+    DummyPowerLogViewSet,
+
+    AWSProviderViewSet,
+    AWSVMConfigViewSet,
+    AWSVMViewSet,
+    AWSAuditViewSet,
+    AWSPowerLogViewSet,
+    AWSFirewallRuleViewSet,
+
+    FirewallRuleViewSet,
+    VMExpirationViewSet,
     FirewallRuleExpirationViewSet,
+
     index, base_js, test,
     create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
     override_schedule, change_vm_schedule, set_expiration,
@@ -26,22 +40,23 @@ router.register(r'timezones', TimeZoneViewSet)
 router.register(r'schedules', ScheduleViewSet)
 router.register(r'projects', ProjectViewSet, 'project')
 
-router.register(r'dummyproviders', DummyProviderViewSet)
-router.register(r'awsproviders', AWSProviderViewSet)
-
-router.register(r'dummyvmconfigs', DummyVMConfigViewSet)
-router.register(r'awsvmconfigs', AWSVMConfigViewSet)
-
 router.register(r'dummyvms', DummyVMViewSet, 'dummyvm')
-router.register(r'awsvm', AWSVMViewSet, 'awsvm')
+router.register(r'dummyproviders', DummyProviderViewSet)
+router.register(r'dummyvmconfigs', DummyVMConfigViewSet)
+router.register(r'dummyaudit', DummyAuditViewSet, 'dummyaudit')
+router.register(r'dummypowerlog', DummyPowerLogViewSet, 'dummypowerlog')
 
-router.register(r'audit', AuditViewSet, 'audit')
-router.register(r'powerlog', PowerLogViewSet, 'powerlog')
+router.register(r'awsvm', AWSVMViewSet, 'awsvm')
+router.register(r'awsproviders', AWSProviderViewSet)
+router.register(r'awsvmconfigs', AWSVMConfigViewSet)
+router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
+router.register(r'awsaudit', AWSAuditViewSet, 'awsaudit')
+router.register(r'awspowerlog', AWSPowerLogViewSet, 'awspowerlog')
+
 router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')
 router.register(r'firewallruleexpiration', FirewallRuleExpirationViewSet,
         'firewallruleexpiration')
 router.register(r'firewallrule', FirewallRuleViewSet, 'firewallrule')
-router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
 
 urlpatterns = [
     url(r'^api/', include(router.urls)),

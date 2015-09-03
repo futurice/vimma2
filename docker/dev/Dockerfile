@@ -18,7 +18,9 @@ RUN apt-get update && apt-get install -y \
 
 # Development dependencies
 RUN apt-get update && apt-get install -y \
-    default-jre xvfb chromium-browser firefox
+    default-jre xvfb chromium-browser firefox \
+    pkg-config graphviz graphviz-dev
+
 # Install Google Chrome: web-component-tester doesn't detect Chromium
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
@@ -57,19 +59,20 @@ ENV LC_ALL en_US.UTF-8
 RUN useradd -m app
 RUN mkdir -p /opt/app
 RUN chown app /opt/app
+RUN mkdir /opt/static
 
-ADD docker/dev/requirements.txt /opt/app/
-ADD docker/dev/package.json /opt/app/
-ADD docker/dev/bower.json /opt/static/
+COPY docker/dev/requirements.txt /opt/static/requirements.txt
+COPY docker/dev/package.json /opt/static/package.json
+COPY docker/dev/bower.json /opt/static/bower.json
 RUN chown -R app /opt/static/
 
-RUN pip3 install -r requirements.txt
+RUN cd /opt/static/ && pip3 install -r requirements.txt
 
 USER app
 
-RUN npm install
+RUN cd /opt/static/ && npm install
 RUN mkdir -p /opt/static/bower_components
-RUN cd /opt/static/ && /opt/app/node_modules/.bin/bower install
+RUN cd /opt/static/ && /opt/static/node_modules/.bin/bower install
 
 ADD docker/dev/supervisord.conf /etc/supervisor/supervisord.conf
 ADD docker/dev/nginx.conf /etc/nginx/

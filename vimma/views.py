@@ -21,11 +21,11 @@ import vimma.expiry
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
-    Audit, PowerLog, Expiration, VMExpiration,
+    Audit, Expiration, VMExpiration,
     FirewallRule, FirewallRuleExpiration,
 )
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
+from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
 
 from vimma.util import (
         can_do, login_required_or_forbidden, get_http_json_err,
@@ -191,6 +191,7 @@ class DummyVMViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AWSVMSerializer(serializers.ModelSerializer):
     isOn = serializers.SerializerMethodField('isOn')
+
     class Meta:
         model = AWSVM
 
@@ -209,54 +210,73 @@ class AWSVMViewSet(viewsets.ReadOnlyModelViewSet):
         return AWSVM.objects.filter(vm__project__id__in=prj_ids)
 
 
-class AuditSerializer(serializers.ModelSerializer):
+class DummyAuditSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Audit
+        model = DummyAudit
 
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AuditSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('user',)
     ordering = ('-timestamp')
 
     def get_queryset(self):
+        model = self.serializer_class.Meta.model
         user = self.request.user
         if can_do(user, Actions.READ_ALL_AUDITS):
-            queryset = Audit.objects.filter()
+            queryset = model.objects.filter()
         else:
             projects = user.projects.all()
             prj_ids = [p.id for p in projects]
-            queryset = Audit.objects.filter(Q(vm__project__id__in=prj_ids) |
+            queryset = model.objects.filter(Q(vm__project__id__in=prj_ids) |
                     Q(user__id=user.id))
 
-        min_lvl = self.request.QUERY_PARAMS.get('min_level', None)
+        min_lvl = self.request.query_params.get('min_level', None)
         if min_lvl is not None:
             queryset = queryset.filter(level__gte=min_lvl)
         return queryset
 
+class DummyAuditViewSet(AuditViewSet):
+    serializer_class = DummyAuditSerializer
+
+class AWSAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSAudit
+
+class AWSAuditViewSet(AuditViewSet):
+    serializer_class = AWSAuditSerializer
 
 audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
     for c in Audit.LEVEL_CHOICES])
 
 
-class PowerLogSerializer(serializers.ModelSerializer):
+class DummyPowerLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PowerLog
+        model = DummyPowerLog
 
 class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = PowerLogSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('id',)
     ordering = ('-timestamp',)
 
     def get_queryset(self):
         user = self.request.user
+        model = self.serializer_class.Meta.model
         if can_do(user, Actions.READ_ALL_POWER_LOGS):
-            return PowerLog.objects.filter()
+            return model.objects.filter()
         else:
             projects = user.projects.all()
             prj_ids = [p.id for p in projects]
-            return PowerLog.objects.filter(vm__project__id__in=prj_ids)
+            return model.objects.filter(vm__project__id__in=prj_ids)
+
+class DummyPowerLogViewSet(PowerLogViewSet):
+    serializer_class = DummyPowerLogSerializer
+
+class AWSPowerLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSPowerLog
+
+class AWSPowerLogViewSet(PowerLogViewSet):
+    serializer_class = AWSPowerLogSerializer
 
 
 class VMExpirationSerializer(serializers.ModelSerializer):

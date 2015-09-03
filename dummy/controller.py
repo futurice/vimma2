@@ -6,7 +6,7 @@ from vimma.celery import app
 from vimma.util import retry_in_transaction
 from vimma.controllers import VMController
 
-from dummy.models import DummyVM
+from dummy.models import DummyVM, DummyPowerLog
 
 aud = Auditor(__name__)
 
@@ -30,8 +30,14 @@ class DummyVMController(VMController):
     def update_status(self):
         update_vm_status.delay(self.vm.pk)
 
+    def power_log(self, powered_on):
+        """
+        PowerLog the current vm state (ON/OFF).
+        """
+        DummyPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
-def create_vm(vm, data, user_id, *args, **kwargs):
+
+def create_vm(data, user_id, *args, **kwargs):
     """
     Create a dummy VM, linking to parent ‘vm’, from ‘data’ → (vm, callables)
 
@@ -43,7 +49,7 @@ def create_vm(vm, data, user_id, *args, **kwargs):
     This function must be called inside a transaction. The caller must execute
     the returned callables only after committing.
     """
-    vm = DummyVM.objects.create(vm=vm, name=data['name'])
+    vm = DummyVM.objects.create(name=data['name'])
 
     aud.info('Created VM', user_id=user_id, vm_id=vm.id)
 
@@ -109,10 +115,7 @@ def destroy_vm(vm_id, user_id=None):
 
 @app.task
 def update_vm_status(vm_id):
-    def call():
-        """
-        Returns the fields destroyed, poweredon from the model.
-        """
+    with aud.ctx_mgr(vm_id=vm_id):
         vm = DummyVM.objects.get(id=vm_id)
         if vm.destroyed:
             new_status = 'destroyed'
@@ -121,16 +124,12 @@ def update_vm_status(vm_id):
         vm.status = new_status
         vm.save()
         aud.debug('Update status ‘{}’'.format(new_status), vm_id=vm_id)
-        return vm.destroyed, vm.poweredon
 
-    with aud.ctx_mgr(vm_id=vm_id):
-        destroyed, poweredon = retry_in_transaction(call)
-        if destroyed:
-            poweredon = False
+        poweredon = False if vm.destroyed else True
 
         vm.controller().set_vm_status_updated_at_now()
 
         vm.controller().power_log(poweredon)
-        if not destroyed:
-            self.switch_on_off(vm_id, poweredon)
+        if not vm.destroyed:
+            vm.controller().switch_on_off(vm.poweredon)
 

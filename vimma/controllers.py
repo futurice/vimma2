@@ -1,5 +1,12 @@
+from django.utils.timezone import utc
+
+import datetime
+
+from vimma.audit import Auditor
 from vimma.util import schedule_at_tstamp
 from vimma.celery import app
+
+aud = Auditor(__name__)
 
 class VMController():
     """
@@ -48,18 +55,10 @@ class VMController():
         """
         PowerLog the current vm state (ON/OFF).
         """
-        def do_log():
-            PowerLog.objects.create(vm=self.vm, powered_on=powered_on)
-
-        with aud.ctx_mgr(vm_id=vm_id):
-            if type(powered_on) is not bool:
-                raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
-                    powered_on, type(powered_on), bool))
-
-            retry_in_transaction(do_log)
+        raise NotImplementedError()
 
     def set_vm_status_updated_at_now(self):
-        self.vm.update(status_updated_at=datetime.datetime.utcnow().replace(tzinfo=utc))
+        self.vm._meta.model.objects.filter(id=self.vm.pk).update(status_updated_at=datetime.datetime.utcnow().replace(tzinfo=utc))
 
     def switch_on_off(self, powered_on):
         """
@@ -117,6 +116,9 @@ class VMController():
         If the VM has expired → OFF. Else if there's a schedule override, use that.
         Else computed from the vm's schedule.
         """
+        if not self.vm.expiration:
+            return False
+
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
         if now > self.vm.expiration.expires_at.timestamp():
             return False

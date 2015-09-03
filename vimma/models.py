@@ -198,7 +198,6 @@ class VM(models.Model):
     provider = "PARENT IMPLEMENTS models.ForeignKey(Provider, on_delete=models.PROTECT)"
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-    audit = models.ForeignKey('vimma.Audit', on_delete=models.CASCADE, null=True, blank=True)
     expiration = models.OneToOneField('vimma.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)
     firewallrules = models.ManyToManyField('vimma.FirewallRule', blank=True)
 
@@ -237,18 +236,6 @@ class VM(models.Model):
         abstract = True
 
 
-class PowerLog(models.Model):
-    """
-    The power state (ON or OFF) of a VM at a point in time.
-
-    If you're not sure what the vm's state is (e.g. you encountered an error
-    while checking it) don't create a PowerLog object.
-    """
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    # True → ON, False → OFF. Can't be None, so the value must be explicit.
-    powered_on = models.BooleanField(default=None)
-
-
 class Expiration(models.Model):
     """
     An item that expires.
@@ -277,6 +264,20 @@ class VMExpiration(Expiration):
 class FirewallRuleExpiration(Expiration):
     controller = ('vimma.expiry', 'FirewallRuleExpirationController')
 
+class PowerLog(models.Model):
+    """
+    The power state (ON or OFF) of a VM at a point in time.
+
+    If you're not sure what the vm's state is (e.g. you encountered an error
+    while checking it) don't create a PowerLog object.
+    """
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    # True → ON, False → OFF. Can't be None, so the value must be explicit.
+    powered_on = models.BooleanField(default=None)
+
+    class Meta:
+        abstract = True
+
 class Audit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -299,15 +300,18 @@ class Audit(models.Model):
         WARNING: logging.WARNING,
         ERROR: logging.ERROR,
     }
-    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
 
-    # Constant used outside this class, e.g. to trim longer text before
-    # creating an Audit object.
-    TEXT_MAX_LENGTH=4096
-    text = models.CharField(max_length=TEXT_MAX_LENGTH)
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+    text = models.TextField()
 
     # Objects this audit message is related to, if any
     user = models.ForeignKey('vimma.User', null=True, blank=True,
             on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return "%s..."%self.text[:40]
+
+    class Meta:
+        abstract = True
 
 

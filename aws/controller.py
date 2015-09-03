@@ -17,7 +17,7 @@ from vimma.models import (
 from vimma.util import retry_in_transaction
 from vimma.controllers import VMController
 
-from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule
+from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule, AWSPowerLog
 
 aud = Auditor(__name__)
 
@@ -43,6 +43,12 @@ class AWSVMController(VMController):
 
     def delete_firewall_rule(self, fw_rule_id, user_id=None):
         delete_firewall_rule(fw_rule_id, user_id=user_id)
+
+    def power_log(self, powered_on):
+        """
+        PowerLog the current vm state (ON/OFF).
+        """
+        AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
     """

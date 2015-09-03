@@ -63,8 +63,8 @@ class Auditor():
             # TODO: VM INFORMATION
             vm = None
             user = User.objects.get(id=user_id) if user_id else None
-            Audit.objects.create(level=level, text=text,
-                    vm=vm, user=user).full_clean()
+            #  TODO: Audit via vm.audit
+            # Audit.objects.create(level=level, text=text, user=user)
         except OperationalError as e:
             # Likely the DB is locked. Don't pollute the logs with a stack
             # trace in this case.
@@ -72,7 +72,7 @@ class Auditor():
         except:
             log.error(traceback.format_exc())
         finally:
-            self._std_log(level, msg, vm_id=vm_id, user_id=user_id)
+            self._std_log(level, msg, vm_id=vm, user_id=user_id)
 
     def debug(self, *args, **kwargs):
         self.log(Audit.DEBUG, *args, **kwargs)
