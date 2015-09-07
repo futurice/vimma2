@@ -4,9 +4,9 @@ from rest_framework.permissions import (
 )
 
 from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog
-from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet, default_fields
+from vimma.viewsets import BaseSerializer, VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet, default_fields
 
-class AWSProviderSerializer(serializers.ModelSerializer):
+class AWSProviderSerializer(BaseSerializer):
     full_name = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
@@ -14,7 +14,7 @@ class AWSProviderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AWSProvider
-        fields = default_fields(AWSProvider)+('full_name','config',)
+        fields = default_fields(AWSProvider)+('full_name','config','content_type',)
         depth = 1
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
@@ -23,9 +23,10 @@ class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id',)
 
-class AWSVMConfigSerializer(serializers.ModelSerializer):
+class AWSVMConfigSerializer(BaseSerializer):
     class Meta:
         model = AWSVMConfig
+        depth = 1
 
 class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AWSVMConfigSerializer
@@ -41,21 +42,21 @@ class AWSVMSerializer(VMSerializer):
 class AWSVMViewSet(VMViewSet):
     serializer_class = AWSVMSerializer
 
-class AWSAuditSerializer(serializers.ModelSerializer):
+class AWSAuditSerializer(BaseSerializer):
     class Meta:
         model = AWSAudit
 
 class AWSAuditViewSet(AuditViewSet):
     serializer_class = AWSAuditSerializer
 
-class AWSPowerLogSerializer(serializers.ModelSerializer):
+class AWSPowerLogSerializer(BaseSerializer):
     class Meta:
         model = AWSPowerLog
 
 class AWSPowerLogViewSet(PowerLogViewSet):
     serializer_class = AWSPowerLogSerializer
 
-class AWSFirewallRuleSerializer(serializers.ModelSerializer):
+class AWSFirewallRuleSerializer(BaseSerializer):
     class Meta:
         model = AWSFirewallRule
         depth = 2

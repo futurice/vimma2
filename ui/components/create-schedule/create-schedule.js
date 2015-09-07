@@ -2,7 +2,7 @@ Polymer({
   is: 'create-schedule',
 
   ready: function() {
-    this.$.form._requestBot.headers = {'X-CSRFToken': $.cookie('csrftoken')};
+    this.$['create-schedule-form']._requestBot.headers = {'X-CSRFToken': $.cookie('csrftoken')};
   },
 
   behaviors: [VimmaBehaviors.Equal],
@@ -43,7 +43,7 @@ Polymer({
   },
 
   submitForm: function() {
-    f = document.getElementById('form');
+    f = this.$$('#create-schedule-form');
     f.submit();
   }
 });

@@ -5,44 +5,46 @@ from rest_framework.permissions import (
 
 from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
 
-from vimma.viewsets import VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, default_fields
+from vimma.viewsets import BaseSerializer, VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, default_fields
 
-class DummyProviderSerializer(serializers.ModelSerializer):
+class DummyProviderSerializer(BaseSerializer):
     class Meta:
         model = DummyProvider
         fields = default_fields(DummyProvider)+('config',)
         depth = 1
 
-class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DummyProviderSerializer
-    queryset = DummyProvider.objects.all()
-
-class DummyVMConfigSerializer(serializers.ModelSerializer):
+class DummyVMConfigSerializer(BaseSerializer):
     class Meta:
         model = DummyVMConfig
-
-class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DummyVMConfigSerializer
-    queryset = DummyVMConfig.objects.all()
 
 class DummyVMSerializer(VMSerializer):
     class Meta:
         model = DummyVM
         depth = 1
 
-class DummyVMViewSet(VMViewSet):
-    serializer_class = DummyVMSerializer
-
-class DummyAuditSerializer(serializers.ModelSerializer):
+class DummyAuditSerializer(BaseSerializer):
     class Meta:
         model = DummyAudit
 
-class DummyAuditViewSet(AuditViewSet):
-    serializer_class = DummyAuditSerializer
-
-class DummyPowerLogSerializer(serializers.ModelSerializer):
+class DummyPowerLogSerializer(BaseSerializer):
     class Meta:
         model = DummyPowerLog
+
+
+
+class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = DummyProviderSerializer
+    queryset = DummyProvider.objects.all()
+
+class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = DummyVMConfigSerializer
+    queryset = DummyVMConfig.objects.all()
+
+class DummyVMViewSet(VMViewSet):
+    serializer_class = DummyVMSerializer
+
+class DummyAuditViewSet(AuditViewSet):
+    serializer_class = DummyAuditSerializer
 
 class DummyPowerLogViewSet(PowerLogViewSet):
     serializer_class = DummyPowerLogSerializer

@@ -1,9 +1,13 @@
-import json
+import json, copy
+
+from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
+from rest_framework.reverse import reverse
+
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
@@ -16,14 +20,38 @@ from vimma.util import (
         retry_in_transaction,
 )
 
+from rest_framework.utils.field_mapping import (get_nested_relation_kwargs,)
 
-def default_fields(model):
+def info():
+    from vimma.urls import router
+    return {k[1].serializer_class.Meta.model:k[1] for k in router.registry}
+
+def default_fields(model, serializer=None):
+    # TODO: add content_type, if found in serializer's fields
     return tuple([k.name for k in model._meta.fields])
 
-class UserSerializer(serializers.ModelSerializer):
+class BaseSerializer(serializers.ModelSerializer):
+    content_type = serializers.SerializerMethodField()
+
+    def get_content_type(self, obj):
+        value = ContentType.objects.get_for_model(obj)
+        return {'id': value.id, 'name': value.model, 'url': reverse('{}-list'.format(value.model)),}
+
+    def build_nested_field(self, field_name, relation_info, nested_depth):
+        # By default only Model information is kept; re-use our own Serializers
+        # TODO: metaprogramming to set depth, to keep serializer Meta intact
+        class NestedSerializer(info()[relation_info.related_model].serializer_class):
+            class Meta:
+                model = relation_info.related_model
+                depth = nested_depth - 1
+        field_class = NestedSerializer
+        field_kwargs = get_nested_relation_kwargs(relation_info)
+        return field_class, field_kwargs
+
+class UserSerializer(BaseSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'projects',)
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'projects',) + ('content_type',)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
@@ -31,7 +59,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id', 'projects',)
 
-class TimeZoneSerializer(serializers.ModelSerializer):
+class TimeZoneSerializer(BaseSerializer):
     class Meta:
         model = TimeZone
 
@@ -50,7 +78,7 @@ class SchedulePermission(BasePermission):
             return True
         return can_do(request.user, Actions.WRITE_SCHEDULES)
 
-class ScheduleSerializer(serializers.ModelSerializer):
+class ScheduleSerializer(BaseSerializer):
     class Meta:
         model = Schedule
 
@@ -61,7 +89,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.OrderingFilter,)
     ordering = ('name',)
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializer(BaseSerializer):
     class Meta:
         model = Project
 
@@ -76,7 +104,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
             return Project.objects.filter()
         return user.projects
 
-class VMSerializer(serializers.ModelSerializer):
+class VMSerializer(BaseSerializer):
     isOn = serializers.SerializerMethodField()
 
     def get_isOn(self, obj):
@@ -131,7 +159,7 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
             prj_ids = [p.id for p in projects]
             return model.objects.filter(vm__project__id__in=prj_ids)
 
-class VMExpirationSerializer(serializers.ModelSerializer):
+class VMExpirationSerializer(BaseSerializer):
     class Meta:
         model = VMExpiration
 
@@ -150,7 +178,7 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         prj_ids = [p.id for p in projects]
         return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
 
-class FirewallRuleExpirationSerializer(serializers.ModelSerializer):
+class FirewallRuleExpirationSerializer(BaseSerializer):
     class Meta:
         model = FirewallRuleExpiration
         depth = 2
@@ -172,7 +200,7 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         return model.objects.filter(
                 firewallrule__vm__project__id__in=prj_ids)
 
-class FirewallRuleSerializer(serializers.ModelSerializer):
+class FirewallRuleSerializer(BaseSerializer):
     expiration = FirewallRuleExpirationSerializer()
 
     class Meta:

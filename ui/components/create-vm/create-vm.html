@@ -6,10 +6,7 @@
 <link rel="import" href="/static/bower_components/paper-input/paper-input.html">
 <link rel="import" href="/static/bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../equal-behavior/equal-behavior.html">
-<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
-<link rel="import" href="create-vm-aws-data.html">
-<link rel="import" href="create-vm-dummy-data.html">
 
 <!--
   Create a new VM.
@@ -36,18 +33,18 @@
     last-response="{{projects}}">
   </iron-ajax>
 
+  <!-- Providers: Dummy, AWS -->
   <iron-ajax
     auto
-    id="providers"
-    url="[[providersUrl]]"
-    last-response="{{providers}}">
+    id="providersDummy"
+    url="[[providersDummyUrl]]"
+    last-response="{{providersDummy}}">
   </iron-ajax>
-
   <iron-ajax
     auto
-    id="configs"
-    url="[[configsUrl]]"
-    last-response="{{configs}}">
+    id="providersAws"
+    url="[[providersAwsUrl]]"
+    last-response="{{providersAws}}">
   </iron-ajax>
 
   <iron-ajax
@@ -59,16 +56,12 @@
 
   <template is="dom-if" if="[[_expanded]]">
     <div id="expanded">
-      <paper-icon-button id="close" icon="close" on-click="_toggle">
-      </paper-icon-button>
+    <paper-icon-button id="close" icon="close" on-click="_toggle">
+    </paper-icon-button>
 
-      <h1>Create a new VM</h1>
+    <h1>Create a new VM</h1>
 
-      <plain-text class="error" text="[[_loadErr]]"></plain-text>
-      <div hidden$="[[!_createError]]">
-        <plain-text class="error" text="[[_createError]]"></plain-text>
-      </div>
-
+    <form is="iron-form" id="create-vm-form" method="post" content-type="application/json" action="[[createUrl]]">
       <table id="form">
         <tr>
           <td>
@@ -77,36 +70,41 @@
           <td>
             <select id="prj" on-change="projectSelected">
               <template is="dom-repeat" items="[[projects.results]]">
-                <option selected$="[[_equal(item, _selPrj)]]"
-                  >[[item.name]]</option>
+                <option selected$="[[_equal(item, _selPrj)]]">[[item.name]]</option>
               </template>
             </select>
           </td>
         </tr>
         <tr>
           <td>
-            <label for="provider">VM Provider:</label>
+            <label for="provider">VM:</label>
           </td>
           <td>
-            <select id="provider" on-change="_providerSelected">
-              <template is="dom-repeat" items="[[providers.results]]">
-                <option selected$="[[_equal(item, _selProvider)]]"
-                  >[[item.name]]</option>
+            <template is="dom-repeat" items="[[providers]]">
+              <template is="dom-repeat" items="[[item.config]]" as="config">
+                <div on-click="providerSelected" data-item="{{item}}" data-config="{{config}}">
+                  <span>[[item.name]]</span>: <span>[[config.name]]</span>
+                </div>
               </template>
-            </select>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label for="vmcfg">VM Configuration:</label>
-          </td>
-          <td>
-            <select id="vmcfg" on-change="_vmcfgSelected">
-              <template is="dom-repeat" items="[[_vmcfgsForProvider]]">
-                <option selected$="[[_equal(item, _selVmcfg)]]"
-                  >[[item.name]]</option>
-              </template>
-            </select>
+            </template>
+            <paper-input
+              id="providertype"
+              name="providertype"
+              hidden
+              required>
+            </paper-input>
+            <paper-input
+              id="provider"
+              name="provider"
+              hidden
+              required>
+            </paper-input>
+            <paper-input
+              id="providerconfig"
+              name="providerconfig"
+              hidden
+              required>
+            </paper-input>
           </td>
         </tr>
         <tr>
@@ -114,35 +112,42 @@
             <label for="schedule">Schedule:</label>
           </td>
           <td>
-            <select id="schedule" on-change="_scheduleSelected">
-              <template is="dom-repeat" items="[[schedules.results]]">
-                <option selected$="[[_equal(item, _selSchedule)]]">[[item.name]]</option>
-              </template>
-            </select>
+            <template is="dom-repeat" items="[[schedules.results]]">
+              <div on-click="scheduleSelected" data-item="{{item}}"><span>[[item.name]]</span></div>
+            </template>
+            <paper-input
+              id="schedule"
+              name="schedule"
+              hidden required>
+            </paper-input>
           </td>
         </tr>
         <tr>
           <td colspan="2">
             <paper-input
+              name="name"
+              label="Name"
+              placeholder="VM name"
+              required>
+            </paper-input>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <paper-input
+              name="comment"
               label="Comment"
-              placeholder="What is this VM for?"
-              value="{{_comment}}"
-              ></paper-input>
+              placeholder="What is this VM for?">
+            </paper-input>
           </td>
         </tr>
       </table>
 
-      <template is="dom-if" if="[[_equal(_selProvider.type, 'dummy')]]" restamp>
-        <create-vm-dummy-data data="{{_data}}"></create-vm-dummy-data>
-      </template>
-      <template is="dom-if" if="[[_equal(_selProvider.type, 'aws')]]" restamp>
-        <create-vm-aws-data data="{{_data}}"></create-vm-aws-data>
-      </template>
-
-      <paper-button id="create" raised on-click="_create">
+      <paper-button id="create" raised on-click="submitForm">
         <iron-icon icon="create"></iron-icon>
         Create
       </paper-button>
+    </form>
     </div>
   </template>
 

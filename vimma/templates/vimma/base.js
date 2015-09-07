@@ -16,6 +16,8 @@ var indexUrl = '{% url "index" %}',
             '{% url "dummyvm-detail" 0 %}'),
     vimmaApiDummyProviderList = '{% url "dummyprovider-list" %}',
     vimmaApiDummyVMConfigList = '{% url "dummyvmconfig-list" %}',
+    vimmaApiDummyAuditList = '{% url "dummyaudit-list" %}',
+    vimmaApiDummyPowerLogList = '{% url "dummypowerlog-list" %}',
 
     vimmaApiAWSVMDetailRoot = apiDetailRootUrl(
             '{% url "awsvm-detail" 0 %}'),
@@ -28,15 +30,11 @@ var indexUrl = '{% url "index" %}',
     vimmaApiAWSFirewallRuleList = '{% url "awsfirewallrule-list" %}',
     vimmaApiAWSFirewallRuleDetailRoot = apiDetailRootUrl(
             '{% url "awsfirewallrule-detail" 0 %}'),
-
     vimmaApiAWSAuditList = '{% url "awsaudit-list" %}',
     vimmaApiAWSPowerLogList = '{% url "awspowerlog-list" %}',
-
-    vimmaApiDummyAuditList = '{% url "dummyaudit-list" %}',
-    vimmaApiDummyPowerLogList = '{% url "dummypowerlog-list" %}',
-
     vimmaApiVMExpirationDetailRoot = apiDetailRootUrl(
             '{% url "vmexpiration-detail" 0 %}'),
+
     vimmaApiFirewallRuleExpirationList =
         '{% url "firewallruleexpiration-list" %}',
     vimmaApiFirewallRuleList = '{% url "firewallrule-list" %}',
