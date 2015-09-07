@@ -18,10 +18,8 @@
 <link rel="import" type="css" href="../../css/component-common.css">
 <link rel="import" type="css" href="create-vm.css">
 <template>
-  <paper-button
-    id="expand"
-    hidden$="[[_expanded]]"
-    raised on-click="_toggle">
+
+  <paper-button id="expand" raised on-click="_toggle">
     <iron-icon icon="add"></iron-icon>
     Create VM
   </paper-button>
@@ -54,12 +52,11 @@
     last-response="{{schedules}}">
   </iron-ajax>
 
-  <template is="dom-if" if="[[_expanded]]">
+  <div class$="[[_toggleClass]]">
+  <paper-material elevation="3" style="padding:20px;">
     <div id="expanded">
     <paper-icon-button id="close" icon="close" on-click="_toggle">
     </paper-icon-button>
-
-    <h1>Create a new VM</h1>
 
     <form is="iron-form" id="create-vm-form" method="post" content-type="application/json" action="[[createUrl]]">
       <table id="form">
@@ -87,12 +84,6 @@
                 </div>
               </template>
             </template>
-            <paper-input
-              id="providertype"
-              name="providertype"
-              hidden
-              required>
-            </paper-input>
             <paper-input
               id="provider"
               name="provider"
@@ -149,7 +140,8 @@
       </paper-button>
     </form>
     </div>
-  </template>
+  </paper-material>
+  </div>
 
 </template>
 </dom-module>

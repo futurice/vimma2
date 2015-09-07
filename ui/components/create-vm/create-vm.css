@@ -5,8 +5,6 @@ paper-button#expand {
 
 div#expanded {
 	position: relative;
-	border: 0.2em solid;
-	border-color: var(--paper-blue-100);
 	padding: 1ex;
 }
 

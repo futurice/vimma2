@@ -9,7 +9,13 @@ Polymer({
   properties: {
     _expanded: {
       type: Boolean,
+      notify: true,
       value: false
+    },
+
+    _toggleClass: {
+      type: String,
+      computed: 'toggleClass(_expanded)'
     },
 
     createUrl: {
@@ -52,16 +58,20 @@ Polymer({
   },
 
   scheduleSelected: function(k, detail) {
-    this.$$('#schedule').value = k.currentTarget.dataItem.id;
+    this.$$('#schedule').value = k.currentTarget.dataItem;
   },
 
   providerSelected: function(k, detail) {
-    this.$$('#provider').value = k.currentTarget.dataItem.id;
-    this.$$('#config').value = k.currentTarget.dataConfig.id;
+    this.$$('#provider').value = k.currentTarget.dataItem;
+    this.$$('#providerconfig').value = k.currentTarget.dataConfig;
   },
 
   _toggle: function() {
     this._expanded = !this._expanded;
+  },
+
+  toggleClass: function(expanded) {
+    return (expanded) ? 'visible' : 'hidden';
   },
 
   submitForm: function() {
