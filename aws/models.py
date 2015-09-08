@@ -40,7 +40,7 @@ def aws_vm_name_validator(val):
                 'must be alphanumeric and dashes (-).').format(val))
 
 class AWSVM(VM, models.Model):
-    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT, related_name="vm")
+    config = models.ForeignKey('aws.AWSVMConfig', on_delete=models.PROTECT, related_name="vm")
 
     # Free-form text, shown to the user. Stores the VM state reported by AWS.
     # Synced regularly by the update tasks.

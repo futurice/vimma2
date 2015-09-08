@@ -11,10 +11,6 @@ from dummy.models import DummyVM, DummyPowerLog
 aud = Auditor(__name__)
 
 class DummyVMController(VMController):
-    """
-    VMController for vms of type dummy.
-    """
-
     def power_on(self, user_id=None):
         power_on_vm.delay(self.vm.pk, user_id=user_id)
 
@@ -31,19 +27,15 @@ class DummyVMController(VMController):
         update_vm_status.delay(self.vm.pk)
 
     def power_log(self, powered_on):
-        """
-        PowerLog the current vm state (ON/OFF).
-        """
         DummyPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
-    def create_vm_details(self, data, user_id, *args, **kwargs):
-        vm = DummyVM.objects.create(name=data['name'])
+    def create_vm_details(self, *args, **kw):
+        vm = DummyVM.objects.create(name=kw['name'], config=kw['config'], project=kw['project'], schedule=kw['schedule'])
 
-        # execute as much code as possible here (inside the transaction) not in the
-        # callable (which runs after comitting the transaction).
-        countdown = min(max(0, data['delay']), 60)
+        delay = 5
+        countdown = min(max(0, 5), 60)
         callables = [
-                lambda: power_on_vm.apply_async(args=(vm.id, user_id),
+                lambda: power_on_vm.apply_async(args=(vm.id, kw['user'].id),
                     countdown=countdown),
                 ]
         return vm, callables

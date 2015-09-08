@@ -93,7 +93,7 @@ def create_vm(request):
 
     try:
         project = Project.objects.get(id=body['project'])
-        vmconfcls = ContentType.objects.get_for_id(body['providerconfig']['content_type']['id'])
+        vmconfcls = ContentType.objects.get_for_id(body['providerconfig']['content_type']['id']).model_class()
         vmconf = vmconfcls.objects.get(id=body['providerconfig']['id'])
         schedule = Schedule.objects.get(id=body['schedule']['id'])
     except ObjectDoesNotExist as e:
@@ -120,7 +120,15 @@ def create_vm(request):
         # Don't create the VMs when running tests
         return HttpResponse()
 
-    vmconf.create_vm(project, schedule, body['comment'], {}, request.user.id)
+    vmconf.vm_model.create_vm(
+            project=project,
+            schedule=schedule,
+            config=vmconf,
+            user=request.user,
+
+            name=body['name'],
+            comment=body['comment'],
+            )
     return HttpResponse()
 
 

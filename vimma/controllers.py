@@ -1,10 +1,13 @@
+from django.conf import settings
 from django.utils.timezone import utc
+from django.db import transaction
 
 import datetime
 
 from vimma.audit import Auditor
 from vimma.util import schedule_at_tstamp
 from vimma.celery import app
+from vimma.models import VMExpiration
 
 aud = Auditor(__name__)
 
@@ -137,7 +140,7 @@ class VMController():
     def create_vm_details(self, data, user_id, *args, **kwargs):
         raise NotImplementedError()
 
-    def create_vm(self, config, project, schedule, comment, user_id):
+    def create_vm(self, config, project, schedule, name, comment, user):
         """
         Create a new VM, return its ID if successful otherwise throw an exception.
 
@@ -152,26 +155,33 @@ class VMController():
             'schedule {schedule.id} ({schedule.name}), ' +
             'comment ‘{comment}’, data ‘{data}’').format(
                 config=config, project=project, schedule=schedule,
-                comment=comment, data=data),
-            user_id=user_id)
+                comment=comment, data={}),
+            user_id=user.pk)
 
         callables = []
         # database
         with transaction.atomic():
-            prov = config.provider
-            user = User.objects.get(id=user_id)
             now = datetime.datetime.utcnow().replace(tzinfo=utc)
-            sched_override_tstamp = (now.timestamp() +
-                    settings.VM_CREATION_OVERRIDE_SECS)
-
+            sched_override_tstamp = (now.timestamp() + settings.VM_CREATION_OVERRIDE_SECS)
             expire_dt = now + datetime.timedelta(seconds=settings.DEFAULT_VM_EXPIRY_SECS)
 
-            vmexp = VMExpiration.objects.create(expires_at=expire_dt)
+            expiration = VMExpiration.objects.create(expires_at=expire_dt)
 
-            vm, callables = self.create_vm_details(data=data, user_id=user_id, config=config)
-            aud.info('Created VM', user_id=user_id, vm_id=vm.id)
+            vm, callables = self.create_vm_details(
+                    name=name,
+                    comment=comment,
+
+                    project=project,
+                    schedule=schedule,
+                    config=config,
+                    user=user,
+                    expiration=expiration,
+
+                    sched_override_tstamp=sched_override_tstamp,
+                    )
+            aud.info('Created VM', user_id=user.pk, vm_id=vm.id)
         # background tasks
         for c in callables:
             c()
-        return vm_id
+        return vm.id
 

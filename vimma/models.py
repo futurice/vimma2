@@ -145,7 +145,8 @@ class VM(models.Model):
     A virtual machine. This model holds only the data common for all VMs from
     any provider.
     """
-    provider = "PARENT IMPLEMENTS models.ForeignKey(Provider, on_delete=models.PROTECT)"
+    config = NotImplementedError("models.ForeignKey(VMConfig, on_delete=models.PROTECT, related_name='vm')")
+
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
     expiration = models.OneToOneField('vimma.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)
@@ -188,8 +189,8 @@ class VM(models.Model):
         return VMController(vm=self)
 
     @classmethod
-    def create(cls):
-        raise NotImplementedError()
+    def create_vm(cls, *args, **kwargs):
+        cls().controller().create_vm(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -204,7 +205,7 @@ class VMConfig(models.Model):
     A config knows how to create a VM.
     """
     vm_model = VM
-    provider = NotImplementedError("models.ForeignKey(Provider, on_delete=models.PROTECT, related_name='vm')")
+    provider = NotImplementedError("models.ForeignKey(Provider, on_delete=models.PROTECT, related_name='config')")
     # The default schedule for this VM config. Users are allowed to choose this
     # schedule for VMs made from this config, even if the schedule itself
     # requires additional permissions.
@@ -233,7 +234,7 @@ class VMConfig(models.Model):
             super().save(*args, **kwargs)
 
     def create_vm(self, *args, **kwargs):
-        self.vm_model.create(*args, config=self, **kwargs)
+        self.vm_model.create_vm(*args, config=self, **kwargs)
 
     class Meta:
         abstract = True

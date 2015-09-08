@@ -45,30 +45,25 @@ class AWSVMController(VMController):
         delete_firewall_rule(fw_rule_id, user_id=user_id)
 
     def power_log(self, powered_on):
-        """
-        PowerLog the current vm state (ON/OFF).
-        """
         AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
-    def create_vm_details(vmconfig, vm, data, user_id):
-        """
-        Generic create_vm calls VM-specific create_vm_details
-        """
+    def create_vm_details(self, name, comment, project, schedule, config, user, expiration, sched_override_tstamp):
         aws_vm = AWSVM.objects.create(
-                name=data['name'],
+                name=name,
+                comment=comment,
 
                 project=project,
                 schedule=schedule,
+                config=config,
+                created_by=user,
+                expiration=expiration,
+
                 sched_override_state=True,
                 sched_override_tstamp=sched_override_tstamp,
-                comment=comment,
-                created_by=user,
-                expiration=vmexp,
+                )
 
-                region=vmconfig.region)
-
-        callables = [lambda: do_create_vm.delay(vmconfig.id,
-            aws_vm_config.root_device_size, vmconfig.root_device_volume_type,
+        callables = [lambda: do_create_vm.delay(config.id,
+            aws_vm_config.root_device_size, config.root_device_volume_type,
             vm.id, user_id)]
         return aws_vm, callables
 

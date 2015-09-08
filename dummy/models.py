@@ -6,7 +6,7 @@ class DummyProvider(Provider):
     pass
 
 class DummyVM(VM):
-    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="vm")
+    config = models.ForeignKey('dummy.DummyVMConfig', on_delete=models.PROTECT, related_name="vm")
 
     name = models.CharField(max_length=50)
     # Free-form text, meant to be read by the user. Simulates Vimma's local
@@ -23,10 +23,6 @@ class DummyVM(VM):
     def controller(self):
         from dummy.controller import DummyVMController
         return DummyVMController(vm=self)
-
-    @classmethod
-    def create(cls, *args, **kwargs):
-        print("Creating {}".format(cls))
 
 class DummyVMConfig(VMConfig):
     vm_model = DummyVM
