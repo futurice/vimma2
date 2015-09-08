@@ -36,31 +36,17 @@ class DummyVMController(VMController):
         """
         DummyPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
+    def create_vm_details(self, data, user_id, *args, **kwargs):
+        vm = DummyVM.objects.create(name=data['name'])
 
-def create_vm(data, user_id, *args, **kwargs):
-    """
-    Create a dummy VM, linking to parent ‘vm’, from ‘data’ → (vm, callables)
-
-    data = {
-        name: string,
-        delay: int, // seconds before powering ON
-    }
-
-    This function must be called inside a transaction. The caller must execute
-    the returned callables only after committing.
-    """
-    vm = DummyVM.objects.create(name=data['name'])
-
-    aud.info('Created VM', user_id=user_id, vm_id=vm.id)
-
-    # execute as much code as possible here (inside the transaction) not in the
-    # callable (which runs after comitting the transaction).
-    countdown = min(max(0, data['delay']), 60)
-    callables = [
-            lambda: power_on_vm.apply_async(args=(vm.id, user_id),
-                countdown=countdown),
-            ]
-    return vm, callables
+        # execute as much code as possible here (inside the transaction) not in the
+        # callable (which runs after comitting the transaction).
+        countdown = min(max(0, data['delay']), 60)
+        callables = [
+                lambda: power_on_vm.apply_async(args=(vm.id, user_id),
+                    countdown=countdown),
+                ]
+        return vm, callables
 
 
 @app.task

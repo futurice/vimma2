@@ -5,6 +5,8 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import utc
+from django.contrib.contenttypes.models import ContentType
+
 import json
 import pytz
 from rest_framework import viewsets, routers, filters, serializers, status
@@ -75,12 +77,11 @@ def create_vm(request):
 
     JSON request body:
     {
-        type: string,
         project: int,
-        vmconfig: int,
-        schedule: int,
+        provider: {id, content_type:{id}},
+        providerconfig: {id, content_type:{id}},
+        schedule: {id},
         comment: string,
-        data: «provider-specific data»,
     }
     """
     if request.method != 'POST':
@@ -90,16 +91,15 @@ def create_vm(request):
 
     body = json.loads(request.read().decode('utf-8'))
 
-    vm = VM.choices()[body['type']]
-
     try:
-        prj = Project.objects.get(id=body['project'])
-        vmconf = VMConfig.objects.get(id=body['vmconfig'])
-        schedule = Schedule.objects.get(id=body['schedule'])
+        project = Project.objects.get(id=body['project'])
+        vmconfcls = ContentType.objects.get_for_id(body['providerconfig']['content_type']['id'])
+        vmconf = vmconfcls.objects.get(id=body['providerconfig']['id'])
+        schedule = Schedule.objects.get(id=body['schedule']['id'])
     except ObjectDoesNotExist as e:
         return get_http_json_err('{}'.format(e), status.HTTP_404_NOT_FOUND)
 
-    if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, prj):
+    if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, project):
         return get_http_json_err('You may not create VMs in this project',
                 status.HTTP_403_FORBIDDEN)
 
@@ -120,8 +120,7 @@ def create_vm(request):
         # Don't create the VMs when running tests
         return HttpResponse()
 
-    vimma.vmutil.create_vm(vmconf, prj, schedule, body['comment'], body['data'],
-            request.user.id)
+    vmconf.create_vm(project, schedule, body['comment'], {}, request.user.id)
     return HttpResponse()
 
 

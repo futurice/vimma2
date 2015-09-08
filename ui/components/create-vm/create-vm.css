@@ -27,3 +27,13 @@ paper-button#create {
 	color: white;
 	background-color: var(--paper-green-700);
 }
+
+.box {
+    border: 1px solid black;
+    padding: 10px;
+    margin-bottom: 2px;
+}
+
+.box.chosen {
+    border: 1px solid orange;
+}

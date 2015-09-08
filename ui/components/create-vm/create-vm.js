@@ -59,11 +59,18 @@ Polymer({
 
   scheduleSelected: function(k, detail) {
     this.$$('#schedule').value = k.currentTarget.dataItem;
+    this.chosen(k.currentTarget, '.schedule-container div.box')
   },
 
   providerSelected: function(k, detail) {
     this.$$('#provider').value = k.currentTarget.dataItem;
     this.$$('#providerconfig').value = k.currentTarget.dataConfig;
+    this.chosen(k.currentTarget, '.provider-container div.box')
+  },
+
+  chosen: function(el, container) {
+    $(container).removeClass('chosen');
+    $(el).toggleClass('chosen');
   },
 
   _toggle: function() {
@@ -78,5 +85,7 @@ Polymer({
     f = this.$$('#create-vm-form');
     f._requestBot.headers = {'X-CSRFToken': $.cookie('csrftoken')};
     f.submit();
+    // TODO: listen to iron-form-response to fire vm-created
+    this.fire('vm-created');
   }
 });

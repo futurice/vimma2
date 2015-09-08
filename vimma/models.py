@@ -116,7 +116,7 @@ class Provider(models.Model):
     default = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{} ({})'.format(self.name, self.get_type_display())
+        return '{}'.format(self.name)
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -131,45 +131,6 @@ class Provider(models.Model):
     class Meta:
         abstract = True
 
-
-class VMConfig(models.Model):
-    """
-    A VM Configuration for a Provider. A provider may have several of these.
-
-    This model holds fields common across all VM Configs. Additional data
-    specific to the provider's type is in a model linked via a one-to-one
-    field.
-    """
-    provider = "PARENT IMPLEMENTS: models.ForeignKey(Provider, on_delete=models.PROTECT)"
-    # The default schedule for this VM config. Users are allowed to choose this
-    # schedule for VMs made from this config, even if the schedule itself
-    # requires additional permissions.
-    default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-
-    name = models.CharField(max_length=50, unique=True)
-    # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
-    is_special = models.BooleanField(default=False)
-    # flag showing which VMConfig is the default one for its provider,
-    # preselected in the UI
-    default = models.BooleanField(default=False)
-
-    def __str__(self):
-        return '{} ({})'.format(self.name, self.provider.name)
-
-    def save(self, *args, **kwargs):
-        with transaction.atomic():
-            if self.default:
-                (self.__class__.objects.filter(provider=self.provider)
-                        .exclude(id=self.id)
-                        .update(default=False))
-            elif (not self.__class__.objects
-                    .filter(provider=self.provider, default=True)
-                    .exclude(id=self.id).exists()):
-                self.default = True
-            super().save(*args, **kwargs)
-
-    class Meta:
-        abstract = True
 
 
 class FirewallRule(models.Model):
@@ -222,8 +183,57 @@ class VM(models.Model):
     def choices(cls):
         return {k().__class__.__name__.lower():k for k in VM.implementations()}
 
+    def controller(self):
+        from vimma.controllers import VMController
+        return VMController(vm=self)
+
+    @classmethod
+    def create(cls):
+        raise NotImplementedError()
+
     def __str__(self):
         return self.name
+
+    class Meta:
+        abstract = True
+
+class VMConfig(models.Model):
+    """
+    Configuration for a Provider. A provider may have several Configs.
+
+    A config knows how to create a VM.
+    """
+    vm_model = VM
+    provider = NotImplementedError("models.ForeignKey(Provider, on_delete=models.PROTECT, related_name='vm')")
+    # The default schedule for this VM config. Users are allowed to choose this
+    # schedule for VMs made from this config, even if the schedule itself
+    # requires additional permissions.
+    default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+
+    name = models.CharField(max_length=50, unique=True)
+    # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
+    is_special = models.BooleanField(default=False)
+    # flag showing which VMConfig is the default one for its provider,
+    # preselected in the UI
+    default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.provider.name)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.default:
+                (self.__class__.objects.filter(provider=self.provider)
+                        .exclude(id=self.id)
+                        .update(default=False))
+            elif (not self.__class__.objects
+                    .filter(provider=self.provider, default=True)
+                    .exclude(id=self.id).exists()):
+                self.default = True
+            super().save(*args, **kwargs)
+
+    def create_vm(self, *args, **kwargs):
+        self.vm_model.create(*args, config=self, **kwargs)
 
     class Meta:
         abstract = True

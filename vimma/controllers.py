@@ -133,3 +133,45 @@ class VMController():
                 vm_id=self.vm.pk)
         return self.vm.expiration.expires_at
 
+
+    def create_vm_details(self, data, user_id, *args, **kwargs):
+        raise NotImplementedError()
+
+    def create_vm(self, config, project, schedule, comment, user_id):
+        """
+        Create a new VM, return its ID if successful otherwise throw an exception.
+
+        The user is only needed to record in an audit message. Permission checking
+        has already been done elsewhere.
+        The data arg is specific to the provider type.
+        This function must not be called inside a transaction.
+        """
+        aud.debug(('Request to create VM: ' +
+            'config {config.id} ({config.name}), ' +
+            'project {project.id} ({project.name}’), ' +
+            'schedule {schedule.id} ({schedule.name}), ' +
+            'comment ‘{comment}’, data ‘{data}’').format(
+                config=config, project=project, schedule=schedule,
+                comment=comment, data=data),
+            user_id=user_id)
+
+        callables = []
+        # database
+        with transaction.atomic():
+            prov = config.provider
+            user = User.objects.get(id=user_id)
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            sched_override_tstamp = (now.timestamp() +
+                    settings.VM_CREATION_OVERRIDE_SECS)
+
+            expire_dt = now + datetime.timedelta(seconds=settings.DEFAULT_VM_EXPIRY_SECS)
+
+            vmexp = VMExpiration.objects.create(expires_at=expire_dt)
+
+            vm, callables = self.create_vm_details(data=data, user_id=user_id, config=config)
+            aud.info('Created VM', user_id=user_id, vm_id=vm.id)
+        # background tasks
+        for c in callables:
+            c()
+        return vm_id
+

@@ -10,7 +10,6 @@
 
 <!--
   Create a new VM.
-
   After creating the VM it fires the event ‘vm-created’.
 -->
 
@@ -65,9 +64,9 @@
             <label for="prj">Project:</label>
           </td>
           <td>
-            <select id="prj" on-change="projectSelected">
+            <select id="prj" name="project" on-change="projectSelected">
               <template is="dom-repeat" items="[[projects.results]]">
-                <option selected$="[[_equal(item, _selPrj)]]">[[item.name]]</option>
+                <option selected$="[[_equal(item, _selPrj)]]" value="[[item.id]]">[[item.name]]</option>
               </template>
             </select>
           </td>
@@ -76,10 +75,10 @@
           <td>
             <label for="provider">VM:</label>
           </td>
-          <td>
+          <td class="provider-container">
             <template is="dom-repeat" items="[[providers]]">
               <template is="dom-repeat" items="[[item.config]]" as="config">
-                <div on-click="providerSelected" data-item="{{item}}" data-config="{{config}}">
+                <div on-click="providerSelected" data-item="{{item}}" data-config="{{config}}" class="box">
                   <span>[[item.name]]</span>: <span>[[config.name]]</span>
                 </div>
               </template>
@@ -87,14 +86,12 @@
             <paper-input
               id="provider"
               name="provider"
-              hidden
-              required>
+              hidden required>
             </paper-input>
             <paper-input
               id="providerconfig"
               name="providerconfig"
-              hidden
-              required>
+              hidden required>
             </paper-input>
           </td>
         </tr>
@@ -102,9 +99,9 @@
           <td>
             <label for="schedule">Schedule:</label>
           </td>
-          <td>
+          <td class="schedule-container">
             <template is="dom-repeat" items="[[schedules.results]]">
-              <div on-click="scheduleSelected" data-item="{{item}}"><span>[[item.name]]</span></div>
+              <div on-click="scheduleSelected" data-item="{{item}}" class="box"><span>[[item.name]]</span></div>
             </template>
             <paper-input
               id="schedule"

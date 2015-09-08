@@ -50,6 +50,28 @@ class AWSVMController(VMController):
         """
         AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
+    def create_vm_details(vmconfig, vm, data, user_id):
+        """
+        Generic create_vm calls VM-specific create_vm_details
+        """
+        aws_vm = AWSVM.objects.create(
+                name=data['name'],
+
+                project=project,
+                schedule=schedule,
+                sched_override_state=True,
+                sched_override_tstamp=sched_override_tstamp,
+                comment=comment,
+                created_by=user,
+                expiration=vmexp,
+
+                region=vmconfig.region)
+
+        callables = [lambda: do_create_vm.delay(vmconfig.id,
+            aws_vm_config.root_device_size, vmconfig.root_device_volume_type,
+            vm.id, user_id)]
+        return aws_vm, callables
+
 def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
     Return a boto EC2Connection to the given AWS VM's region.
@@ -80,28 +102,6 @@ def vpc_connect_to_aws_vm_region(aws_vm_id):
             aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
 
 
-def create_vm(vmconfig, vm, data, user_id):
-    """
-    Create an AWS VM from vmconfig & data, linking to parent ‘vm’.
-    
-    Returns (aws_vm, callables).
-    data = {
-        name: string,
-    }
-
-    This function must be called inside a transaction. The caller must execute
-    the returned callables only after committing.
-    """
-    aws_vm_config = vmconfig.awsvmconfig
-
-    aws_vm = AWSVM.objects.create(vm=vm, name=data['name'],
-            region=aws_vm_config.region)
-    aws_vm.full_clean()
-
-    callables = [lambda: do_create_vm.delay(aws_vm_config.id,
-        aws_vm_config.root_device_size, aws_vm_config.root_device_volume_type,
-        vm.id, user_id)]
-    return aws_vm, callables
 
 
 @app.task

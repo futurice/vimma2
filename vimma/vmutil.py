@@ -33,46 +33,6 @@ aud = Auditor(__name__)
 # Often retrying the transaction.
 
 
-def create_vm(vmconfig, project, schedule, comment, data, user_id):
-    """
-    Create a new VM, return its ID if successful otherwise throw an exception.
-
-    The user is only needed to record in an audit message. Permission checking
-    has already been done elsewhere.
-    The data arg is specific to the provider type.
-    This function must not be called inside a transaction.
-    """
-    aud.debug(('Request to create VM: ' +
-        'config {vmconfig.id} ({vmconfig.name}), ' +
-        'project {project.id} ({project.name}’), ' +
-        'schedule {schedule.id} ({schedule.name}), ' +
-        'comment ‘{comment}’, data ‘{data}’').format(
-            vmconfig=vmconfig, project=project, schedule=schedule,
-            comment=comment, data=data),
-        user_id=user_id)
-
-    callables = []
-    with transaction.atomic():
-        prov = vmconfig.provider
-        user = User.objects.get(id=user_id)
-        now = datetime.datetime.utcnow().replace(tzinfo=utc)
-        sched_override_tstamp = (now.timestamp() +
-                settings.VM_CREATION_OVERRIDE_SECS)
-
-        expire_dt = now + datetime.timedelta(seconds=settings.DEFAULT_VM_EXPIRY_SECS)
-
-        vmexp = VMExpiration.objects.create(expires_at=expire_dt)
-        vm = VM.objects.create(provider=prov, project=project,
-                schedule=schedule, sched_override_state=True,
-                sched_override_tstamp=sched_override_tstamp,
-                comment=comment, created_by=user, expiration=vmexp)
-        vm.full_clean()
-        vm, callables = vm.controller().create_vm(data=data, user_id=user_id, vmconfig=vmconfig)
-    for c in callables:
-        c()
-    return vm_id
-
-
 @app.task
 def update_all_vms_status():
     """

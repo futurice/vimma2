@@ -5,9 +5,6 @@ from vimma.models import VM, VMConfig, Provider, Audit, PowerLog
 class DummyProvider(Provider):
     pass
 
-class DummyVMConfig(VMConfig):
-    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="config")
-
 class DummyVM(VM):
     provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="vm")
 
@@ -26,6 +23,14 @@ class DummyVM(VM):
     def controller(self):
         from dummy.controller import DummyVMController
         return DummyVMController(vm=self)
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        print("Creating {}".format(cls))
+
+class DummyVMConfig(VMConfig):
+    vm_model = DummyVM
+    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="config")
 
 class DummyAudit(Audit, models.Model):
     vm = models.ForeignKey('dummy.DummyVM', related_name="audit")
