@@ -30,6 +30,7 @@ class DummyVMController(VMController):
         DummyPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
     def create_vm_details(self, *args, **kw):
+        #  TODO: self.vm.__class__.
         vm = DummyVM.objects.create(name=kw['name'], config=kw['config'], project=kw['project'], schedule=kw['schedule'])
 
         delay = 5

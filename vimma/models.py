@@ -5,7 +5,21 @@ from django.conf import settings
 import json
 import logging
 
-class Permission(models.Model):
+from vimma.haikunator import heroku
+
+class CleanModel(models.Model):
+    """
+    Force full_clean() on Model.save()
+    https://docs.djangoproject.com/en/1.8/ref/models/instances/#validating-objects
+    """
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        abstract = True
+
+class Permission(CleanModel):
     """
     A Permission.
 
@@ -17,7 +31,7 @@ class Permission(models.Model):
         return self.name
 
 
-class Role(models.Model):
+class Role(CleanModel):
     """
     A role represents a set of Permissions.
 
@@ -30,7 +44,7 @@ class Role(models.Model):
         return self.name
 
 
-class Project(models.Model):
+class Project(CleanModel):
     """
     Projects group Users and VMs.
     """
@@ -48,7 +62,7 @@ if settings.REMOTE_USER_ENABLED:
     User._meta.get_field('password').null = True
     User._meta.get_field('password').blank = True
 
-class TimeZone(models.Model):
+class TimeZone(CleanModel):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
@@ -72,7 +86,7 @@ def schedule_matrix_validator(val):
                 raise ValidationError('Schedule matrix has non-bool element ' +
                         str(type(item)))
 
-class Schedule(models.Model):
+class Schedule(CleanModel):
     """
     A schedule marks when the VM should be powered on or powered off.
 
@@ -100,7 +114,7 @@ class Schedule(models.Model):
         super().save(*args, **kwargs)
 
 
-class Provider(models.Model):
+class Provider(CleanModel):
     """
     A provider of virtual machines.
 
@@ -133,14 +147,14 @@ class Provider(models.Model):
 
 
 
-class FirewallRule(models.Model):
+class FirewallRule(CleanModel):
     expiration = models.OneToOneField('vimma.FirewallRuleExpiration', on_delete=models.CASCADE)
 
     def is_special(self):
         return False
 
 
-class VM(models.Model):
+class VM(CleanModel):
     """
     A virtual machine. This model holds only the data common for all VMs from
     any provider.
@@ -192,13 +206,20 @@ class VM(models.Model):
     def create_vm(cls, *args, **kwargs):
         cls().controller().create_vm(*args, **kwargs)
 
+    def generate_name(self):
+        return heroku()
+
+    def save(self, *args, **kwargs):
+        self.name = self.name or self.generate_name()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
 
     class Meta:
         abstract = True
 
-class VMConfig(models.Model):
+class VMConfig(CleanModel):
     """
     Configuration for a Provider. A provider may have several Configs.
 
@@ -240,7 +261,7 @@ class VMConfig(models.Model):
         abstract = True
 
 
-class Expiration(models.Model):
+class Expiration(CleanModel):
     """
     An item that expires.
 
@@ -268,7 +289,7 @@ class VMExpiration(Expiration):
 class FirewallRuleExpiration(Expiration):
     controller = ('vimma.expiry', 'FirewallRuleExpirationController')
 
-class PowerLog(models.Model):
+class PowerLog(CleanModel):
     """
     The power state (ON or OFF) of a VM at a point in time.
 
@@ -282,7 +303,7 @@ class PowerLog(models.Model):
     class Meta:
         abstract = True
 
-class Audit(models.Model):
+class Audit(CleanModel):
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # Imitating https://docs.python.org/3/library/logging.html#logging-levels

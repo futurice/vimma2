@@ -8,7 +8,6 @@
 <link rel="import" href="../equal-behavior/equal-behavior.html">
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
-<link rel="import" href="../user-name/user-name.html">
 
 <dom-module id="audit-display">
   <link rel="import" type="css" href="../../css/component-common.css">
@@ -71,7 +70,7 @@
                     –
                   </template>
                   <template is="dom-if" if="[[!_null(item.user)]]" restamp>
-                    <user-name userid="[[item.user]]" show="username"></user-name>
+                    <span>[[item.user]]</span>
                   </template>
                 </td>
                 <td>

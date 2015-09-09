@@ -14,7 +14,9 @@ class AWSProviderSerializer(BaseSerializer):
 
     class Meta:
         model = AWSProvider
-        fields = default_fields(AWSProvider)+('full_name','config','content_type',)
+        fields = default_fields(AWSProvider,
+                    exclude=['ssh_key_name','access_key_id','access_key_secret'])\
+                    +('full_name','config','content_type',)
         depth = 1
 
 class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):

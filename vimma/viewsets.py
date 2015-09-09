@@ -26,9 +26,10 @@ def info():
     from vimma.urls import router
     return {k[1].serializer_class.Meta.model:k[1] for k in router.registry}
 
-def default_fields(model, serializer=None):
+def default_fields(model, serializer=None, exclude=[]):
     # TODO: add content_type, if found in serializer's fields
-    return tuple([k.name for k in model._meta.fields])
+    fields = [k.name for k in model._meta.fields]
+    return tuple(filter(lambda x: None if x in exclude else x, fields))
 
 class BaseSerializer(serializers.ModelSerializer):
     content_type = serializers.SerializerMethodField()

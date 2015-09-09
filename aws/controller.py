@@ -73,8 +73,8 @@ def ec2_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.ec2.connect_to_region(vm.region,
-            aws_access_key_id=os.getenv(vm.provider.access_key_id),
-            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
+            aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
 
 
 def route53_connect_to_aws_vm_region(aws_vm_id):
@@ -83,8 +83,8 @@ def route53_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.route53.connect_to_region(vm.region,
-            aws_access_key_id=os.getenv(vm.provider.access_key_id),
-            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
+            aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
 
 
 def vpc_connect_to_aws_vm_region(aws_vm_id):
@@ -93,8 +93,8 @@ def vpc_connect_to_aws_vm_region(aws_vm_id):
     """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.vpc.connect_to_region(vm.region,
-            aws_access_key_id=os.getenv(vm.provider.access_key_id),
-            aws_secret_access_key=os.getenv(vm.provider.access_key_secret),)
+            aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
+            aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
 
 
 
@@ -123,17 +123,15 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
     # include idempotent code, not the AWS API calls which create more VMs.
 
     vm = AWSVM.objects.get(id=vm_id)
-    aws_vm_config = AWSVMConfig.objects.get(id=aws_vm_config_id)
 
-    ssh_key_name = vm.provider.ssh_key_name
-    default_security_group_id = vm.provider.default_security_group_id
-    vpc_id = vm.provider.vpc_id
-
+    ssh_key_name = vm.config.provider.ssh_key_name
+    default_security_group_id = vm.config.provider.default_security_group_id
+    vpc_id = vm.config.provider.vpc_id
     name = vm.name
-    ami_id = aws_vm_config.ami_id
-    instance_type = aws_vm_config.instance_type
+    ami_id = vm.config.ami_id
+    instance_type = vm.config.instance_type
 
-    user_data = vm.provider.user_data.format(vm=vm).encode('utf-8')
+    user_data = vm.config.provider.user_data.format(vm=vm).encode('utf-8')
 
     ec2_conn = ec2_connect_to_aws_vm_region(vm.pk)
 
@@ -308,7 +306,7 @@ def route53_add(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'add route53 cname', **aud_kw):
         vm = AWSVM.objects.get(id=vm_id)
-        vm_cname = (vm.name + '.' + vm.provider.route_53_zone).lower()
+        vm_cname = (vm.name + '.' + vm.config.provider.route_53_zone).lower()
 
         ec2_conn = ec2_connect_to_aws_vm_region(vm.pk)
         instances = ec2_conn.get_only_instances(instance_ids=[vm.instance_id])
@@ -321,7 +319,7 @@ def route53_add(self, vm_id, user_id=None):
         r53_conn = route53_connect_to_aws_vm_region(vm.pk)
         priv_zone, pub_zone = None, None
         for z in r53_conn.get_zones():
-            if z.name != vm.provider.route_53_zone:
+            if z.name != vm.config.provider.route_53_zone:
                 continue
             if z.config['PrivateZone'] == 'true':
                 priv_zone = z
@@ -343,7 +341,7 @@ def route53_add(self, vm_id, user_id=None):
                     comment='Vimma-generated')
             aud.info('Created DNS cname ‘{}’'.format(vm_cname), **aud_kw)
         else:
-            aud.warning('No public DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
+            aud.warning('No public DNS zone named ‘{}’'.format(vm.config.provider.route_53_zone),
                     **aud_kw)
 
         if priv_zone:
@@ -361,7 +359,7 @@ def route53_add(self, vm_id, user_id=None):
             aud.info('Created A record ‘{}’ {}'.format(vm_cname, priv_ip),
                     **aud_kw)
         else:
-            aud.warning('No private DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
+            aud.warning('No private DNS zone named ‘{}’'.format(vm.config.provider.route_53_zone),
                     **aud_kw)
 
 
@@ -376,12 +374,12 @@ def route53_delete(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete route53 cname', **aud_kw):
         vm = AWSVM.objects.get(id=vm_id)
-        vm_cname = (vm.name + '.' + vm.provider.route_53_zone).lower()
+        vm_cname = (vm.name + '.' + vm.config.provider.route_53_zone).lower()
 
         r53_conn = route53_connect_to_aws_vm_region(vm.pk)
         priv_zone, pub_zone = None, None
         for z in r53_conn.get_zones():
-            if z.name != vm.provider.route_53_zone:
+            if z.name != vm.config.provider.route_53_zone:
                 continue
             if z.config['PrivateZone'] == 'true':
                 priv_zone = z
@@ -396,7 +394,7 @@ def route53_delete(self, vm_id, user_id=None):
                 aud.warning('DNS cname ‘{}’ does not exist'.format(vm_cname),
                         **aud_kw)
         else:
-            aud.warning('No public DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
+            aud.warning('No public DNS zone named ‘{}’'.format(vm.config.provider.route_53_zone),
                     **aud_kw)
 
         if priv_zone:
@@ -407,7 +405,7 @@ def route53_delete(self, vm_id, user_id=None):
                 aud.warning('DNS A record ‘{}’ does not exist'.format(
                     vm_cname), **aud_kw)
         else:
-            aud.warning('No private DNS zone named ‘{}’'.format(vm.provider.route_53_zone),
+            aud.warning('No private DNS zone named ‘{}’'.format(vm.config.provider.route_53_zone),
                     **aud_kw)
 
 

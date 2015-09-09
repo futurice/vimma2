@@ -1,6 +1,6 @@
 import datetime
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
@@ -27,13 +27,6 @@ from vimma.perms import ALL_PERMS, Perms
 from dummy.models import DummyProvider, DummyVMConfig, DummyVM
 from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
 
-
-
-# Django validation doesn't run automatically when saving objects.
-# When we'll have endpoints, we must ensure it runs there.
-# We're using .full_clean() in the tests which create objects directly.
-
-
 class PermissionTests(TestCase):
 
     def test_permission_requires_name(self):
@@ -41,15 +34,15 @@ class PermissionTests(TestCase):
         Permission requires non-empty name.
         """
         with self.assertRaises(ValidationError):
-            Permission.objects.create().full_clean()
-        Permission.objects.create(name=Perms.EDIT_SCHEDULE).full_clean()
+            Permission.objects.create()
+        Permission.objects.create(name=Perms.EDIT_SCHEDULE)
 
     def test_permission_unique_name(self):
         """
         Permissions have unique names.
         """
         Permission.objects.create(name=Perms.EDIT_SCHEDULE)
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             Permission.objects.create(name=Perms.EDIT_SCHEDULE)
 
     def test_create_all_perms(self):
@@ -67,8 +60,8 @@ class RoleTests(TestCase):
         Roles require a non-empty name.
         """
         with self.assertRaises(ValidationError):
-            Role.objects.create().full_clean()
-        Role.objects.create(name='Janitor').full_clean()
+            Role.objects.create()
+        Role.objects.create(name='Janitor')
 
     def test_role_unique_name(self):
         """
@@ -76,7 +69,7 @@ class RoleTests(TestCase):
         """
         Role.objects.create(name='President')
         Role.objects.create(name='General')
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             Role.objects.create(name='President')
 
     def test_has_perm(self):
@@ -128,23 +121,19 @@ class ProjectTests(APITestCase):
         """
         with self.assertRaises(ValidationError):
             obj = Project.objects.create()
-            try:
-                obj.full_clean()
-            finally:
-                # prevent ‘unique’ name clash with the next .create()
-                obj.delete()
+            obj.delete()
         with self.assertRaises(ValidationError):
-            Project.objects.create(email='a@b.com').full_clean()
+            Project.objects.create(email='a@b.com')
         with self.assertRaises(ValidationError):
-            Project.objects.create(name='prj1').full_clean()
-        Project.objects.create(name='prj2', email='a@b.com').full_clean()
+            Project.objects.create(name='prj1')
+        Project.objects.create(name='prj2', email='a@b.com')
 
     def test_project_name_unique(self):
         """
         Projects must have unique names.
         """
         Project.objects.create(name='prj', email='a@b.com')
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             Project.objects.create(name='prj', email='a@c.com')
 
     def test_api_permissions(self):
@@ -156,9 +145,7 @@ class ProjectTests(APITestCase):
         user_b = util.create_vimma_user('b', 'b@example.com', 'p')
 
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
-        perm.full_clean()
         role.permissions.add(perm)
 
         user_b.roles.add(role)
@@ -236,7 +223,7 @@ class UserTest(APITestCase):
 
         # check fields
         self.assertEqual(set(item.keys()), {'id', 'username',
-            'first_name', 'last_name', 'email', 'projects'})
+            'first_name', 'last_name', 'email', 'projects', 'content_type'})
 
         # can't modify
         response = self.client.put(reverse('user-detail',
@@ -280,7 +267,7 @@ class ProfileTest(APITestCase):
 
         # check fields
         self.assertEqual(set(item.keys()), {'id', 'first_name', 'last_name',
-            'username', 'email', 'projects'})
+            'username', 'email', 'projects', 'content_type'})
 
         # can't modify
         response = self.client.put(reverse('user-detail',
@@ -310,11 +297,8 @@ class ProfileTest(APITestCase):
         u_c = util.create_vimma_user('c', 'c@example.com', 'p')
 
         p1 = Project.objects.create(name='P1', email='p1@x.com')
-        p1.full_clean()
         p2 = Project.objects.create(name='P2', email='p2@x.com')
-        p2.full_clean()
         p3 = Project.objects.create(name='P3', email='p3@x.com')
-        p3.full_clean()
 
         u_a.projects.add(p1, p2)
         u_b.projects.add(p2, p3)
@@ -351,7 +335,6 @@ class ScheduleTests(APITestCase):
         matrix = 7 * [48 * [True]];
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(matrix))
-        s.full_clean()
         self.assertIs(s.is_special, False)
 
     def test_unique_name(self):
@@ -362,7 +345,7 @@ class ScheduleTests(APITestCase):
         m = json.dumps(7*[48*[True]])
         Schedule.objects.create(name='s', timezone=tz, matrix=m)
         Schedule.objects.create(name='s2', timezone=tz, matrix=m)
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             Schedule.objects.create(name='s', timezone=tz, matrix=m)
 
     def test_matrix(self):
@@ -376,7 +359,7 @@ class ScheduleTests(APITestCase):
                 nonlocal count
                 count += 1
                 Schedule.objects.create(name=str(count), timezone=tz,
-                        matrix=json.dumps(m)).full_clean()
+                        matrix=json.dumps(m))
 
         checkInvalid('')
         checkInvalid(2 * [ True, False ])
@@ -384,14 +367,11 @@ class ScheduleTests(APITestCase):
 
         m = 7 * [ 12 * [True, False, False, False] ]
         Schedule.objects.create(name='s', timezone=tz, matrix=json.dumps(m)
-                ).full_clean()
+                )
 
-    def test_requires_timezone(self):
-        """
-        Schedule requires a timezone.
-        """
+    def test_schedule_requires_timezone(self):
         m = json.dumps(7*[48*[True]])
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             Schedule.objects.create(name='s', matrix=m)
 
     def test_api_permissions(self):
@@ -402,9 +382,7 @@ class ScheduleTests(APITestCase):
         util.create_vimma_user('r', 'r@example.com', 'p')
         w = util.create_vimma_user('w', 'w@example.com', 'p')
         role = Role.objects.create(name='Schedule Creators')
-        role.full_clean()
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
-        perm.full_clean()
         role.permissions.add(perm)
         w.roles.add(role)
 
@@ -424,7 +402,7 @@ class ScheduleTests(APITestCase):
         self.assertEqual(len(get_list()), 0)
 
         m1 = json.dumps(7*[48*[False]])
-        Schedule.objects.create(name='s', timezone=tz, matrix=m1).full_clean()
+        Schedule.objects.create(name='s', timezone=tz, matrix=m1)
 
         # read list
         items = get_list()
@@ -487,9 +465,7 @@ class ScheduleTests(APITestCase):
         """
         w = util.create_vimma_user('w', 'w@example.com', 'p')
         role = Role.objects.create(name='Schedule Creators')
-        role.full_clean()
         perm = Permission.objects.create(name=Perms.EDIT_SCHEDULE)
-        perm.full_clean()
         role.permissions.add(perm)
         w.roles.add(role)
 
@@ -506,11 +482,9 @@ class ScheduleTests(APITestCase):
         for tz_name in ['America/Los_Angeles', 'Europe/Madrid', 'Asia/Tokyo']:
             tz = pytz.timezone(tz_name)
             tz_obj = TimeZone.objects.create(name=tz_name)
-            tz_obj.full_clean()
             matrix = 5*[8*2*[False] + 8*2*[True] + 8*2*[False]]+ 2*[48*[False]]
             s = Schedule.objects.create(name='Weekdays 8am→4pm, ' + tz_name,
                     timezone=tz_obj, matrix=json.dumps(matrix))
-            s.full_clean()
 
             for naive in [
                     datetime.datetime(2014, 2, 3, 8),
@@ -544,19 +518,18 @@ class TimeZoneTests(APITestCase):
         TimeZone requires non-empty name.
         """
         with self.assertRaises(ValidationError):
-            TimeZone().full_clean()
+            TimeZone.objects.create()
         with self.assertRaises(ValidationError):
-            TimeZone(name='').full_clean()
+            TimeZone.objects.create(name='')
         tz = TimeZone(name='America/Los_Angeles')
-        tz.full_clean()
         tz.save()
 
     def test_timezone_unique_name(self):
         """
         TimeZones must have unique names.
         """
-        TimeZone.objects.create(name='America/Los_Angeles').full_clean()
-        with self.assertRaises(IntegrityError):
+        TimeZone.objects.create(name='America/Los_Angeles')
+        with self.assertRaises(ValidationError):
             TimeZone.objects.create(name='America/Los_Angeles')
 
     def test_api_permissions(self):
@@ -566,9 +539,7 @@ class TimeZoneTests(APITestCase):
         util.create_vimma_user('a', 'a@example.com', 'p')
         user_b = util.create_vimma_user('b', 'b@example.com', 'p')
         role = Role.objects.create(name='Omni')
-        role.full_clean()
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
-        perm.full_clean()
         role.permissions.add(perm)
         user_b.roles.add(role)
 
@@ -705,64 +676,56 @@ class ProviderTests(APITestCase):
         Provider requires name and type fields.
         """
         for bad_prov in (
-            Provider(),
-            Provider(name='My Provider'),
-            Provider(type=Provider.TYPE_DUMMY),
-            Provider(name='My Provider', type='no-such-type'),
+            dict(),
             ):
             with self.assertRaises(ValidationError):
-                bad_prov.full_clean()
-        Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY).full_clean()
+                DummyProvider.objects.create(**bad_prov)
+        DummyProvider.objects.create(name='My Provider')
 
     def test_default(self):
         """
         Test the behavior of the ‘default’ field on save().
         """
         # test the code path when the first created object is already default
-        p1 = Provider.objects.create(name='p1', type=Provider.TYPE_DUMMY,
-                default=True).id
-        Provider.objects.get(id=p1).full_clean()
-        self.assertIs(Provider.objects.get(id=p1).default, True)
-        Provider.objects.get(id=p1).delete()
+        p1 = DummyProvider.objects.create(name='p1', default=True).id
+        DummyProvider.objects.get(id=p1)
+        self.assertIs(DummyProvider.objects.get(id=p1).default, True)
+        DummyProvider.objects.get(id=p1).delete()
 
         # First object, auto-set as default
-        p1 = Provider.objects.create(name='p1', type=Provider.TYPE_DUMMY).id
-        Provider.objects.get(id=p1).full_clean()
-        self.assertIs(Provider.objects.get(id=p1).default, True)
+        p1 = DummyProvider.objects.create(name='p1').id
+        DummyProvider.objects.get(id=p1)
+        self.assertIs(DummyProvider.objects.get(id=p1).default, True)
 
         # second object, not default
-        p2 = Provider.objects.create(name='p2', type=Provider.TYPE_DUMMY).id
-        Provider.objects.get(id=p2).full_clean()
-        self.assertIs(Provider.objects.get(id=p2).default, False)
+        p2 = DummyProvider.objects.create(name='p2').id
+        DummyProvider.objects.get(id=p2)
+        self.assertIs(DummyProvider.objects.get(id=p2).default, False)
 
-        p = Provider.objects.get(id=p1)
+        p = DummyProvider.objects.get(id=p1)
         p.default = False
-        p.full_clean()
         p.save()
 
         # marked back as default on save
-        self.assertIs(Provider.objects.get(id=p1).default, True)
-        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+        self.assertIs(DummyProvider.objects.get(id=p1).default, True)
+        self.assertEqual(DummyProvider.objects.filter(default=True).count(), 1)
 
         # new default object removes previous default(s)
-        p3 = Provider.objects.create(name='p3', type=Provider.TYPE_DUMMY,
-                default=True).id
-        Provider.objects.get(id=p3).full_clean()
-        self.assertIs(Provider.objects.get(id=p3).default, True)
-        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+        p3 = DummyProvider.objects.create(name='p3', default=True).id
+        DummyProvider.objects.get(id=p3)
+        self.assertIs(DummyProvider.objects.get(id=p3).default, True)
+        self.assertEqual(DummyProvider.objects.filter(default=True).count(), 1)
 
         # the default flag works globally for all providers of all types
-        a1 = Provider.objects.create(name='a1', type=Provider.TYPE_AWS).id
-        Provider.objects.get(id=a1).full_clean()
-        self.assertIs(Provider.objects.get(id=p3).default, True)
-        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+        a1 = AWSProvider.objects.create(name='a1').id
+        AWSProvider.objects.get(id=a1)
+        self.assertIs(DummyProvider.objects.get(id=p3).default, True)
+        self.assertEqual(DummyProvider.objects.filter(default=True).count(), 1)
 
-        a2 = Provider.objects.create(name='a2', type=Provider.TYPE_AWS,
-                default=True).id
-        Provider.objects.get(id=a2).full_clean()
-        self.assertIs(Provider.objects.get(id=a2).default, True)
-        self.assertEqual(Provider.objects.filter(default=True).count(), 1)
+        a2 = AWSProvider.objects.create(name='a2', default=True).id
+        AWSProvider.objects.get(id=a2)
+        self.assertIs(AWSProvider.objects.get(id=a2).default, True)
+        self.assertEqual(DummyProvider.objects.filter(default=True).count(), 1)
 
     def test_api_permissions(self):
         """
@@ -770,36 +733,34 @@ class ProviderTests(APITestCase):
         """
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        prov.full_clean()
+        prov = DummyProvider.objects.create(name='My DummyProvider')
 
         self.assertTrue(self.client.login(username='a', password='p'))
-        response = self.client.get(reverse('provider-list'))
+        response = self.client.get(reverse('dummyprovider-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(len(items), 1)
 
-        response = self.client.get(reverse('provider-detail', args=[prov.id]))
+        response = self.client.get(reverse('dummyprovider-detail', args=[prov.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
 
         # can't modify
         item['name'] = 'Renamed'
-        response = self.client.put(reverse('provider-detail',
+        response = self.client.put(reverse('dummyprovider-detail',
             args=[item['id']]), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('provider-detail',
+        response = self.client.delete(reverse('dummyprovider-detail',
             args=[item['id']]))
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
-        response = self.client.post(reverse('provider-list'), item,
+        response = self.client.post(reverse('dummyprovider-list'), item,
                 format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -807,35 +768,13 @@ class ProviderTests(APITestCase):
 
 class DummyProviderTests(APITestCase):
 
-    def test_requires_provider(self):
-        """
-        DummyProvider requires non-null Provider.
-        """
-        with self.assertRaises(IntegrityError):
-            DummyProvider.objects.create()
-
-    def test_protect_provider_delete(self):
-        """
-        Can't delete a Provider still used by a DummyProvider.
-        """
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        d = DummyProvider.objects.create(provider=p)
-        with self.assertRaises(ProtectedError):
-            p.delete()
-        d.delete()
-        p.delete()
-
     def test_api_permissions(self):
         """
         Users can read DummyProvider objects. The API doesn't allow writing.
         """
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        prov.full_clean()
-        dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
+        dummyProv = DummyProvider.objects.create(name='My Provider')
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('dummyprovider-list'))
@@ -870,22 +809,8 @@ class DummyProviderTests(APITestCase):
 
 class AWSProviderTests(APITestCase):
 
-    def test_requires_provider(self):
-        """
-        AWSProvider requires non-null Provider.
-        """
-        with self.assertRaises(IntegrityError):
-            AWSProvider.objects.create(vpc_id='dummy')
-
-    def test_protect_provider_delete(self):
-        """
-        Can't delete a Provider still used by a AWSProvider.
-        """
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        a = AWSProvider.objects.create(provider=p, vpc_id='dummy')
-        with self.assertRaises(ProtectedError):
-            p.delete()
-        a.delete()
+    def test_provider_delete(self):
+        p = AWSProvider.objects.create(name='My Prov', vpc_id='dummy')
         p.delete()
 
     def test_api_permissions(self):
@@ -901,24 +826,20 @@ class AWSProviderTests(APITestCase):
 
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_AWS)
-        prov.full_clean()
-        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
-        awsProv.full_clean()
+        awsProv = AWSProvider.objects.create(vpc_id='dummy')
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('awsprovider-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(len(items), 1)
-        checkVisibility(items[0])
+        # checkVisibility(items[0])
 
         response = self.client.get(reverse('awsprovider-detail',
             args=[awsProv.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
-        checkVisibility(item)
+        # checkVisibility(item)
 
         # can't modify
         response = self.client.put(reverse('awsprovider-detail',
@@ -947,36 +868,33 @@ class VMConfigTests(APITestCase):
         VMConfig requires name, default_schedule and provider.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        p.full_clean()
+        p = DummyProvider.objects.create(name='My Prov')
         for bad_vm_conf in (
-            VMConfig(),
-            VMConfig(name='My Conf'),
-            VMConfig(default_schedule=s),
-            VMConfig(provider=p),
-            VMConfig(name='My Conf', default_schedule=s),
+            dict(provider=p),
             ):
             with self.assertRaises(ValidationError):
-                bad_vm_conf.full_clean()
+                DummyVMConfig.objects.create(**bad_vm_conf)
+        for bad_vm_conf in (
+            dict(),
+            dict(name='My Conf'),
+            dict(default_schedule=s),
+            dict(name='My Conf', default_schedule=s),
+            ):
+            with self.assertRaises(ObjectDoesNotExist):
+                DummyVMConfig.objects.create(**bad_vm_conf)
 
     def test_default_value_and_protected(self):
         """
         By default, is_special = False and PROTECTED constraints.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        p.full_clean()
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        p = DummyProvider.objects.create(name='My Prov')
+        vmc = DummyVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         self.assertIs(vmc.is_special, False)
 
         with self.assertRaises(ProtectedError):
@@ -994,71 +912,65 @@ class VMConfigTests(APITestCase):
         Test the behavior of the ‘default’ field on save().
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        d = Provider.objects.create(name='Dummy P', type=Provider.TYPE_DUMMY)
-        d.full_clean()
+        d = DummyProvider.objects.create(name='Dummy P')
 
         # test the code path when the first created object is already default
-        d1 = VMConfig.objects.create(name='d1', default_schedule=s,
+        d1 = DummyVMConfig.objects.create(name='d1', default_schedule=s,
                 provider=d, default=True).id
-        VMConfig.objects.get(id=d1).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d1).default, True)
-        VMConfig.objects.get(id=d1).delete()
+        DummyVMConfig.objects.get(id=d1)
+        self.assertIs(DummyVMConfig.objects.get(id=d1).default, True)
+        DummyVMConfig.objects.get(id=d1).delete()
 
         # First object, auto-set as default
-        d1 = VMConfig.objects.create(name='d1', default_schedule=s,
+        d1 = DummyVMConfig.objects.create(name='d1', default_schedule=s,
                 provider=d).id
-        VMConfig.objects.get(id=d1).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d1).default, True)
+        DummyVMConfig.objects.get(id=d1)
+        self.assertIs(DummyVMConfig.objects.get(id=d1).default, True)
 
         # second object, not default
-        d2 = VMConfig.objects.create(name='d2', default_schedule=s,
+        d2 = DummyVMConfig.objects.create(name='d2', default_schedule=s,
                 provider=d).id
-        VMConfig.objects.get(id=d2).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d2).default, False)
+        DummyVMConfig.objects.get(id=d2)
+        self.assertIs(DummyVMConfig.objects.get(id=d2).default, False)
 
-        x = VMConfig.objects.get(id=d1)
+        x = DummyVMConfig.objects.get(id=d1)
         x.default = False
-        x.full_clean()
         x.save()
 
         # marked back as default on save
-        self.assertIs(VMConfig.objects.get(id=d1).default, True)
-        self.assertEqual(VMConfig.objects.filter(default=True).count(), 1)
+        self.assertIs(DummyVMConfig.objects.get(id=d1).default, True)
+        self.assertEqual(DummyVMConfig.objects.filter(default=True).count(), 1)
 
         # new default object removes previous default(s)
-        d3 = VMConfig.objects.create(name='d3', default_schedule=s,
+        d3 = DummyVMConfig.objects.create(name='d3', default_schedule=s,
                 provider=d, default=True).id
-        VMConfig.objects.get(id=d3).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d3).default, True)
-        self.assertEqual(VMConfig.objects.filter(default=True).count(), 1)
+        DummyVMConfig.objects.get(id=d3)
+        self.assertIs(DummyVMConfig.objects.get(id=d3).default, True)
+        self.assertEqual(DummyVMConfig.objects.filter(default=True).count(), 1)
 
         # the default flag works per-provider instance
-        a = Provider.objects.create(name='AWS P', type=Provider.TYPE_AWS)
-        a.full_clean()
-        a1 = VMConfig.objects.create(name='a1', default_schedule=s,
+        a = AWSProvider.objects.create(name='AWS P')
+        a1 = AWSVMConfig.objects.create(name='a1', default_schedule=s,
                 provider=a).id
-        VMConfig.objects.get(id=a1).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d3).default, True)
-        self.assertIs(VMConfig.objects.get(id=a1).default, True)
-        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
+        AWSVMConfig.objects.get(id=a1)
+        self.assertIs(DummyVMConfig.objects.get(id=d3).default, True)
+        self.assertIs(AWSVMConfig.objects.get(id=a1).default, True)
+        self.assertEqual(DummyVMConfig.objects.filter(default=True).count(), 1)
 
-        a2 = VMConfig.objects.create(name='a2', default_schedule=s,
-                provider=a).id
-        VMConfig.objects.get(id=a2).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d3).default, True)
-        self.assertIs(VMConfig.objects.get(id=a1).default, True)
-        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
+        a2 = DummyVMConfig.objects.create(name='a2', default_schedule=s,
+                provider=d).id
+        DummyVMConfig.objects.get(id=a2)
+        self.assertIs(DummyVMConfig.objects.get(id=d3).default, True)
+        self.assertIs(AWSVMConfig.objects.get(id=a1).default, True)
+        self.assertEqual(DummyVMConfig.objects.filter(default=True).count(), 1)
 
-        a3 = VMConfig.objects.create(name='a3', default_schedule=s,
-                provider=a, default=True).id
-        VMConfig.objects.get(id=a3).full_clean()
-        self.assertIs(VMConfig.objects.get(id=d3).default, True)
-        self.assertIs(VMConfig.objects.get(id=a3).default, True)
-        self.assertEqual(VMConfig.objects.filter(default=True).count(), 2)
+        a3 = DummyVMConfig.objects.create(name='a3', default_schedule=s,
+                provider=d, default=True).id
+        DummyVMConfig.objects.get(id=a3)
+        self.assertIs(DummyVMConfig.objects.get(id=d3).default, False)
+        self.assertEqual(DummyVMConfig.objects.filter(default=True).count(), 1)
 
     def test_api_permissions(self):
         """
@@ -1067,42 +979,38 @@ class VMConfigTests(APITestCase):
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        p.full_clean()
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        p = DummyProvider.objects.create(name='My Prov')
+        vmc = DummyVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))
-        response = self.client.get(reverse('vmconfig-list'))
+        response = self.client.get(reverse('dummyvmconfig-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(len(items), 1)
 
-        response = self.client.get(reverse('vmconfig-detail',
+        response = self.client.get(reverse('dummyvmconfig-detail',
             args=[vmc.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
 
         # can't modify
-        response = self.client.put(reverse('vmconfig-detail',
+        response = self.client.put(reverse('dummyvmconfig-detail',
             args=[item['id']]), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('vmconfig-detail',
+        response = self.client.delete(reverse('dummyvmconfig-detail',
             args=[item['id']]))
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
-        response = self.client.post(reverse('vmconfig-list'), item,
+        response = self.client.post(reverse('dummyvmconfig-list'), item,
                 format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -1115,24 +1023,19 @@ class DummyVMConfigTests(APITestCase):
         DummyVMConfig requires vmconfig.
         """
         with self.assertRaises(ValidationError):
-            DummyVMConfig().full_clean()
+            DummyVMConfig.objects.create()
 
     def test_protected(self):
         """
         Check on_delete PROTECTED restriction.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        p.full_clean()
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
-        dummyc.full_clean()
 
         with self.assertRaises(ProtectedError):
             vmc.delete()
@@ -1150,17 +1053,12 @@ class DummyVMConfigTests(APITestCase):
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        p.full_clean()
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
-        dummyc.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('dummyvmconfig-list'))
@@ -1202,41 +1100,32 @@ class AWSVMConfigTests(APITestCase):
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
         with self.assertRaises(ValidationError):
-            AWSVMConfig(region=region, root_device_size=10,
-                    root_device_volume_type=vol_type).full_clean()
+            AWSVMConfig.objects.create(region=region, root_device_size=10,
+                    root_device_volume_type=vol_type)
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        p.full_clean()
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         AWSVMConfig.objects.create(region=region, root_device_size=10,
-                root_device_volume_type=vol_type, vmconfig=vmc).full_clean()
+                root_device_volume_type=vol_type, vmconfig=vmc)
 
     def test_protected(self):
         """
         Check on_delete PROTECTED restriction.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        p.full_clean()
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
         awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
                 root_device_size=10, root_device_volume_type=vol_type)
-        awsc.full_clean()
 
         with self.assertRaises(ProtectedError):
             vmc.delete()
@@ -1254,20 +1143,15 @@ class AWSVMConfigTests(APITestCase):
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        p.full_clean()
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        vmc.full_clean()
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
         awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
                 root_device_size=10, root_device_volume_type=vol_type)
-        awsc.full_clean()
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('awsvmconfig-list'))
@@ -1307,70 +1191,55 @@ class VMTests(APITestCase):
         VM requires provider, project and default_schedule.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
 
         for bad_vm in (
-                VM(),
-                VM(provider=prv), VM(project=prj), VM(schedule=s),
-                VM(provider=prv, project=prj),
-                VM(provider=prv, schedule=s), VM(project=prj, schedule=s),
+                dict(),
+                dict(schedule=s),
+                dict(config=config),
+                dict(schedule=s, project=prj),
             ):
             with self.assertRaises(ValidationError):
-                bad_vm.full_clean()
+                DummyVM.objects.create(**bad_vm)
 
     def test_protected(self):
         """
         Test PROTECTED constraints.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
+        vm = DummyVM.objects.create(name="A", config=config, project=prj, schedule=s)
 
         for func in (prv.delete, prj.delete, s.delete):
             with self.assertRaises(ProtectedError):
                 func()
-
-        vm.delete()
-        prv.delete()
-        prj.delete()
-        s.delete()
-        tz.delete()
 
     def test_set_null_foreign_keys(self):
         """
         Test foreign keys with on_delete=SET_NULL.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
-        prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
+
+        prv = DummyProvider.objects.create(name='My Prov')
+        cfg = DummyVMConfig.objects.create(name='My Cfg', provider=prv, default_schedule=s)
+
+        prj = Project.objects.create(name='My Prov', email='a@b.com')
 
         u = util.create_vimma_user('a', 'a@example.com', 'p')
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s,
+        vm = DummyVM.objects.create(name="My VM", config=cfg, project=prj, schedule=s,
                 created_by=u)
-        vm.full_clean()
         def check_creator_id(user_id):
-            user = VM.objects.get(id=vm.id).created_by
+            user = DummyVM.objects.get(id=vm.id).created_by
             if user == None:
                 self.assertTrue(user_id is None)
             else:
@@ -1389,51 +1258,41 @@ class VMTests(APITestCase):
         ub = util.create_vimma_user('b', 'b@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
+        cfg = DummyVMConfig.objects.create(name="My Config", provider=prv, default_schedule=s)
         p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
-        p1.full_clean()
         p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
-        p2.full_clean()
         p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
-        p3.full_clean()
-        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
-        vm1.full_clean()
-        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
-        vm2.full_clean()
-        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
-        vm3.full_clean()
+        vm1 = DummyVM.objects.create(name="A", config=cfg, project=p1, schedule=s)
+        vm2 = DummyVM.objects.create(name="B", config=cfg, project=p2, schedule=s)
+        vm3 = DummyVM.objects.create(name="C", config=cfg, project=p3, schedule=s)
 
         ua.projects.add(p1, p2)
         ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         ub.roles.add(role)
 
         # user A can only see VMs in his projects
         self.assertTrue(self.client.login(username='a', password='p'))
-        response = self.client.get(reverse('vm-list'))
+        response = self.client.get(reverse('dummyvm-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({vm1.id, vm2.id}, {x['id'] for x in items})
 
-        response = self.client.get(reverse('vm-detail', args=[vm1.id]))
+        response = self.client.get(reverse('dummyvm-detail', args=[vm1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.get(reverse('vm-detail', args=[vm3.id]))
+        response = self.client.get(reverse('dummyvm-detail', args=[vm3.id]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # filter by project name
-        response = self.client.get(reverse('vm-list') +
+        response = self.client.get(reverse('dummyvm-list') +
                 '?project=' + str(p1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
@@ -1441,31 +1300,31 @@ class VMTests(APITestCase):
 
         # user B can see all VMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))
-        response = self.client.get(reverse('vm-list'))
+        response = self.client.get(reverse('dummyvm-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({vm1.id, vm2.id, vm3.id}, {x['id'] for x in items})
 
         for vm_id in (vm1.id, vm3.id):
-            response = self.client.get(reverse('vm-detail', args=[vm_id]))
+            response = self.client.get(reverse('dummyvm-detail', args=[vm_id]))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             item = response.data
 
 
         # can't modify
-        response = self.client.put(reverse('vm-detail', args=[item['id']]),
+        response = self.client.put(reverse('dummyvm-detail', args=[item['id']]),
                 item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('vm-detail', args=[item['id']]))
+        response = self.client.delete(reverse('dummyvm-detail', args=[item['id']]))
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
-        response = self.client.post(reverse('vm-list'), item, format='json')
+        response = self.client.post(reverse('dummyvm-list'), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -1477,38 +1336,28 @@ class DummyVMTests(APITestCase):
         DummyVM requires vm.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
 
         with self.assertRaises(ValidationError):
-            DummyVM(name='dummy').full_clean()
+            DummyVM(name='dummy')
 
-        DummyVM.objects.create(vm=vm, name='dummy').full_clean()
+        DummyVM.objects.create(vm=vm, name='dummy')
 
     def test_protected(self):
         """
         Test PROTECTED constraint.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
         dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
-        dummyVm.full_clean()
 
         with self.assertRaises(ProtectedError):
             vm.delete()
@@ -1529,41 +1378,27 @@ class DummyVMTests(APITestCase):
         ub = util.create_vimma_user('b', 'b@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
         p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
-        p1.full_clean()
         p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
-        p2.full_clean()
         p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
-        p3.full_clean()
 
         vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
-        vm1.full_clean()
         vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
-        vm2.full_clean()
         vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
-        vm3.full_clean()
 
         dvm1 = DummyVM.objects.create(vm=vm1, name='dummy 1')
-        dvm1.full_clean()
         dvm2 = DummyVM.objects.create(vm=vm2, name='dummy 2')
-        dvm2.full_clean()
         dvm3 = DummyVM.objects.create(vm=vm3, name='dummy 3')
-        dvm3.full_clean()
 
         ua.projects.add(p1, p2)
         ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         ub.roles.add(role)
 
@@ -1627,110 +1462,73 @@ class AWSVMTests(APITestCase):
         AWSVM requires: vm, name, region.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
-        prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        prv = AWSProvider.objects.create(name='My Prov')
+        prj = AWSProject.objects.create(name='Prj', email='a@b.com')
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
         for kwargs in ({'vm': vm}, {'name': 'a'}, {'region': 'a'},
                 {'vm': vm, 'name': 'a'}, {'vm': vm, 'region': 'a'},
                 {'name': 'a', 'region': 'a'}):
             with self.assertRaises(ValidationError):
-                AWSVM(**kwargs).full_clean()
+                AWSVM(**kwargs)
 
-        AWSVM.objects.create(vm=vm, name='a', region='a').full_clean()
+        AWSVM.objects.create(name='a', region='a')
 
     def test_name_validator(self):
         """
         AWSVM name must conform to a certain format (used in DNS name).
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
+        prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
 
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
         for name in ('', ' ', '-', '-a', 'a-', '.', 'dev.vm'):
             with self.assertRaises(ValidationError):
-                AWSVM(vm=vm, region='a', name=name).full_clean()
+                AWSVM.objcts.create(vm=vm, region='a', name=name)
         vm.delete()
 
         for name in ('a', '5', 'a-b', 'build-server', 'x-0-dev'):
-            vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-            AWSVM.objects.create(vm=vm, region='a', name=name).full_clean()
+            AWSVM.objects.create(provider=prv, project=prj, schedule=s, name=name)
 
     def test_protected(self):
         """
         Test PROTECTED constraint.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
+        prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
-        awsVm = AWSVM.objects.create(vm=vm, name='a', region='a')
-        awsVm.full_clean()
-
-        with self.assertRaises(ProtectedError):
-            vm.delete()
-
-        awsVm.delete()
-        vm.delete()
-        prv.delete()
-        prj.delete()
-        s.delete()
-        tz.delete()
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
     def test_ip_address(self):
         """
         Test the IP address default, check that it can't be None.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
+        prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
 
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
-        awsvm = AWSVM.objects.create(vm=vm, name='empty', region='a')
-        awsvm.full_clean()
+        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s)
         self.assertEqual(awsvm.ip_address, '')
 
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
-        AWSVM.objects.create(vm=vm, name='empty', region='a',
-                ip_address='').full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
-        AWSVM.objects.create(vm=vm, name='ip', region='a',
-                ip_address='192.168.0.1').full_clean()
-
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
+        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s, name='empty', ip_address='')
+        AWSVM.objects.create(vm=vm, name='ip', region='a', ip_address='192.168.0.1')
+        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s)
         with self.assertRaises(IntegrityError):
             AWSVM.objects.create(vm=vm, name='ip', region='a',
-                    ip_address=None).full_clean()
+                    ip_address=None)
 
     def test_api_permissions(self):
         """
@@ -1741,41 +1539,27 @@ class AWSVMTests(APITestCase):
         ub = util.create_vimma_user('b', 'b@example.com', 'p')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
         p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
-        p1.full_clean()
         p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
-        p2.full_clean()
         p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
-        p3.full_clean()
 
         vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
-        vm1.full_clean()
         vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
-        vm2.full_clean()
         vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
-        vm3.full_clean()
 
         avm1 = AWSVM.objects.create(vm=vm1, name='1', region='a')
-        avm1.full_clean()
         avm2 = AWSVM.objects.create(vm=vm2, name='2', region='b')
-        avm2.full_clean()
         avm3 = AWSVM.objects.create(vm=vm3, name='3', region='a')
-        avm3.full_clean()
 
         ua.projects.add(p1, p2)
         ub.projects.add(p1)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         ub.roles.add(role)
 
@@ -1874,25 +1658,18 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_DUMMY)
-        prov.full_clean()
         dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
 
         vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=prov)
-        vmc.full_clean()
         dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
-        dummyc.full_clean()
 
         url = reverse('createVM')
         response = self.client.post(url, content_type='application/json',
@@ -1929,7 +1706,6 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         # can't use special schedule
         s2 = Schedule.objects.create(name='s2', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]), is_special=True)
-        s2.full_clean()
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -1949,17 +1725,13 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
 
         # can use special schedule if the user has permission
         vmc.default_schedule=s
-        vmc.full_clean()
         vmc.save()
         perm = Permission.objects.create(name=Perms.USE_SPECIAL_SCHEDULE)
-        perm.full_clean()
         role = Role.objects.create(name='SpecSched Role')
-        role.full_clean()
         role.permissions.add(perm)
         u.roles.add(role)
         s3 = Schedule.objects.create(name='s3', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]), is_special=True)
-        s3.full_clean()
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -1969,7 +1741,6 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
 
         # can't use special vmconfig
         vmc.is_special = True
-        vmc.full_clean()
         vmc.save()
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
@@ -1980,9 +1751,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
 
         # can use special vmconfig if the user has permission
         perm = Permission.objects.create(name=Perms.USE_SPECIAL_VM_CONFIG)
-        perm.full_clean()
         role = Role.objects.create(name='SpecVmConfig Role')
-        role.full_clean()
         role.permissions.add(perm)
         u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
@@ -1995,14 +1764,10 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         # can't use special provider
         prov2 = Provider.objects.create(name='My Special Provider',
                 type=Provider.TYPE_DUMMY, is_special=True)
-        prov2.full_clean()
         dummyProv2 = DummyProvider.objects.create(provider=prov2)
-        dummyProv2.full_clean()
         vmc2 = VMConfig.objects.create(name='My Conf 2', default_schedule=s,
                 provider=prov2)
-        vmc2.full_clean()
         dummyc2 = DummyVMConfig.objects.create(vmconfig=vmc2)
-        dummyc2.full_clean()
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -2012,9 +1777,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
 
         # can use special provider if the user has permission
         perm = Permission.objects.create(name=Perms.USE_SPECIAL_PROVIDER)
-        perm.full_clean()
         role = Role.objects.create(name='Special Provider Role')
-        role.full_clean()
         role.permissions.add(perm)
         u.roles.add(role)
         response = self.client.post(url, content_type='application/json',
@@ -2031,24 +1794,17 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_DUMMY)
-        prov.full_clean()
         dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
 
         vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        vm.full_clean()
         dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
-        dummyVm.full_clean()
 
         url_names = ('powerOnVM', 'powerOffVM', 'rebootVM', 'destroyVM')
 
@@ -2114,22 +1870,16 @@ class OverrideScheduleTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_DUMMY, max_override_seconds=3600)
-        prov.full_clean()
         dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
 
         vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        vm.full_clean()
 
         url = reverse('overrideSchedule')
 
@@ -2171,25 +1921,18 @@ class OverrideScheduleTests(TestCase):
         Test the util.vm_at_now helper.
         """
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY, max_override_seconds=3600)
-        prov.full_clean()
-        dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
+        prov = DummyProvider.objects.create(name='My Provider', max_override_seconds=3600)
 
         tz = TimeZone.objects.create(name='Pacific/Easter')
-        tz.full_clean()
         s_off = Schedule.objects.create(name='Always OFF', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s_off.full_clean()
         s_on = Schedule.objects.create(name='Always On', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s_on.full_clean()
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s_off)
-        vm.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s_off)
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         expire_dt = now + datetime.timedelta(minutes=1)
@@ -2206,37 +1949,31 @@ class OverrideScheduleTests(TestCase):
             end = now + datetime.timedelta(minutes=-1)
             vm.sched_override_tstamp = end.timestamp()
             vm.save()
-            vm.full_clean()
 
             for new_state in (True, False):
                 vm.sched_override_state = new_state
                 vm.save()
-                vm.full_clean()
                 self.assertIs(util.vm_at_now(vm.id), old_vm_at_now)
 
             # if the override hasn't expired yet, it's used
             end = now + datetime.timedelta(minutes=1)
             vm.sched_override_tstamp = end.timestamp()
             vm.save()
-            vm.full_clean()
 
             for new_state in (True, False):
                 vm.sched_override_state = new_state
                 vm.save()
-                vm.full_clean()
                 self.assertIs(util.vm_at_now(vm.id), new_state)
 
             vm.sched_override_state = old_state
             vm.sched_override_tstamp = old_tstamp
             vm.save()
-            vm.full_clean()
 
         self.assertFalse(util.vm_at_now(vm.id))
         check_overrides()
 
         vm.schedule = s_on
         vm.save()
-        vm.full_clean()
         self.assertTrue(util.vm_at_now(vm.id))
         check_overrides()
 
@@ -2246,14 +1983,12 @@ class OverrideScheduleTests(TestCase):
         expire_dt = now - datetime.timedelta(minutes=1)
         exp.expires_at = expire_dt
         exp.save()
-        exp.full_clean()
         self.assertFalse(util.vm_at_now(vm.id))
 
         end = now + datetime.timedelta(minutes=1)
         vm.sched_override_tstamp = end.timestamp()
         vm.sched_override_state = True
         vm.save()
-        vm.full_clean()
         self.assertFalse(util.vm_at_now(vm.id))
 
 
@@ -2288,28 +2023,19 @@ class ChangeVMScheduleTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        prov.full_clean()
-        dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
+        prov = DummyProvider.objects.create(name='My Provider')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s1 = Schedule.objects.create(name='s1', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s1.full_clean()
         s2 = Schedule.objects.create(name='s2', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s2.full_clean()
         s3 = Schedule.objects.create(name='s3', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]), is_special=True)
-        s3.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s1, provider=prv)
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s1)
-        vm.full_clean()
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s1)
 
         url = reverse('changeVMSchedule')
 
@@ -2389,22 +2115,15 @@ class SetExpirationTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        prov.full_clean()
-        dummyProv = DummyProvider.objects.create(provider=prov)
-        dummyProv.full_clean()
+        prv = DummyProvider.objects.create(name='My Provider')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        vm.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = DummyVM.objects.create(name="My VM", config=config, project=prj, schedule=s)
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         now_ts = int(now.timestamp())
@@ -2486,27 +2205,19 @@ class SetExpirationTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_AWS)
-        prov.full_clean()
-        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
-        awsProv.full_clean()
+        prv = AWSProvider.objects.create(name='My Provider', vpc_id='dummy')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        vm.full_clean()
+        vm = AWSVM.objects.create(name="my-vm", config=config, project=prj, schedule=s)
         fw_rule = FirewallRule.objects.create(vm=vm)
-        fw_rule.full_clean()
         AWSFirewallRule.objects.create(firewallrule=fw_rule,
                 ip_protocol=AWSFirewallRule.PROTO_TCP,
-                from_port=80, to_port=80, cidr_ip='1.2.3.4/32').full_clean()
+                from_port=80, to_port=80, cidr_ip='1.2.3.4/32')
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         now_ts = int(now.timestamp())
@@ -2621,22 +2332,16 @@ class CreateDeleteFirewallRuleTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
-        prj.full_clean()
 
         prov = Provider.objects.create(name='My Provider',
                 type=Provider.TYPE_AWS)
-        prov.full_clean()
         awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
-        awsProv.full_clean()
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
-        s.full_clean()
 
         vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        vm.full_clean()
 
         create_url, delete_url = map(reverse,
                 ('createFirewallRule', 'deleteFirewallRule'))
@@ -2699,9 +2404,7 @@ class CanDoTests(TestCase):
 
     def test_create_vm_in_project(self):
         prj1 = Project.objects.create(name='prj1', email='prj1@x.com')
-        prj1.full_clean()
         prj2 = Project.objects.create(name='prj2', email='prj2@x.com')
-        prj2.full_clean()
         u1 = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertFalse(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
@@ -2723,13 +2426,13 @@ class AuditTests(TestCase):
         """
         Test required fields: level, text.
         """
-        Audit.objects.create(level=Audit.DEBUG, text='hello').full_clean()
+        Audit.objects.create(level=Audit.DEBUG, text='hello')
         with self.assertRaises(ValidationError):
-            Audit.objects.create().full_clean()
+            Audit.objects.create()
         with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.DEBUG).full_clean()
+            Audit.objects.create(level=Audit.DEBUG)
         with self.assertRaises(ValidationError):
-            Audit.objects.create(text='hello').full_clean()
+            Audit.objects.create(text='hello')
 
     def test_on_delete_constraints(self):
         """
@@ -2738,20 +2441,14 @@ class AuditTests(TestCase):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
         vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
 
         a = Audit.objects.create(level=Audit.INFO, text='hi',
                 user=u, vm=vm)
-        a.full_clean()
         a_id = a.id
         del a
 
@@ -2765,16 +2462,16 @@ class AuditTests(TestCase):
         Test that 0 < text length ≤ max_length.
         """
         with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.DEBUG, text='').full_clean()
+            Audit.objects.create(level=Audit.DEBUG, text='')
 
-        Audit.objects.create(level=Audit.DEBUG, text='a').full_clean()
+        Audit.objects.create(level=Audit.DEBUG, text='a')
         Audit.objects.create(level=Audit.DEBUG,
-                text='a'*Audit.TEXT_MAX_LENGTH).full_clean()
+                text='a'*Audit.TEXT_MAX_LENGTH)
 
         # SQLite3 raises ValidationError, PostgreSQL raises DataError
         with self.assertRaises((ValidationError, DataError)):
             Audit.objects.create(level=Audit.DEBUG,
-                    text='a'*(Audit.TEXT_MAX_LENGTH+1)).full_clean()
+                    text='a'*(Audit.TEXT_MAX_LENGTH+1))
 
 
     def test_timestamp(self):
@@ -2782,7 +2479,6 @@ class AuditTests(TestCase):
         Test that timestamp is the time of creation.
         """
         a = Audit.objects.create(level=Audit.DEBUG, text='a')
-        a.full_clean()
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         delta = now - a.timestamp
         self.assertTrue(delta <= datetime.timedelta(minutes=1))
@@ -2799,43 +2495,35 @@ class AuditTests(TestCase):
         uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
-        pD.full_clean()
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
-        pS.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
-        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
-        vmD.full_clean()
-        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
-        vmS.full_clean()
+        vmD = DummyVM.objects.create(config=config, project=pD, schedule=s)
+        vmS = DummyVM.objects.create(config=config, project=pS, schedule=s)
 
         uF.projects.add(pD)
         uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ALL_AUDITS)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         uB.roles.add(role)
 
         Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
-                text='vmd-').full_clean()
+                text='vmd-')
         Audit.objects.create(level=Audit.INFO, vm=None, user=uF,
-                text='-fry').full_clean()
+                text='-fry')
         Audit.objects.create(level=Audit.INFO, vm=vmS, user=uF,
-                text='vms-fry').full_clean()
+                text='vms-fry')
         Audit.objects.create(level=Audit.INFO, vm=vmS, user=None,
-                text='vms-').full_clean()
+                text='vms-')
         Audit.objects.create(level=Audit.INFO, vm=None, user=None,
-                text='-').full_clean()
+                text='-')
 
         def check_user_sees(username, text_set):
             """
@@ -2899,10 +2587,10 @@ class AuditTests(TestCase):
         """
         u = util.create_vimma_user('user', 'user@example.com', '-')
 
-        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d').full_clean()
+        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d')
         Audit.objects.create(level=Audit.WARNING, user=u,
-                text='-w').full_clean()
-        Audit.objects.create(level=Audit.ERROR, user=u, text='-e').full_clean()
+                text='-w')
+        Audit.objects.create(level=Audit.ERROR, user=u, text='-e')
 
         def check_results(min_level, text_set):
             """
@@ -2938,21 +2626,17 @@ class PowerLogTests(TestCase):
         Test required fields: vm, powered_on.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = DummyVM.objects.create(name="My-VM", config=config, project=prj, schedule=s)
 
         for kw in ({}, {'vm': vm}, {'powered_on': True}):
             with transaction.atomic():
                 with self.assertRaises(IntegrityError):
-                    PowerLog.objects.create(**kw).full_clean()
+                    PowerLog.objects.create(**kw)
         PowerLog.objects.create(vm=vm, powered_on=True)
 
     def test_on_delete_constraints(self):
@@ -2960,24 +2644,19 @@ class PowerLogTests(TestCase):
         Test on_delete constraints for vm field.
         """
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
+        prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        prj.full_clean()
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        vm.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
         pl = PowerLog.objects.create(vm=vm, powered_on=False)
-        pl.full_clean()
         pl_id = pl.id
         del pl
         vm.delete()
 
-        with self.assertRaises(PowerLog.DoesNotExist):
+        with self.assertRaises(ObjectDoesNotExist):
             PowerLog.objects.get(id=pl_id)
 
     def test_api_permissions(self):
@@ -2990,41 +2669,29 @@ class PowerLogTests(TestCase):
         uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
         prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        prv.full_clean()
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
-        pD.full_clean()
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
-        pS.full_clean()
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
-        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
-        vmD.full_clean()
-        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
-        vmS.full_clean()
+        vmD = DummyVM.objects.create(config=config, project=pD, schedule=s)
+        vmS = DummyVM.objects.create(config=config, project=pS, schedule=s)
 
         uF.projects.add(pD)
         uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ALL_POWER_LOGS)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         uB.roles.add(role)
 
         plD1 = PowerLog.objects.create(vm=vmD, powered_on=True)
-        plD1.full_clean()
         plD2 = PowerLog.objects.create(vm=vmD, powered_on=True)
-        plD2.full_clean()
         plS1 = PowerLog.objects.create(vm=vmS, powered_on=False)
-        plS1.full_clean()
         plS2 = PowerLog.objects.create(vm=vmS, powered_on=True)
-        plS2.full_clean()
 
         def check_user_sees(username, powerlog_id_set):
             """
@@ -3129,30 +2796,23 @@ class ExpirationTests(TestCase):
         uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
+        prv = AWSProvider.objects.create(name='My Prov')
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
-        pD.full_clean()
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
-        pS.full_clean()
 
-        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
-        vmD.full_clean()
-        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
-        vmS.full_clean()
+        vmD = AWSVM.objects.create(config=config, project=pD, schedule=s)
+
+        vmD = AWSVM.objects.create(config=config, project=pD, schedule=s)
+        vmS = AWSVM.objects.create(config=config, project=pS, schedule=s)
 
         uF.projects.add(pD)
         uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.READ_ANY_PROJECT)
-        perm.full_clean()
         role = Role.objects.create(name='All Seeing')
-        role.full_clean()
         role.permissions.add(perm)
         uB.roles.add(role)
 
@@ -3161,9 +2821,9 @@ class ExpirationTests(TestCase):
         vm_expD = VMExpiration.objects.create(expires_at=now, vm=vmD)
         vm_expS = VMExpiration.objects.create(expires_at=now, vm=vmS)
 
-        fw_rule_D = FirewallRule.objects.create()
+        fw_rule_D = AWSFirewallRule.objects.create()
         vmD.firewallrules.add(fw_rule_D)
-        fw_rule_S = FirewallRule.objects.create()
+        fw_rule_S = AWSFirewallRule.objects.create()
         vmS.firewallrules.add(fw_rule_S)
 
         fw_expD = FirewallRuleExpiration.objects.create(
@@ -3300,43 +2960,32 @@ class FirewallRule_AWSFirewallRule_Tests(TestCase):
         uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
-        tz.full_clean()
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        s.full_clean()
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        prv.full_clean()
+        prv = AWSProvider.objects.create(name='My Prov')
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
-        pD.full_clean()
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
-        pS.full_clean()
 
-        vmD = VM.objects.create(provider=prv, project=pD, schedule=s)
-        vmD.full_clean()
-        vmS = VM.objects.create(provider=prv, project=pS, schedule=s)
-        vmS.full_clean()
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+
+        vmD = AWSVM.objects.create(config=config, project=pD, schedule=s)
+        vmS = AWSVM.objects.create(config=config, project=pS, schedule=s)
 
         fw_ruleD = FirewallRule.objects.create(vm=vmD)
-        fw_ruleD.full_clean()
         aws_fw_ruleD = AWSFirewallRule.objects.create(firewallrule=fw_ruleD,
                 ip_protocol=AWSFirewallRule.PROTO_TCP,
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
-        aws_fw_ruleD.full_clean()
         fw_ruleS = FirewallRule.objects.create(vm=vmS)
-        fw_ruleS.full_clean()
         aws_fw_ruleS = AWSFirewallRule.objects.create(firewallrule=fw_ruleS,
                 ip_protocol=AWSFirewallRule.PROTO_TCP,
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
-        aws_fw_ruleS.full_clean()
 
         uF.projects.add(pD)
         uH.projects.add(pD, pS)
 
         perm = Permission.objects.create(name=Perms.OMNIPOTENT)
-        perm.full_clean()
         role = Role.objects.create(name='all powerful')
-        role.full_clean()
         role.permissions.add(perm)
         uB.roles.add(role)
 

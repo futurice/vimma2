@@ -136,6 +136,8 @@ SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 7
 
 TRUSTED_NETWORKS = ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12']
 
+EC2_DEFAULT_REGION = 'us-east-1'
+
 del secs_in_day
 
 try:

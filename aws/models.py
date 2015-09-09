@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.db import models, transaction
+from django.core.exceptions import ValidationError
 
 import logging
 import ipaddress
 import re
 
-from vimma.models import VM, VMConfig, Provider, Audit, PowerLog
+from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog
 
 class AWSProvider(Provider):
     # names of environment variables for actual lookups
@@ -20,7 +21,7 @@ class AWSProvider(Provider):
     default_security_group_id = models.CharField(max_length=50, blank=True)
     # The ID of the VPC in which to create VMs. A random subnet will be chosen
     # at VM creation time.
-    vpc_id = models.CharField(max_length=50)
+    vpc_id = models.CharField(max_length=50, null=True, blank=True)
     # User data (e.g. a script) provided to the AWS Instances. Python Template
     # https://docs.python.org/3/library/string.html#format-string-syntax
     # given the ‘vm’ keyword argument. E.g.:
@@ -47,7 +48,7 @@ class AWSVM(VM, models.Model):
     state = models.CharField(max_length=100, blank=True)
     # AWS fields:
     name = models.CharField(max_length=50, validators=[aws_vm_name_validator])
-    region = models.CharField(max_length=20)
+    region = models.CharField(max_length=20, default=settings.EC2_DEFAULT_REGION)
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
     instance_id = models.CharField(max_length=50, blank=True)
@@ -92,14 +93,16 @@ class AWSVMConfig(VMConfig, models.Model):
         'us-west-2',
     ])
     REGION_CHOICES = ((r, r) for r in regions)
-    region = models.CharField(max_length=20, choices=REGION_CHOICES)
+    DEFAULT_REGION = 'us-east-1'
+    region = models.CharField(max_length=20, default=DEFAULT_REGION, choices=REGION_CHOICES)
 
     # Amazon Machine Image ID
     ami_id = models.CharField(max_length=50, blank=True)
     instance_type = models.CharField(max_length=50, blank=True)
 
     # The default root device size in GB for VMs made from this config.
-    root_device_size = models.IntegerField()
+    AMI_DEFAULT_SIZE = 8
+    root_device_size = models.IntegerField(default=AMI_DEFAULT_SIZE)
 
     # Not including ‘io1’ for now because ‘The parameter iops must be specified
     # for io1 volumes’.
@@ -115,7 +118,7 @@ class AWSVMConfig(VMConfig, models.Model):
                 self.name)
 
 
-class AWSFirewallRule(models.Model):
+class AWSFirewallRule(CleanModel):
     # ip_protocol, from_port, to_port and cidr_ip correspond to
     # AWS call params.
 
