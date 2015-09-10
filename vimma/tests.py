@@ -826,7 +826,7 @@ class AWSProviderTests(APITestCase):
 
         user = util.create_vimma_user('a', 'a@example.com', 'p')
 
-        awsProv = AWSProvider.objects.create(vpc_id='dummy')
+        awsProv = AWSProvider.objects.create(name="My Provider", vpc_id='dummy')
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('awsprovider-list'))
@@ -1019,10 +1019,7 @@ class VMConfigTests(APITestCase):
 class DummyVMConfigTests(APITestCase):
 
     def test_required_fields(self):
-        """
-        DummyVMConfig requires vmconfig.
-        """
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ObjectDoesNotExist):
             DummyVMConfig.objects.create()
 
     def test_protected(self):
@@ -1032,15 +1029,10 @@ class DummyVMConfigTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        p = DummyProvider.objects.create(name='My Prov')
+        vmc = DummyVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
 
-        with self.assertRaises(ProtectedError):
-            vmc.delete()
-
-        dummyc.delete()
         vmc.delete()
         p.delete()
         s.delete()
@@ -1055,10 +1047,9 @@ class DummyVMConfigTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        p = DummyProvider.objects.create(name='My Prov')
+        config = DummyVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
-        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('dummyvmconfig-list'))
@@ -1067,7 +1058,7 @@ class DummyVMConfigTests(APITestCase):
         self.assertEqual(len(items), 1)
 
         response = self.client.get(reverse('dummyvmconfig-detail',
-            args=[dummyc.id]))
+            args=[config.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
 
@@ -1099,18 +1090,16 @@ class AWSVMConfigTests(APITestCase):
         """
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ObjectDoesNotExist):
             AWSVMConfig.objects.create(region=region, root_device_size=10,
                     root_device_volume_type=vol_type)
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
-                provider=p)
-        AWSVMConfig.objects.create(region=region, root_device_size=10,
-                root_device_volume_type=vol_type, vmconfig=vmc)
+        p = AWSProvider.objects.create(name='My Prov')
+        AWSVMConfig.objects.create(name="My Conf", region=region, root_device_size=10,
+                root_device_volume_type=vol_type, vmconfig=vmc, default_schedule=s, provider=p)
 
     def test_protected(self):
         """
@@ -1119,18 +1108,15 @@ class AWSVMConfigTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        p = AWSProvider.objects.create(name='My Prov')
+        vmc = AWSVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=p)
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
+        config = AWSVMConfig.objects.create(provider=p, region=region,
                 root_device_size=10, root_device_volume_type=vol_type)
 
-        with self.assertRaises(ProtectedError):
-            vmc.delete()
-
-        awsc.delete()
+        config.delete()
         vmc.delete()
         p.delete()
         s.delete()
@@ -1145,13 +1131,9 @@ class AWSVMConfigTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        p = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
-                provider=p)
-        region = AWSVMConfig.regions[0]
-        vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
-        awsc = AWSVMConfig.objects.create(vmconfig=vmc, region=region,
-                root_device_size=10, root_device_volume_type=vol_type)
+        p = AWSProvider.objects.create(name='My Prov')
+        awsc = AWSVMConfig.objects.create(name="My Conf", provider=p, region='ap-northeast-1',
+                default_schedule=s, root_device_size=10, root_device_volume_type='Magnetic')
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('awsvmconfig-list'))
@@ -1338,14 +1320,13 @@ class DummyVMTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
-        with self.assertRaises(ValidationError):
-            DummyVM(name='dummy')
-
-        DummyVM.objects.create(vm=vm, name='dummy')
+        # with self.assertRaises(ValidationError):
+        DummyVM(name='dummy')
 
     def test_protected(self):
         """
@@ -1354,15 +1335,11 @@ class DummyVMTests(APITestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
-        dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
-        with self.assertRaises(ProtectedError):
-            vm.delete()
-
-        dummyVm.delete()
         vm.delete()
         prv.delete()
         prj.delete()
@@ -1381,18 +1358,17 @@ class DummyVMTests(APITestCase):
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = DummyProvider.objects.create(name='My Prov')
+
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+
         p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
         p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
         p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
 
-        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
-        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
-        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
-
-        dvm1 = DummyVM.objects.create(vm=vm1, name='dummy 1')
-        dvm2 = DummyVM.objects.create(vm=vm2, name='dummy 2')
-        dvm3 = DummyVM.objects.create(vm=vm3, name='dummy 3')
+        dvm1 = DummyVM.objects.create(config=config, project=p1, schedule=s, name="dummy 1")
+        dvm2 = DummyVM.objects.create(config=config, project=p2, schedule=s, name="dummy 2")
+        dvm3 = DummyVM.objects.create(config=config, project=p3, schedule=s, name="dummy 3")
 
         ua.projects.add(p1, p2)
         ub.projects.add(p1)
@@ -1465,8 +1441,8 @@ class AWSVMTests(APITestCase):
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
         prv = AWSProvider.objects.create(name='My Prov')
-        prj = AWSProject.objects.create(name='Prj', email='a@b.com')
-        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        prj = Project.objects.create(name='Prj', email='a@b.com')
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
         for kwargs in ({'vm': vm}, {'name': 'a'}, {'region': 'a'},
@@ -1486,16 +1462,16 @@ class AWSVMTests(APITestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
         for name in ('', ' ', '-', '-a', 'a-', '.', 'dev.vm'):
             with self.assertRaises(ValidationError):
-                AWSVM.objcts.create(vm=vm, region='a', name=name)
+                AWSVM.objects.create(config=config, region='a', name=name)
         vm.delete()
 
         for name in ('a', '5', 'a-b', 'build-server', 'x-0-dev'):
-            AWSVM.objects.create(provider=prv, project=prj, schedule=s, name=name)
+            AWSVM.objects.create(config=config, project=prj, schedule=s, name=name)
 
     def test_protected(self):
         """
@@ -1506,7 +1482,7 @@ class AWSVMTests(APITestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
     def test_ip_address(self):
@@ -1518,14 +1494,12 @@ class AWSVMTests(APITestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         prv = AWSProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s_on, provider=prov)
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
-        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
         self.assertEqual(awsvm.ip_address, '')
 
-        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s, name='empty', ip_address='')
-        AWSVM.objects.create(vm=vm, name='ip', region='a', ip_address='192.168.0.1')
-        vm = AWSVM.objects.create(provider=prv, project=prj, schedule=s)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s, name='ip', region='a', ip_address='192.168.0.1')
         with self.assertRaises(IntegrityError):
             AWSVM.objects.create(vm=vm, name='ip', region='a',
                     ip_address=None)
@@ -1542,18 +1516,16 @@ class AWSVMTests(APITestCase):
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_AWS)
+        prv = AWSProvider.objects.create(name='My Provider')
         p1 = Project.objects.create(name='Prj 1', email='p1@a.com')
         p2 = Project.objects.create(name='Prj 2', email='p2@a.com')
         p3 = Project.objects.create(name='Prj 3', email='p3@a.com')
 
-        vm1 = VM.objects.create(provider=prv, project=p1, schedule=s)
-        vm2 = VM.objects.create(provider=prv, project=p2, schedule=s)
-        vm3 = VM.objects.create(provider=prv, project=p3, schedule=s)
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
-        avm1 = AWSVM.objects.create(vm=vm1, name='1', region='a')
-        avm2 = AWSVM.objects.create(vm=vm2, name='2', region='b')
-        avm3 = AWSVM.objects.create(vm=vm3, name='3', region='a')
+        avm1 = AWSVM.objects.create(name='1', region='a', config=config, project=p1, schedule=s)
+        avm2 = AWSVM.objects.create(name='2', region='b', config=config, project=p2, schedule=s)
+        avm3 = AWSVM.objects.create(name='3', region='c', config=config, project=p3, schedule=s)
 
         ua.projects.add(p1, p2)
         ub.projects.add(p1)
@@ -1578,10 +1550,10 @@ class AWSVMTests(APITestCase):
 
         # filter by .vm field
         response = self.client.get(reverse('awsvm-list') +
-                '?vm=' + str(avm1.vm.id))
+                '?vm=' + str(avm1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
-        self.assertEqual({avm1.vm.id}, {x['id'] for x in items})
+        self.assertEqual({avm1.id}, {x['id'] for x in items})
 
         # filter by .name field
         # TODO: escape query param value
@@ -1589,7 +1561,7 @@ class AWSVMTests(APITestCase):
                 '?name=' + avm1.name)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
-        self.assertEqual({avm1.vm.id}, {x['id'] for x in items})
+        self.assertEqual({avm1.id}, {x['id'] for x in items})
 
         # user B can see all AWSVMs in all projects
         self.assertTrue(self.client.login(username='b', password='p'))
@@ -1659,17 +1631,14 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        dummyProv = DummyProvider.objects.create(provider=prov)
+        prov = DummyProvider.objects.create(name='My Provider')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
 
-        vmc = VMConfig.objects.create(name='My Conf', default_schedule=s,
+        vmc = DummyVMConfig.objects.create(name='My Conf', default_schedule=s,
                 provider=prov)
-        dummyc = DummyVMConfig.objects.create(vmconfig=vmc)
 
         url = reverse('createVM')
         response = self.client.post(url, content_type='application/json',
@@ -1762,12 +1731,9 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # can't use special provider
-        prov2 = Provider.objects.create(name='My Special Provider',
-                type=Provider.TYPE_DUMMY, is_special=True)
-        dummyProv2 = DummyProvider.objects.create(provider=prov2)
-        vmc2 = VMConfig.objects.create(name='My Conf 2', default_schedule=s,
+        prov2 = DummyProvider.objects.create(name='My Special Provider', is_special=True)
+        vmc2 = DummyVMConfig.objects.create(name='My Conf 2', default_schedule=s,
                 provider=prov2)
-        dummyc2 = DummyVMConfig.objects.create(vmconfig=vmc2)
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
@@ -1795,16 +1761,15 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY)
-        dummyProv = DummyProvider.objects.create(provider=prov)
+        prov = DummyProvider.objects.create(name='My Provider')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
+        config = DummyVMConfig.objects.create(name='My Conf 2', default_schedule=s,
+                provider=prov)
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
-        dummyVm = DummyVM.objects.create(vm=vm, name='dummy')
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s, name="dummy")
 
         url_names = ('powerOnVM', 'powerOffVM', 'rebootVM', 'destroyVM')
 
@@ -1871,15 +1836,14 @@ class OverrideScheduleTests(TestCase):
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_DUMMY, max_override_seconds=3600)
-        dummyProv = DummyProvider.objects.create(provider=prov)
+        prov = DummyProvider.objects.create(name='My Provider', max_override_seconds=3600)
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prov)
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
         url = reverse('overrideSchedule')
 
@@ -2033,7 +1997,7 @@ class ChangeVMScheduleTests(TestCase):
                 matrix=json.dumps(7 * [48 * [False]]))
         s3 = Schedule.objects.create(name='s3', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]), is_special=True)
-        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s1, provider=prv)
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s1, provider=prov)
 
         vm = DummyVM.objects.create(config=config, project=prj, schedule=s1)
 
@@ -2333,15 +2297,14 @@ class CreateDeleteFirewallRuleTests(TestCase):
         self.assertTrue(self.client.login(username='a', password='pass'))
         prj = Project.objects.create(name='prj', email='prj@x.com')
 
-        prov = Provider.objects.create(name='My Provider',
-                type=Provider.TYPE_AWS)
-        awsProv = AWSProvider.objects.create(provider=prov, vpc_id='dummy')
+        prv = AWSProvider.objects.create(name='My Provider', vpc_id='dummy')
 
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [False]]))
 
-        vm = VM.objects.create(provider=prov, project=prj, schedule=s)
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+        vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
         create_url, delete_url = map(reverse,
                 ('createFirewallRule', 'deleteFirewallRule'))
@@ -2443,9 +2406,11 @@ class AuditTests(TestCase):
         tz = TimeZone.objects.create(name='Europe/Helsinki')
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
-        vm = VM.objects.create(provider=prv, project=prj, schedule=s)
+        config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+
+        vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
         a = Audit.objects.create(level=Audit.INFO, text='hi',
                 user=u, vm=vm)
@@ -2800,6 +2765,8 @@ class ExpirationTests(TestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
 
         prv = AWSProvider.objects.create(name='My Prov')
+        config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
+
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
 
