@@ -3,7 +3,7 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog, DummyVMExpiration
 
 from vimma.viewsets import BaseSerializer, VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, default_fields
 
@@ -30,7 +30,9 @@ class DummyPowerLogSerializer(BaseSerializer):
     class Meta:
         model = DummyPowerLog
 
-
+class DummyVMExpiration(BaseSerializer):
+    class Meta:
+        model = DummyVMExpiration
 
 class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DummyProviderSerializer

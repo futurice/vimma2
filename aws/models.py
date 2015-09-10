@@ -6,7 +6,7 @@ import logging
 import ipaddress
 import re
 
-from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog
+from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog, FirewallRule, FirewallRuleExpiration, VMExpiration
 
 class AWSProvider(Provider):
     # names of environment variables for actual lookups
@@ -42,6 +42,8 @@ def aws_vm_name_validator(val):
 
 class AWSVM(VM, models.Model):
     config = models.ForeignKey('aws.AWSVMConfig', on_delete=models.PROTECT, related_name="vm")
+    firewallrules = models.ManyToManyField('aws.AWSFirewallRule', blank=True)
+    expiration = models.OneToOneField('aws.AWSVMExpiration', on_delete=models.CASCADE, null=True, blank=True)
 
     # Free-form text, shown to the user. Stores the VM state reported by AWS.
     # Synced regularly by the update tasks.
@@ -118,11 +120,11 @@ class AWSVMConfig(VMConfig, models.Model):
                 self.name)
 
 
-class AWSFirewallRule(CleanModel):
+class AWSFirewallRule(FirewallRule, models.Model):
     # ip_protocol, from_port, to_port and cidr_ip correspond to
     # AWS call params.
 
-    firewallrule = models.OneToOneField('vimma.FirewallRule', on_delete=models.CASCADE, related_name='config')
+    expiration = models.ForeignKey('aws.AWSFirewallRuleExpiration', on_delete=models.CASCADE)
 
     PROTO_TCP = 'tcp'
     PROTO_UDP = 'udp'
@@ -146,6 +148,12 @@ class AWSFirewallRule(CleanModel):
         if net.num_addresses > 256:
             return True
         return False
+
+class AWSFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
+    expiration = models.ForeignKey('aws.AWSFirewallRuleExpiration', on_delete=models.CASCADE, related_name="firewallrule")
+
+class AWSVMExpiration(VMExpiration):
+    pass
 
 class AWSAudit(Audit, models.Model):
     vm = models.ForeignKey('aws.AWSVM', related_name="audit")

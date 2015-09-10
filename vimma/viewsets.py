@@ -23,6 +23,7 @@ from vimma.util import (
 from rest_framework.utils.field_mapping import (get_nested_relation_kwargs,)
 
 def info():
+    # map models to viewsets
     from vimma.urls import router
     return {k[1].serializer_class.Meta.model:k[1] for k in router.registry}
 
@@ -41,7 +42,13 @@ class BaseSerializer(serializers.ModelSerializer):
     def build_nested_field(self, field_name, relation_info, nested_depth):
         # By default only Model information is kept; re-use our own Serializers
         # TODO: metaprogramming to set depth, to keep serializer Meta intact
-        class NestedSerializer(info()[relation_info.related_model].serializer_class):
+        try:
+            base_cls = info()[relation_info.related_model].serializer_class
+        except Exception as e:
+            print("Missing ViewSet for {}: {}".format(relation_info.related_model, e))
+            base_cls = serializers.ModelSerializer
+
+        class NestedSerializer(base_cls):
             class Meta:
                 model = relation_info.related_model
                 depth = nested_depth - 1

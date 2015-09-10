@@ -1,12 +1,14 @@
 from django.db import models, transaction
 
-from vimma.models import VM, VMConfig, Provider, Audit, PowerLog
+from vimma.models import VM, VMConfig, Provider, Audit, PowerLog, FirewallRule, FirewallRuleExpiration, VMExpiration
 
 class DummyProvider(Provider):
     pass
 
 class DummyVM(VM):
     config = models.ForeignKey('dummy.DummyVMConfig', on_delete=models.PROTECT, related_name="vm")
+    firewallrules = models.ManyToManyField('dummy.DummyFirewallRule', blank=True)
+    expiration = models.OneToOneField('dummy.DummyVMExpiration', on_delete=models.CASCADE, null=True, blank=True)
 
     name = models.CharField(max_length=50)
     # Free-form text, meant to be read by the user. Simulates Vimma's local
@@ -24,9 +26,18 @@ class DummyVM(VM):
         from dummy.controller import DummyVMController
         return DummyVMController(vm=self)
 
+class DummyFirewallRule(FirewallRule, models.Model):
+    expiration = models.ForeignKey('dummy.DummyFirewallRuleExpiration', on_delete=models.CASCADE, related_name="firewallrule")
+
+class DummyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
+    pass
+
 class DummyVMConfig(VMConfig):
     vm_model = DummyVM
     provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="config")
+
+class DummyVMExpiration(VMExpiration):
+    pass
 
 class DummyAudit(Audit, models.Model):
     vm = models.ForeignKey('dummy.DummyVM', related_name="audit")

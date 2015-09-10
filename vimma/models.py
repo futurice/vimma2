@@ -6,6 +6,47 @@ import json
 import logging
 
 from vimma.haikunator import heroku
+"""
+vimma.models provides an interface for building VM implementations.
+
+Implementing a new VM:
+1) my.controller:
+class MyVMController(vimma.controllers.VMController):
+    pass
+
+2) my.models:
+
+class MyProvider(Provider):
+    pass
+
+class My(VM):
+    config = models.ForeignKey('my.MyVMConfig', on_delete=models.PROTECT, related_name="vm")
+    firewallrules = models.ManyToManyField('my.MyFirewallRule', blank=True)
+    expiration = models.OneToOneField('my.MyVMExpiration', on_delete=models.CASCADE, null=True, blank=True)
+
+    def controller(self):
+        from my.controller import MyVMController
+        return MyVMController(vm=self)
+
+class MyFirewallRule(FirewallRule, models.Model):
+    expiration = models.ForeignKey('my.MyFirewallRuleExpiration', on_delete=models.CASCADE, related_name="firewallrule")
+
+class MyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
+    pass
+
+class MyVMConfig(VMConfig):
+    vm_model = MyVM
+    provider = models.ForeignKey('my.MyProvider', on_delete=models.PROTECT, related_name="config")
+
+class MyVMExpiration(VMExpiration):
+    pass
+
+class MyAudit(Audit, models.Model):
+    vm = models.ForeignKey('my.MyVM', related_name="audit")
+
+class MyPowerLog(PowerLog, models.Model):
+    vm = models.ForeignKey('my.MyVM', related_name="powerlog")
+"""
 
 class CleanModel(models.Model):
     """
@@ -21,8 +62,6 @@ class CleanModel(models.Model):
 
 class Permission(CleanModel):
     """
-    A Permission.
-
     There is a special omnipotent permission used to grant all permissions.
     """
     name = models.CharField(max_length=100, unique=True)
@@ -33,8 +72,6 @@ class Permission(CleanModel):
 
 class Role(CleanModel):
     """
-    A role represents a set of Permissions.
-
     A user is assigned a set of Roles and has all permissions in those roles.
     """
     name = models.CharField(max_length=100, unique=True)
@@ -148,10 +185,13 @@ class Provider(CleanModel):
 
 
 class FirewallRule(CleanModel):
-    expiration = models.OneToOneField('vimma.FirewallRuleExpiration', on_delete=models.CASCADE)
+    expiration = NotImplementedError("models.ForeignKey('my.FirewallRuleExpiration', on_delete=models.CASCADE, related_name='firewallrule')")
 
     def is_special(self):
         return False
+
+    class Meta:
+        abstract = True
 
 
 class VM(CleanModel):
@@ -159,12 +199,12 @@ class VM(CleanModel):
     A virtual machine. This model holds only the data common for all VMs from
     any provider.
     """
-    config = NotImplementedError("models.ForeignKey(VMConfig, on_delete=models.PROTECT, related_name='vm')")
+    config = NotImplementedError("models.ForeignKey('my.VMConfig', on_delete=models.PROTECT, related_name='vm')")
+    expiration = NotImplementedError("models.OneToOneField('my.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)")
+    firewallrules = NotImplementedError("models.ManyToManyField('my.FirewallRule', blank=True")
 
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
-    expiration = models.OneToOneField('vimma.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)
-    firewallrules = models.ManyToManyField('vimma.FirewallRule', blank=True)
 
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
@@ -226,7 +266,7 @@ class VMConfig(CleanModel):
     A config knows how to create a VM.
     """
     vm_model = VM
-    provider = NotImplementedError("models.ForeignKey(Provider, on_delete=models.PROTECT, related_name='config')")
+    provider = NotImplementedError("models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name='config')")
     # The default schedule for this VM config. Users are allowed to choose this
     # schedule for VMs made from this config, even if the schedule itself
     # requires additional permissions.
@@ -240,7 +280,7 @@ class VMConfig(CleanModel):
     default = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{} ({})'.format(self.name, self.provider.name)
+        return '{}'.format(self.name)
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -286,15 +326,18 @@ class Expiration(CleanModel):
 class VMExpiration(Expiration):
     controller = ('vimma.expiry', 'VMExpirationController')
 
+    class Meta:
+        abstract = True
+
 class FirewallRuleExpiration(Expiration):
     controller = ('vimma.expiry', 'FirewallRuleExpirationController')
+
+    class Meta:
+        abstract = True
 
 class PowerLog(CleanModel):
     """
     The power state (ON or OFF) of a VM at a point in time.
-
-    If you're not sure what the vm's state is (e.g. you encountered an error
-    while checking it) don't create a PowerLog object.
     """
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     # True → ON, False → OFF. Can't be None, so the value must be explicit.
@@ -329,7 +372,6 @@ class Audit(CleanModel):
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     text = models.TextField()
 
-    # Objects this audit message is related to, if any
     user = models.ForeignKey('vimma.User', null=True, blank=True,
             on_delete=models.SET_NULL)
 
