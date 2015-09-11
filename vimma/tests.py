@@ -2637,7 +2637,7 @@ class PowerLogTests(TestCase):
         s = Schedule.objects.create(name='s', timezone=tz,
                 matrix=json.dumps(7 * [48 * [True]]))
 
-        prv = Provider.objects.create(name='My Prov', type=Provider.TYPE_DUMMY)
+        prv = DummyProvider.objects.create(name='My Prov')
         pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
         pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
         config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)

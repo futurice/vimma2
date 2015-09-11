@@ -1,6 +1,10 @@
 import json, copy
 
 from django.contrib.contenttypes.models import ContentType
+from django.utils.timezone import utc
+
+from rest_framework.response import Response
+from rest_framework.decorators import detail_route, list_route
 
 from rest_framework import viewsets, routers, filters, serializers, status
 from rest_framework.permissions import (
@@ -130,6 +134,192 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
         prj_ids = [p.id for p in user.projects.all()]
         return model.objects.filter(project__id__in=prj_ids)
+
+    @list_route(methods=['post'])
+    def create(self, request):
+        body = json.loads(request.read().decode('utf-8'))
+        try:
+            project = Project.objects.get(id=body['project'])
+            vmconfcls = ContentType.objects.get_for_id(body['providerconfig']['content_type']['id']).model_class()
+            vmconf = vmconfcls.objects.get(id=body['providerconfig']['id'])
+            schedule = Schedule.objects.get(id=body['schedule']['id'])
+        except ObjectDoesNotExist as e:
+            return Response('{}'.format(e), status=status.HTTP_404_NOT_FOUND)
+
+        if not can_do(request.user, Actions.CREATE_VM_IN_PROJECT, project):
+            return get_http_json_err('You may not create VMs in this project',
+                    status.HTTP_403_FORBIDDEN)
+
+        if not can_do(request.user, Actions.USE_PROVIDER, vmconf.provider):
+            return get_http_json_err('You may not use this provider',
+                    status.HTTP_403_FORBIDDEN)
+
+        if not can_do(request.user, Actions.USE_VM_CONFIG, vmconf):
+            return get_http_json_err('You may not use this VM Configuration',
+                    status.HTTP_403_FORBIDDEN)
+
+        if vmconf.default_schedule.id != schedule.id:
+            if not can_do(request.user, Actions.USE_SCHEDULE, schedule):
+                return get_http_json_err('You may not use this schedule',
+                        status.HTTP_403_FORBIDDEN)
+
+        #  aud.debug('Request to create VM', vm_id=vm_id, user_id=request.user.id)
+
+        model = self.serializer_class.Meta.model
+        vmconf.vm_model.create_vm(
+                project=project,
+                schedule=schedule,
+                config=vmconf,
+                user=request.user,
+
+                name=body['name'],
+                comment=body['comment'],)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def power_on(self, request, pk=None):
+        obj = self.get_object()
+        if not can_do(request.user,
+                Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
+            return Response('You may not power on VMs in this project',
+                    status=status.HTTP_403_FORBIDDEN)
+        #  aud.debug('Request to Power ON', vm_id=vm_id, user_id=request.user.id)
+        obj.controller().power_on(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def power_off(self, request, pk=None):
+        obj = self.get_object()
+        if not can_do(request.user,
+                Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
+            return Response('You may not power off VMs in this project',
+                    status=status.HTTP_403_FORBIDDEN)
+        #  aud.debug('Request to Power OFF', vm_id=vm_id, user_id=request.user.id)
+        obj.controller().power_off(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def reboot(self, request, pk=None):
+        obj = self.get_object()
+        if not can_do(request.user,
+                Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
+            return Response('You may not reboot VMs in this project',
+                    status=status.HTTP_403_FORBIDDEN)
+        # aud.debug('Request to Reboot', vm_id=vm_id, user_id=request.user.id)
+        obj.controller().reboot(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def destroy(self, request, pk=None):
+        obj = self.get_object()
+        if not can_do(request.user,
+                Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
+            return Response('You may not destroy VMs in this project',
+                    status=status.HTTP_403_FORBIDDEN)
+
+        obj.destroy_request_at = datetime.datetime.utcnow().replace(tzinfo=utc)
+        obj.destroy_request_by = request.user
+        obj.save()
+
+        # aud.debug('Request to Destroy', vm_id=vm_id, user_id=request.user.id)
+        obj.controller().destroy(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def override_schedule(self, request, pk=None):
+        body = json.loads(request.read().decode('utf-8'))
+        state = body['state'] # true,false,null
+
+        schedule_id = body['scheduleid']
+        obj = self.get_object()
+        schedule = Schedule.objects.get(id=schedule_id)
+
+        if not can_do(request.user, Actions.OVERRIDE_VM_SCHEDULE, vm):
+            return Response('You may not override this VM schedule',
+                    status=status.HTTP_403_FORBIDDEN)
+
+        if state is not None:
+            seconds = body['seconds']
+            max_secs = obj.config.provider.max_override_seconds
+            if seconds > max_secs:
+                return Response(('{}s is too long, must be ≤ {}s').format(
+                    seconds, max_secs), status=status.HTTP_400_BAD_REQUEST)
+
+        obj.sched_override_state = state
+        if state == None:
+            obj.sched_override_tstamp = None
+        else:
+            now = datetime.datetime.utcnow().replace(tzinfo=utc)
+            obj.sched_override_tstamp = now.timestamp() + seconds
+        obj.save()
+
+        if state is None:
+            msg = 'Cleared scheduling override'
+        else:
+            msg = 'Override schedule, keep {} for {} seconds'.format(
+                    'ON' if state else 'OFF', seconds)
+        #aud.info(msg, user_id=request.user.id, vm_id=vm.id)
+        obj.controller().update_status(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def change_schedule(self, request, pk=None):
+        body = json.loads(request.read().decode('utf-8'))
+        schedule_id = body['scheduleid']
+        obj = self.get_object()
+        schedule = Schedule.objects.get(id=schedule_id)
+
+        if not can_do(request.user, Actions.CHANGE_VM_SCHEDULE,
+                {'vm': vm, 'schedule': schedule}):
+            return Response('You may not set this VM to this schedule',
+                    status=status.HTTP_403_FORBIDDEN)
+
+        obj.schedule = schedule
+        obj.save()
+        #  aud.info('Changed schedule to {}'.format(schedule_id), user_id=request.user.id, vm_id=vm_id)
+        obj.controller().update_status(user_id=self.request.user)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def set_expiration(self, request, pk=None):
+        body = json.loads(request.read().decode('utf-8'))
+        exp_id = body['expid']
+        tstamp = body['timestamp']
+        obj = self.get_object()
+        if not obj.controller().can_set_expiry_date(tstamp, request.user.id):
+            return Response('You may not set this Expiration ' +
+                    'object to this value', status=status.HTTP_403_FORBIDDEN)
+
+        naive = datetime.datetime.utcfromtimestamp(tstamp)
+        aware = pytz.utc.localize(naive)
+
+        exp = AWSVMExpiration.objects.get(id=exp_id)
+        exp.expires_at = aware
+        exp.save()
+
+        #  aud.info('Changed expiration id {} to {}'.format(exp_id, aware), user_id=request.user.id, vm_id=vm_id)
+
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def create_firewall_rule(self, request, pk=None):
+        body = json.loads(request.read().decode('utf-8'))
+        obj = self.get_object()
+        if not obj.controller().can_change_firewall_rules(request.user.id):
+            return Response('You may not change firewall rules ' +
+                    'for this VM', status=status.HTTP_403_FORBIDDEN)
+        obj.controller().create_firewall_rule(body['data'], user_id=request.user.id)
+        return Response({}, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def delete_firewall_rule(self, request, pk=None):
+        obj = self.get_object()
+        if not obj.controller().can_change_firewall_rules(request.user.id):
+            return Response('You may not change firewall rules ' +
+                    'for this VM', status=status.HTTP_403_FORBIDDEN)
+        obj.controller().delete_firewall_rule(rule_id, user_id=request.user.id)
+        return Response({}, status=status.HTTP_200_OK)
+    
 
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)

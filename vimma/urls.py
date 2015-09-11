@@ -33,9 +33,6 @@ from aws.viewsets import (
 
 from vimma.views import (
     index, base_js, test,
-    create_vm, power_on_vm, power_off_vm, reboot_vm, destroy_vm,
-    override_schedule, change_vm_schedule, set_expiration,
-    create_firewall_rule, delete_firewall_rule,
 )
 
 
@@ -70,17 +67,4 @@ urlpatterns = [
     url(r'^base.js$', base_js, name='base_js'),
     url(r'^test$', test, name='test'),
 
-    url(r'^createvm$', create_vm, name='createVM'),
-    url(r'^poweronvm$', power_on_vm, name='powerOnVM'),
-    url(r'^poweroffvm$', power_off_vm, name='powerOffVM'),
-    url(r'^rebootvm$', reboot_vm, name='rebootVM'),
-    url(r'^destroyvm$', destroy_vm, name='destroyVM'),
-
-    url(r'^override-schedule$', override_schedule, name='overrideSchedule'),
-    url(r'^change-vm-schedule$', change_vm_schedule, name='changeVMSchedule'),
-    url(r'^set-expiration$', set_expiration, name='setExpiration'),
-    url(r'^create-firewall-rule$', create_firewall_rule,
-        name='createFirewallRule'),
-    url(r'^delete-firewall-rule$', delete_firewall_rule,
-        name='deleteFirewallRule'),
 ] + staticfiles_urlpatterns()
