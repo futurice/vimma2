@@ -19,11 +19,9 @@ def update_all_vms_status():
     """
     aud.debug('Update status of all non-destroyed VMs')
     for model in VM.implementations():
-        vms = model.objects.filter(destroyed_at=None)
-        for vm in vms:
+        for vm in model.objects.filter(destroyed_at=None):
             aud.debug('Request status update', vm_id=vm.pk)
             vm.controller().update_status()
-
 
 @app.task
 def expiration_grace_action(cls, vm_id):
@@ -34,7 +32,6 @@ def expiration_grace_action(cls, vm_id):
                 'which expired on ' + str(exp_date),
                 vm_id=vm.id)
         vm.controller().destroy()
-
 
 @app.task
 def dispatch_all_expiration_notifications():

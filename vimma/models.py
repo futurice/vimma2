@@ -6,7 +6,7 @@ import json
 import logging
 
 from vimma.haikunator import heroku
-from vimma.tools import subclasses, get_import
+from vimma.tools import subclassmodels, get_import
 """
 vimma.models provides an interface for building VM implementations.
 
@@ -53,7 +53,7 @@ class CleanModel(models.Model):
 
     @classmethod
     def implementations(cls):
-        return subclasses(cls)
+        return subclassmodels(cls)
 
     def save(self, *args, **kwargs):
         self.full_clean()

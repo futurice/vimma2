@@ -1393,7 +1393,7 @@ class DummyVMTests(APITestCase):
 
         # filter by .vm field
         response = self.client.get(reverse('dummyvm-list') +
-                '?vm=' + str(dvm1.vm.id))
+                '?vm=' + str(dvm1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({dvm1.id}, {x['id'] for x in items})
@@ -1548,7 +1548,6 @@ class AWSVMTests(APITestCase):
         response = self.client.get(reverse('awsvm-detail', args=[avm3.id]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # filter by .vm field
         response = self.client.get(reverse('awsvm-list') +
                 '?vm=' + str(avm1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
