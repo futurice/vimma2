@@ -18,10 +18,6 @@ from vimma.perms import Perms
 
 aud = Auditor(__name__)
 
-def get_import(module, thing):
-    m = importlib.import_module(module)
-    return getattr(m, thing)
-
 @transaction.atomic
 def create_vimma_user(username, email, password, first_name='', last_name=''):
     user,_ = User.objects.get_or_create(username=username, defaults=dict(email=email,

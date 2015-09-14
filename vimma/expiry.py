@@ -7,7 +7,7 @@ from vimma.actions import Actions
 from vimma.audit import Auditor
 from vimma.util import retry_in_transaction, can_do
 from vimma.models import Expiration, VMExpiration, User
-import vimma.vmutil
+from vimma.vmutil import expiration_grace_action
 
 
 aud = Auditor(__name__)
@@ -35,15 +35,6 @@ def needs_notification(expires_at, last_notification, notif_intervals):
     now_secs = (now - expires_at).total_seconds()
     return notif_intervals[0] <= now_secs
 
-
-def get_controller(model, expiration_id):
-    def call():
-        e = model.objects.get(id=expiration_id)
-        return get_import(*e.controller)(expiration_id)
-
-    return retry_in_transaction(call)
-
-
 class ExpirationController:
     """
     Base class showing the common interface.
@@ -56,8 +47,9 @@ class ExpirationController:
     offset in seconds from the expiration date (negative is before, positive is
     after the expiration date).
     """
-    def __init__(self, exp_id):
-        self.exp_id = exp_id
+    def __init__(self, parent):
+        self.parent = parent
+        self.exp_id = self.parent.pk
 
     def get_notification_intervals(self):
         """
@@ -69,29 +61,14 @@ class ExpirationController:
         raise NotImplementedError()
 
     def needs_notification(self):
-        def read():
-            e = Expiration.objects.get(id=self.exp_id)
-            return (e.expires_at, e.last_notification,
+        e = self.parent
+        return needs_notification(e.expires_at, e.last_notification,
                     self.get_notification_intervals())
 
-        exp_at, last_notif, notif_intervals = retry_in_transaction(read)
-        return needs_notification(exp_at, last_notif, notif_intervals)
-
     def notify(self):
-        """
-        Mark the last notification time as now and call _do_notify.
-        """
-        def write():
-            e = Expiration.objects.get(id=self.exp_id)
-            now = datetime.datetime.utcnow().replace(tzinfo=utc)
-            e.last_notification = now
-            e.save()
-        retry_in_transaction(write)
-
-        self._do_notify()
-
-    def _do_notify(self):
-        raise NotImplementedError()
+        e = self.parent
+        e.last_notification = datetime.datetime.utcnow().replace(tzinfo=utc)
+        e.save()
 
     def set_expiry_date(self, tstamp, user_id=None):
         """
@@ -136,34 +113,19 @@ class ExpirationController:
         return now_tstamp >= grace_end_tstamp
 
     def perform_grace_end_action(self):
-        """
-        Set grace_end_action_performed and call _do_perform_grace_action.
-        """
-        def write():
-            e = Expiration.objects.get(id=self.exp_id)
-            e.grace_end_action_performed = True
-            e.save()
-        retry_in_transaction(write)
-
-        self._do_perform_grace_action()
-
-    def _do_perform_grace_action(self):
-        raise NotImplementedError()
+        e = self.parent
+        e.grace_end_action_performed = True
+        e.save()
 
 
 class VMExpirationController(ExpirationController):
 
-    def __init__(self, exp_id):
-        super().__init__(exp_id)
-
     def get_notification_intervals(self):
         return settings.VM_NOTIFICATION_INTERVALS
 
-    def _do_notify(self):
-        def read():
-            return VMExpiration.objects.get(id=self.exp_id).vm.id
-        vm_id = retry_in_transaction(read)
-        vimma.vmutil.expiration_notify.delay(vm_id)
+    def notify(self):
+        super().notify()
+        self.parent.vm.controller().expiration_notify.delay(self.parent.vm.id)
 
     def can_set_expiry_date(self, tstamp, user_id):
         now_tstamp = int(
@@ -184,17 +146,13 @@ class VMExpirationController(ExpirationController):
     def get_grace_interval(self):
         return settings.VM_GRACE_INTERVAL
 
-    def _do_perform_grace_action(self):
-        def read():
-            return VMExpiration.objects.get(id=self.exp_id).vm.id
-        vm_id = retry_in_transaction(read)
-        vimma.vmutil.expiration_grace_action.delay(vm_id)
+    def perform_grace_end_action(self):
+        super().perform_grace_end_action()
+        vm = self.parent.vm
+        expiration_grace_action.delay(vm.__class__, vm_id)
 
 
 class FirewallRuleExpirationController(ExpirationController):
-
-    def __init__(self, exp_id):
-        super().__init__(exp_id)
 
     def get_notification_intervals(self):
         return []
@@ -225,9 +183,7 @@ class FirewallRuleExpirationController(ExpirationController):
     def get_grace_interval(self):
         return 0
 
-    def _do_perform_grace_action(self):
-        def get_fw_id():
-            exp = Expiration.objects.get(id=self.exp_id)
-            return exp.firewallruleexpiration.firewallrule.id
-        rule_id = retry_in_transaction(get_fw_id)
-        vimma.vmutil.delete_firewall_rule(rule_id)
+    def perform_grace_end_action(self):
+        super().perform_grace_end_action()
+        rule_id = self.parent.firewallruleexpiration.firewallrule.id
+        self.parent.vm.controller().delete_firewall_rule(rule_id)

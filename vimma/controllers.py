@@ -125,7 +125,7 @@ class VMController():
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
         if now > self.vm.expiration.expires_at.timestamp():
             return False
-        if (vm.sched_override_state != None and
+        if (self.vm.sched_override_state != None and
                 self.vm.sched_override_tstamp >= now):
             return self.vm.sched_override_state
         return schedule_at_tstamp(self.vm.schedule, now)

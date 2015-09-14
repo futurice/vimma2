@@ -42,7 +42,17 @@ class AWSVMController(VMController):
                 user_id=user_id)
 
     def delete_firewall_rule(self, fw_rule_id, user_id=None):
-        delete_firewall_rule(fw_rule_id, user_id=user_id)
+        fwr = AWSFirewallRule.objects.get(id=fw_rule_id)
+
+        with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+            conn = ec2_connect_to_aws_vm_region(self.vm.id)
+            conn.revoke_security_group(group_id=self.vm.security_group_id,
+                    ip_protocol=fwr.ip_protocol,
+                    from_port=fwr.from_port,
+                    to_port=fwr.to_port,
+                    cidr_ip=fwr.cidr_ip)
+            fwr.delete()
+            aud.info('Deleted a firewall rule', vm_id=vm_id, user_id=user_id)
 
     def power_log(self, powered_on):
         AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
@@ -68,9 +78,6 @@ class AWSVMController(VMController):
         return aws_vm, callables
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
-    """
-    Return a boto EC2Connection to the given AWS VM's region.
-    """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.ec2.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
@@ -78,9 +85,6 @@ def ec2_connect_to_aws_vm_region(aws_vm_id):
 
 
 def route53_connect_to_aws_vm_region(aws_vm_id):
-    """
-    Return a boto Route53Connection to the given AWS VM's region.
-    """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.route53.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
@@ -88,9 +92,6 @@ def route53_connect_to_aws_vm_region(aws_vm_id):
 
 
 def vpc_connect_to_aws_vm_region(aws_vm_id):
-    """
-    Return a boto VPCConnection to the given AWS VM's region.
-    """
     vm = AWSVM.objects.get(id=aws_vm_id)
     return boto.vpc.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
@@ -183,18 +184,6 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
     route53_add.delay(vm_id, user_id=user_id)
 
 
-
-def mark_vm_destroyed_if_needed(vm):
-    """
-    Mark the parent .vm model destroyed if the awsvm is destroyed, else no-op.
-
-    This function may only be called inside a transaction.
-    """
-    if vm.instance_terminated and vm.security_group_deleted:
-        vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
-        vm.save()
-
-
 def create_firewall_rule(vm_id, data, user_id=None):
     """
     data: {
@@ -219,7 +208,6 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     from_port=from_port,
                     to_port=to_port,
                     cidr_ip=cidr_ip)
-            aws_fw_rule.full_clean()
 
             now = datetime.datetime.utcnow().replace(tzinfo=utc)
             expire_dt = now + datetime.timedelta(
@@ -228,10 +216,9 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     else settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS)
             expiration = Expiration.objects.create(
                     type=Expiration.TYPE_FIREWALL_RULE, expires_at=expire_dt)
-            expiration.full_clean()
             FirewallRuleExpiration.objects.create(
                     expiration=expiration,
-                    firewallrule=base_fw_rule).full_clean()
+                    firewallrule=base_fw_rule)
 
             conn = ec2_connect_to_aws_vm_region(vm.id)
             conn.authorize_security_group(group_id=vm.security_group_id,
@@ -241,25 +228,4 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     cidr_ip=cidr_ip)
 
         aud.info('Created a firewall rule', vm_id=vm_id, user_id=user_id)
-
-
-def delete_firewall_rule(fw_rule_id, user_id=None):
-    def get_vm_id():
-        fw_rule = FirewallRule.objects.get(id=fw_rule_id)
-        return fw_rule.vm.id
-    vm_id = retry_in_transaction(get_vm_id)
-
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        fw_rule = FirewallRule.objects.get(id=fw_rule_id)
-        afr = fw_rule.awsfirewallrule
-        awsvm = fw_rule.vm.awsvm
-        conn = ec2_connect_to_aws_vm_region(awsvm.id)
-        conn.revoke_security_group(group_id=awsvm.security_group_id,
-                ip_protocol=afr.ip_protocol,
-                from_port=afr.from_port,
-                to_port=afr.to_port,
-                cidr_ip=afr.cidr_ip)
-        fw_rule.delete()
-
-    aud.info('Deleted a firewall rule', vm_id=vm_id, user_id=user_id)
 

@@ -6,6 +6,7 @@ import json
 import logging
 
 from vimma.haikunator import heroku
+from vimma.tools import subclasses, get_import
 """
 vimma.models provides an interface for building VM implementations.
 
@@ -16,30 +17,26 @@ class MyVMController(vimma.controllers.VMController):
 
 2) my.models:
 
-class MyProvider(Provider):
-    pass
-
 class My(VM):
+    controller_cls = ('my.controller', 'MyVMController')
     config = models.ForeignKey('my.MyVMConfig', on_delete=models.PROTECT, related_name="vm")
     firewallrules = models.ManyToManyField('my.MyFirewallRule', blank=True)
-    expiration = models.OneToOneField('my.MyVMExpiration', on_delete=models.CASCADE, null=True, blank=True)
 
-    def controller(self):
-        from my.controller import MyVMController
-        return MyVMController(vm=self)
-
-class MyFirewallRule(FirewallRule, models.Model):
-    expiration = models.ForeignKey('my.MyFirewallRuleExpiration', on_delete=models.CASCADE, related_name="firewallrule")
-
-class MyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
+class MyProvider(Provider):
     pass
 
 class MyVMConfig(VMConfig):
     vm_model = MyVM
     provider = models.ForeignKey('my.MyProvider', on_delete=models.PROTECT, related_name="config")
 
-class MyVMExpiration(VMExpiration):
+class MyFirewallRule(FirewallRule, models.Model):
     pass
+
+class MyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
+    firewallrule = models.OneToOneField('my.MyFirewallRule', related_name="expiration")
+
+class MyVMExpiration(VMExpiration):
+    vm = models.OneToOneField('my.MyVM', related_name="expiration")
 
 class MyAudit(Audit, models.Model):
     vm = models.ForeignKey('my.MyVM', related_name="audit")
@@ -53,9 +50,19 @@ class CleanModel(models.Model):
     Force full_clean() on Model.save()
     https://docs.djangoproject.com/en/1.8/ref/models/instances/#validating-objects
     """
+
+    @classmethod
+    def implementations(cls):
+        return subclasses(cls)
+
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+    expiration_controller_cls = ('','')
+    def expiration_controller(self):
+        cls = get_import(*self.expiration_controller_cls)
+        return cls(parent=self)
 
     class Meta:
         abstract = True
@@ -231,16 +238,13 @@ class VM(CleanModel):
     destroyed_at = models.DateTimeField(blank=True, null=True)
 
     @classmethod
-    def implementations(cls):
-        return VM.__subclasses__()
-
-    @classmethod
     def choices(cls):
-        return {k().__class__.__name__.lower():k for k in VM.implementations()}
+        return {k().__class__.__name__.lower():k for k in cls.implementations()}
 
+    vm_controller_cls = ('vimma.controllers,', 'VMController')
     def controller(self):
-        from vimma.controllers import VMController
-        return VMController(vm=self)
+        cls = get_import(*self.vm_controller_cls)
+        return cls(vm=self)
 
     @classmethod
     def create_vm(cls, *args, **kwargs):
@@ -316,21 +320,17 @@ class Expiration(CleanModel):
     last_notification = models.DateTimeField(blank=True, null=True)
     grace_end_action_performed = models.BooleanField(default=False)
 
-    @classmethod
-    def implementations(cls):
-        return Expiration.__subclasses__()
-
     class Meta:
         abstract = True
 
 class VMExpiration(Expiration):
-    controller = ('vimma.expiry', 'VMExpirationController')
+    expiration_controller_cls = ('vimma.expiry', 'VMExpirationController')
 
     class Meta:
         abstract = True
 
 class FirewallRuleExpiration(Expiration):
-    controller = ('vimma.expiry', 'FirewallRuleExpirationController')
+    expiration_controller_cls = ('vimma.expiry', 'FirewallRuleExpirationController')
 
     class Meta:
         abstract = True

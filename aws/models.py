@@ -8,42 +8,16 @@ import re
 
 from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog, FirewallRule, FirewallRuleExpiration, VMExpiration
 
-class AWSProvider(Provider):
-    # names of environment variables for actual lookups
-    access_key_id = models.CharField(max_length=100, blank=True)
-    access_key_secret = models.CharField(max_length=100, blank=True)
-    ssh_key_name = models.CharField(max_length=50, blank=True)
-
-    # 'example.com.'
-    route_53_zone = models.CharField(max_length=100, blank=True)
-    # Optional security group added to every vm, in addition to the vm's
-    # individual security group.
-    default_security_group_id = models.CharField(max_length=50, blank=True)
-    # The ID of the VPC in which to create VMs. A random subnet will be chosen
-    # at VM creation time.
-    vpc_id = models.CharField(max_length=50, null=True, blank=True)
-    # User data (e.g. a script) provided to the AWS Instances. Python Template
-    # https://docs.python.org/3/library/string.html#format-string-syntax
-    # given the ‘vm’ keyword argument. E.g.:
-    # """#!/usr/bin/env bash
-    #   echo VM NAME {vm.awsvm.name} >/test
-    #   echo region {vm.provider.awsprovider.route_53_zone} >>/test
-    #   echo {{curly braces}} >>/test
-    # """
-    user_data = models.TextField(blank=True)
-
-    def __str__(self):
-        return '{} ({})'.format(self.name, self.route_53_zone)
-
 def aws_vm_name_validator(val):
     if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
         raise ValidationError(('Invalid AWS VM name ‘{}’, ' +
                 'must be alphanumeric and dashes (-).').format(val))
 
 class AWSVM(VM, models.Model):
+    vm_controller_cls = ('aws.controller', 'AWSVMController')
+
     config = models.ForeignKey('aws.AWSVMConfig', on_delete=models.PROTECT, related_name="vm")
     firewallrules = models.ManyToManyField('aws.AWSFirewallRule', blank=True)
-    expiration = models.OneToOneField('aws.AWSVMExpiration', on_delete=models.CASCADE, null=True, blank=True)
 
     # Free-form text, shown to the user. Stores the VM state reported by AWS.
     # Synced regularly by the update tasks.
@@ -72,13 +46,35 @@ class AWSVM(VM, models.Model):
                 else None)
         return powered_on
 
-    def controller(self):
-        from aws.controller import AWSVMController
-        return AWSVMController(vm=self)
+class AWSProvider(Provider):
+    # names of environment variables for actual lookups
+    access_key_id = models.CharField(max_length=100, blank=True)
+    access_key_secret = models.CharField(max_length=100, blank=True)
+    ssh_key_name = models.CharField(max_length=50, blank=True)
+
+    # 'example.com.'
+    route_53_zone = models.CharField(max_length=100, blank=True)
+    # Optional security group added to every vm, in addition to the vm's
+    # individual security group.
+    default_security_group_id = models.CharField(max_length=50, blank=True)
+    # The ID of the VPC in which to create VMs. A random subnet will be chosen
+    # at VM creation time.
+    vpc_id = models.CharField(max_length=50, null=True, blank=True)
+    # User data (e.g. a script) provided to the AWS Instances. Python Template
+    # https://docs.python.org/3/library/string.html#format-string-syntax
+    # given the ‘vm’ keyword argument. E.g.:
+    # """#!/usr/bin/env bash
+    #   echo VM NAME {vm.awsvm.name} >/test
+    #   echo region {vm.provider.awsprovider.route_53_zone} >>/test
+    #   echo {{curly braces}} >>/test
+    # """
+    user_data = models.TextField(blank=True)
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.route_53_zone)
 
 class AWSVMConfig(VMConfig, models.Model):
     vm_model = AWSVM
-
     provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT, related_name="config")
 
     regions = sorted([
@@ -124,8 +120,6 @@ class AWSFirewallRule(FirewallRule, models.Model):
     # ip_protocol, from_port, to_port and cidr_ip correspond to
     # AWS call params.
 
-    expiration = models.ForeignKey('aws.AWSFirewallRuleExpiration', on_delete=models.CASCADE)
-
     PROTO_TCP = 'tcp'
     PROTO_UDP = 'udp'
     IP_PROTOCOL_CHOICES = (
@@ -150,10 +144,10 @@ class AWSFirewallRule(FirewallRule, models.Model):
         return False
 
 class AWSFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
-    expiration = models.ForeignKey('aws.AWSFirewallRuleExpiration', on_delete=models.CASCADE, related_name="firewallrule")
+    firewallrule = models.OneToOneField('aws.AWSFirewallRule', related_name="expiration")
 
 class AWSVMExpiration(VMExpiration):
-    pass
+    vm = models.OneToOneField('aws.AWSVM', related_name="expiration")
 
 class AWSAudit(Audit, models.Model):
     vm = models.ForeignKey('aws.AWSVM', related_name="audit")

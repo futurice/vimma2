@@ -24,7 +24,7 @@ from vimma.models import (
 )
 from vimma.perms import ALL_PERMS, Perms
 
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyVMExpiration
 from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
 
 class PermissionTests(TestCase):
@@ -1881,9 +1881,6 @@ class OverrideScheduleTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_vm_at_now(self):
-        """
-        Test the util.vm_at_now helper.
-        """
         prj = Project.objects.create(name='prj', email='prj@x.com')
 
         prov = DummyProvider.objects.create(name='My Provider', max_override_seconds=3600)
@@ -1900,13 +1897,13 @@ class OverrideScheduleTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         expire_dt = now + datetime.timedelta(minutes=1)
-        exp = VMExpiration.objects.create(vm=vm, expires_at=expire_dt)
+        exp = DummyVMExpiration.objects.create(vm=vm, expires_at=expire_dt)
         del now
 
         def check_overrides():
             old_state = vm.sched_override_state
             old_tstamp = vm.sched_override_tstamp
-            old_vm_at_now = util.vm_at_now(vm.id)
+            old_vm_at_now = vm.controller().vm_at_now()
 
             now = datetime.datetime.utcnow().replace(tzinfo=utc)
             # if the override expired already, it has no effect
@@ -1917,7 +1914,7 @@ class OverrideScheduleTests(TestCase):
             for new_state in (True, False):
                 vm.sched_override_state = new_state
                 vm.save()
-                self.assertIs(util.vm_at_now(vm.id), old_vm_at_now)
+                self.assertIs(vm.controller().vm_at_now(), old_vm_at_now)
 
             # if the override hasn't expired yet, it's used
             end = now + datetime.timedelta(minutes=1)
@@ -1927,18 +1924,18 @@ class OverrideScheduleTests(TestCase):
             for new_state in (True, False):
                 vm.sched_override_state = new_state
                 vm.save()
-                self.assertIs(util.vm_at_now(vm.id), new_state)
+                self.assertIs(vm.controller().vm_at_now(), new_state)
 
             vm.sched_override_state = old_state
             vm.sched_override_tstamp = old_tstamp
             vm.save()
 
-        self.assertFalse(util.vm_at_now(vm.id))
+        self.assertFalse(vm.controller().vm_at_now())
         check_overrides()
 
         vm.schedule = s_on
         vm.save()
-        self.assertTrue(util.vm_at_now(vm.id))
+        self.assertTrue(vm.controller().vm_at_now())
         check_overrides()
 
         # if the VM has expired, it's OFF, regardles of schedule and overrides
@@ -1947,13 +1944,13 @@ class OverrideScheduleTests(TestCase):
         expire_dt = now - datetime.timedelta(minutes=1)
         exp.expires_at = expire_dt
         exp.save()
-        self.assertFalse(util.vm_at_now(vm.id))
+        self.assertFalse(vm.controller().vm_at_now())
 
         end = now + datetime.timedelta(minutes=1)
         vm.sched_override_tstamp = end.timestamp()
         vm.sched_override_state = True
         vm.save()
-        self.assertFalse(util.vm_at_now(vm.id))
+        self.assertFalse(vm.controller().vm_at_now())
 
 
 class ChangeVMScheduleTests(TestCase):
