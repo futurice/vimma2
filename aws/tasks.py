@@ -1,5 +1,7 @@
 from vimma.celery import app
 
+from aws.models import AWSVM
+
 @app.task
 def do_create_vm(aws_vm_config_id, root_device_size, root_device_volume_type,
         vm_id, user_id):

@@ -80,7 +80,10 @@ Polymer({
     },
 
     getExpiryDate: function() {
-        return this.vm.expiration.expires_at || null;
+      if(this.vm.expiration) {
+        return this.vm.expiration.expires_at;
+      }
+      return null;
     },
     _getExpiryClass: function(vm) {
         var d = new Date(this.getExpiryDate()).valueOf(),

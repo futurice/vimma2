@@ -58,7 +58,7 @@ class AWSVMController(VMController):
         AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
     def create_vm_details(self, name, comment, project, schedule, config, user, expires_at, sched_override_tstamp):
-        aws_vm = AWSVM.objects.create(
+        vm = AWSVM.objects.create(
                 name=name,
                 comment=comment,
 
@@ -70,12 +70,12 @@ class AWSVMController(VMController):
                 sched_override_state=True,
                 sched_override_tstamp=sched_override_tstamp,
                 )
-        expiration,_ = AWSVMExpiration.objects.get_or_create(vm=aws_vm, expires_at=expires_at)
+        expiration,_ = AWSVMExpiration.objects.get_or_create(vm=vm, expires_at=expires_at)
 
         callables = [lambda: do_create_vm.delay(config.id,
-            aws_vm_config.root_device_size, config.root_device_volume_type,
+            vm.config.root_device_size, config.root_device_volume_type,
             vm.id, user_id)]
-        return aws_vm, callables
+        return vm, callables
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
     vm = AWSVM.objects.get(id=aws_vm_id)

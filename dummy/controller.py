@@ -31,7 +31,7 @@ class DummyVMController(VMController):
 
     def create_vm_details(self, *args, **kw):
         vm = DummyVM.objects.create(name=kw['name'], config=kw['config'], project=kw['project'], schedule=kw['schedule'])
-        expiration, _ = DummyVMExpiration.objects.get_or_create(vm=aws_vm, expires_at=kw['expires_at'])
+        expiration, _ = DummyVMExpiration.objects.get_or_create(vm=vm, expires_at=kw['expires_at'])
 
         delay = 5
         countdown = min(max(0, 5), 60)
