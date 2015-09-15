@@ -64,7 +64,7 @@ div#table-head span.label {
 	flex-grow: 1;
 }
 
-/* Dummy buttons to align to table header with the vm rows */
+/*  buttons to align to table header with the vm rows */
 paper-icon-button#vm-expand,
 paper-icon-button#vm-refresh,
 paper-icon-button#vm-reboot,

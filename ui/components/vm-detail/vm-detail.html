@@ -15,9 +15,7 @@
 <link rel="import" href="../plain-text/plain-text.html">
 <link rel="import" href="../power-log/power-log.html">
 <link rel="import" href="../vm-schedule/vm-schedule.html">
-<link rel="import" href="aws-vm-basic-details.html">
 <link rel="import" href="aws-vm-advanced-details.html">
-<link rel="import" href="dummy-vm-basic-details.html">
 
 <dom-module id="vm-detail">
 <link rel="import" type="css" href="../../css/component-common.css">
@@ -148,20 +146,6 @@
               </template>
             </div>
           </template>
-
-          <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'dummy')]]">
-            <dummy-vm-basic-details vm="[[vm]]" foo="joe-bob"></dummy-vm-basic-details>
-          </template>
-
-          <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'aws')]]">
-            <aws-vm-basic-details vm="[[vm]]"></aws-vm-basic-details>
-          </template>
-
-          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
-            Unknown VM type: <span>[[vm.provider.type]]</span>.
-          </template>
         </template>
 
         <h3
@@ -192,7 +176,7 @@
         <template is="dom-if" if="[[_showFirewallRules]]" restamp>
           <template is="dom-if" restamp
             if="[[_equal(vm.provider.type, 'dummy')]]">
-            Dummy VMs have no firewall rules.
+             VMs have no firewall rules.
           </template>
 
           <template is="dom-if" restamp
@@ -217,7 +201,7 @@
         <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
           <template is="dom-if" restamp
             if="[[_equal(vm.provider.type, 'dummy')]]">
-            Dummy VMs have no advanced details.
+             VMs have no advanced details.
           </template>
 
           <template is="dom-if" restamp

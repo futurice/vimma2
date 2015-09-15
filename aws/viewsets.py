@@ -3,53 +3,53 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSAudit, AWSPowerLog, AWSVMExpiration, AWSFirewallRuleExpiration
-from vimma.viewsets import (BaseSerializer, VMSerializer, VMExpirationSerializer, FirewallRuleSerializer, FirewallRuleExpirationSerializer,
-        AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet, VMExpirationViewSet, FirewallRuleExpirationViewSet,
+from aws.models import Provider, Config, VM, FirewallRule, Audit, PowerLog, Expiration, FirewallRuleExpiration
+from vimma.viewsets import (BaseSerializer, VMSerializer, ExpirationSerializer, FirewallRuleSerializer, FirewallRuleExpirationSerializer,
+        AuditViewSet, PowerLogViewSet, VMViewSet, FirewallRuleViewSet, ExpirationViewSet, FirewallRuleExpirationViewSet,
         default_fields)
 
-class AWSProviderSerializer(BaseSerializer):
+class ProviderSerializer(BaseSerializer):
     full_name = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
         return '{} {}'.format(obj.name, obj.route_53_zone)
 
     class Meta:
-        model = AWSProvider
-        fields = default_fields(AWSProvider,
+        model = Provider
+        fields = default_fields(Provider,
                     exclude=['ssh_key_name','access_key_id','access_key_secret'])\
                     +('full_name','config','content_type',)
         depth = 1
 
-class AWSVMConfigSerializer(BaseSerializer):
+class ConfigSerializer(BaseSerializer):
     class Meta:
-        model = AWSVMConfig
+        model = Config
         depth = 1
 
-class AWSVMSerializer(VMSerializer):
+class VMSerializer(VMSerializer):
     class Meta(VMSerializer.Meta):
-        model = AWSVM
+        model = VM
 
-class AWSAuditSerializer(BaseSerializer):
+class AuditSerializer(BaseSerializer):
     class Meta:
-        model = AWSAudit
+        model = Audit
 
-class AWSPowerLogSerializer(BaseSerializer):
+class PowerLogSerializer(BaseSerializer):
     class Meta:
-        model = AWSPowerLog
+        model = PowerLog
 
-class AWSVMExpirationSerializer(BaseSerializer):
+class ExpirationSerializer(BaseSerializer):
     class Meta:
-        model = AWSVMExpiration
+        model = Expiration
 
-class AWSFirewallRuleSerializer(FirewallRuleSerializer):
+class FirewallRuleSerializer(FirewallRuleSerializer):
     class Meta:
-        model = AWSFirewallRule
+        model = FirewallRule
         depth = 2
 
-class AWSFirewallRuleExpirationSerializer(FirewallRuleExpirationSerializer):
+class FirewallRuleExpirationSerializer(FirewallRuleExpirationSerializer):
     class Meta:
-        model = AWSFirewallRuleExpiration
+        model = FirewallRuleExpiration
         depth = 1
 
 
@@ -57,32 +57,32 @@ class AWSFirewallRuleExpirationSerializer(FirewallRuleExpirationSerializer):
 #
 # 
 
-class AWSProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSProviderSerializer
-    queryset = AWSProvider.objects.all()
+class ProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ProviderSerializer
+    queryset = Provider.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id',)
 
-class AWSVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AWSVMConfigSerializer
-    queryset = AWSVMConfig.objects.all()
+class ConfigViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ConfigSerializer
+    queryset = Config.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id',)
 
-class AWSVMViewSet(VMViewSet):
-    serializer_class = AWSVMSerializer
+class VMViewSet(VMViewSet):
+    serializer_class = VMSerializer
 
-class AWSVMExpirationViewSet(VMExpirationViewSet):
-    serializer_class = AWSVMExpirationSerializer
+class ExpirationViewSet(ExpirationViewSet):
+    serializer_class = ExpirationSerializer
 
-class AWSAuditViewSet(AuditViewSet):
-    serializer_class = AWSAuditSerializer
+class AuditViewSet(AuditViewSet):
+    serializer_class = AuditSerializer
 
-class AWSPowerLogViewSet(PowerLogViewSet):
-    serializer_class = AWSPowerLogSerializer
+class PowerLogViewSet(PowerLogViewSet):
+    serializer_class = PowerLogSerializer
 
-class AWSFirewallRuleViewSet(FirewallRuleViewSet):
-    serializer_class = AWSFirewallRuleSerializer
+class FirewallRuleViewSet(FirewallRuleViewSet):
+    serializer_class = FirewallRuleSerializer
 
-class AWSFirewallRuleExpirationViewSet(FirewallRuleExpirationViewSet):
-    serializer_class = AWSFirewallRuleExpirationSerializer
+class FirewallRuleExpirationViewSet(FirewallRuleExpirationViewSet):
+    serializer_class = FirewallRuleExpirationSerializer

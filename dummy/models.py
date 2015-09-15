@@ -1,11 +1,11 @@
 from django.db import models, transaction
 
-from vimma.models import VM, VMConfig, Provider, Audit, PowerLog, FirewallRule, FirewallRuleExpiration, VMExpiration
+import vimma.models
 
-class DummyVM(VM):
-    vm_controller_cls = ('dummy.controller', 'DummyVMController')
+class VM(vimma.models.VM):
+    vm_controller_cls = ('dummy.controller', 'VMController')
 
-    config = models.ForeignKey('dummy.DummyVMConfig', on_delete=models.PROTECT, related_name="vm")
+    config = models.ForeignKey('dummy.Config', on_delete=models.PROTECT, related_name="vm")
 
     # Free-form text, meant to be read by the user. Simulates Vimma's local
     # copy of the remote machine state, synced regularly by the update tasks.
@@ -18,24 +18,24 @@ class DummyVM(VM):
     def isOn(self, state=None):
         return self.poweredon
 
-class DummyProvider(Provider):
+class Provider(vimma.models.Provider):
     pass
 
-class DummyVMConfig(VMConfig):
-    vm_model = DummyVM
-    provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="config")
+class Config(vimma.models.Config):
+    vm_model = VM
+    provider = models.ForeignKey('dummy.Provider', on_delete=models.PROTECT, related_name="config")
 
-class DummyFirewallRule(FirewallRule, models.Model):
-    vm = models.ForeignKey('dummy.DummyVM', related_name="firewallrule")
+class FirewallRule(vimma.models.FirewallRule, models.Model):
+    vm = models.ForeignKey('dummy.VM', related_name="firewallrule")
 
-class DummyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
-    firewallrule = models.OneToOneField('dummy.DummyFirewallRule', related_name="expiration")
+class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration, models.Model):
+    firewallrule = models.OneToOneField('dummy.FirewallRule', related_name="expiration")
 
-class DummyVMExpiration(VMExpiration):
-    vm = models.OneToOneField('dummy.DummyVM', related_name="expiration")
+class Expiration(vimma.models.Expiration):
+    vm = models.OneToOneField('dummy.VM', related_name="expiration")
 
-class DummyAudit(Audit, models.Model):
-    vm = models.ForeignKey('dummy.DummyVM', related_name="audit")
+class Audit(vimma.models.Audit, models.Model):
+    vm = models.ForeignKey('dummy.VM', related_name="audit")
 
-class DummyPowerLog(PowerLog, models.Model):
-    vm = models.ForeignKey('dummy.DummyVM', related_name="powerlog")
+class PowerLog(vimma.models.PowerLog, models.Model):
+    vm = models.ForeignKey('dummy.VM', related_name="powerlog")

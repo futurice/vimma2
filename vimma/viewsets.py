@@ -15,7 +15,7 @@ from rest_framework.reverse import reverse
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
-    Audit, Expiration, VMExpiration,
+    Audit, Expiration, Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
 from vimma.actions import Actions
@@ -49,7 +49,9 @@ class BaseSerializer(serializers.ModelSerializer):
 
     def get_content_type(self, obj):
         value = ContentType.objects.get_for_model(obj)
-        return {'id': value.id, 'name': value.model, 'url': reverse('{}-list'.format(value.model)),}
+        module_name = value.model_class().__module__.split('.')[0]
+        module_name = module_name.replace('vimma', '')
+        return {'id': value.id, 'app_label': value.app_label, 'model': value.model, 'url': reverse('{}{}-list'.format(module_name, value.model)),}
 
     def build_nested_field(self, field_name, relation_info, nested_depth):
         # By default only Model information is kept; re-use our own Serializers
@@ -131,7 +133,7 @@ class VMSerializer(BaseSerializer):
         return obj.isOn()
 
     def get_meta_fields(self):
-        return default_fields(self.Meta.model)+('expiration','firewallrule',)
+        return default_fields(self.Meta.model)+('expiration','firewallrule',) + ('content_type',)
 
     class Meta:
         model = VM
@@ -309,7 +311,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         naive = datetime.datetime.utcfromtimestamp(tstamp)
         aware = pytz.utc.localize(naive)
 
-        exp = AWSVMExpiration.objects.get(id=exp_id)
+        exp = Expiration.objects.get(id=exp_id)
         exp.expires_at = aware
         exp.save()
 
@@ -370,11 +372,11 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
 
-class VMExpirationSerializer(BaseSerializer):
+class ExpirationSerializer(BaseSerializer):
     pass
 
-class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = VMExpirationSerializer
+class ExpirationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ExpirationSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id',)
 

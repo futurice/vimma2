@@ -23,7 +23,7 @@ import vimma.expiry
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
-    Audit, Expiration, VMExpiration,
+    Audit, Expiration, Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
 
@@ -33,7 +33,7 @@ from vimma.util import (
 )
 from vimmasite.pagination import VimmaPagination
 
-from aws.models import AWSFirewallRule
+from aws.models import FirewallRule
 
 aud = Auditor(__name__)
 
@@ -43,7 +43,7 @@ def index(request):
 
 aws_firewall_rule_protocol_choices_json = json.dumps([
     {'value': c[0], 'label': c[1]}
-    for c in AWSFirewallRule.IP_PROTOCOL_CHOICES])
+    for c in FirewallRule.IP_PROTOCOL_CHOICES])
 
 audit_levels_json = json.dumps([{'id': c[0], 'name': c[1]}
     for c in Audit.LEVEL_CHOICES])

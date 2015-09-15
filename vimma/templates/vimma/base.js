@@ -12,28 +12,28 @@ var indexUrl = '{% url "index" %}',
     vimmaApiUserDetailRoot = apiDetailRootUrl(
             '{% url "user-detail" 0 %}'),
 
-    vimmaApiDummyVMDetailRoot = apiDetailRootUrl(
+    vimmaApiVMDetailRoot = apiDetailRootUrl(
             '{% url "dummyvm-detail" 0 %}'),
-    vimmaApiDummyProviderList = '{% url "dummyprovider-list" %}',
-    vimmaApiDummyVMConfigList = '{% url "dummyvmconfig-list" %}',
-    vimmaApiDummyAuditList = '{% url "dummyaudit-list" %}',
-    vimmaApiDummyPowerLogList = '{% url "dummypowerlog-list" %}',
+    vimmaApiProviderList = '{% url "dummyprovider-list" %}',
+    vimmaApiConfigList = '{% url "dummyconfig-list" %}',
+    vimmaApiAuditList = '{% url "dummyaudit-list" %}',
+    vimmaApiPowerLogList = '{% url "dummypowerlog-list" %}',
 
-    vimmaApiAWSVMDetailRoot = apiDetailRootUrl(
+    vimmaApiVMDetailRoot = apiDetailRootUrl(
             '{% url "awsvm-detail" 0 %}'),
-    vimmaApiAWSProviderList = '{% url "awsprovider-list" %}',
-    vimmaApiAWSProviderDetailRoot = apiDetailRootUrl(
+    vimmaApiProviderList = '{% url "awsprovider-list" %}',
+    vimmaApiProviderDetailRoot = apiDetailRootUrl(
             '{% url "awsprovider-detail" 0 %}'),
-    vimmaApiAWSVMConfigList = '{% url "awsvmconfig-list" %}',
-    vimmaApiAWSVMConfigDetailRoot = apiDetailRootUrl(
-            '{% url "awsvmconfig-detail" 0 %}'),
-    vimmaApiAWSFirewallRuleList = '{% url "awsfirewallrule-list" %}',
-    vimmaApiAWSFirewallRuleDetailRoot = apiDetailRootUrl(
+    vimmaApiConfigList = '{% url "awsconfig-list" %}',
+    vimmaApiConfigDetailRoot = apiDetailRootUrl(
+            '{% url "awsconfig-detail" 0 %}'),
+    vimmaApiFirewallRuleList = '{% url "awsfirewallrule-list" %}',
+    vimmaApiFirewallRuleDetailRoot = apiDetailRootUrl(
             '{% url "awsfirewallrule-detail" 0 %}'),
-    vimmaApiAWSAuditList = '{% url "awsaudit-list" %}',
-    vimmaApiAWSPowerLogList = '{% url "awspowerlog-list" %}',
+    vimmaApiAuditList = '{% url "awsaudit-list" %}',
+    vimmaApiPowerLogList = '{% url "awspowerlog-list" %}',
 
-    vimmaApiVMExpirationDetailRoot = '',
+    vimmaApiExpirationDetailRoot = '',
     vimmaApiFirewallRuleExpirationList = '',
     vimmaApiFirewallRuleList = '',
     vimmaEndpointCreateVM = '',

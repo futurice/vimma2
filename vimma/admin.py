@@ -1,13 +1,9 @@
 from django.contrib import admin
+from django.db import models
 
-from vimma.models import (
-    TimeZone, Permission, Schedule,
-    Role, User, Project,
-)
+from vimma.tools import get_types
 
+models = get_types('vimma.models', models.Model, p=lambda x: not x._meta.abstract)
 
-for model in (
-        TimeZone, Permission, Schedule,
-        Role, User, Project,
-        ):
+for model in models:
     admin.site.register(model)

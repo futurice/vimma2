@@ -12,37 +12,36 @@ vimma.models provides an interface for building VM implementations.
 
 Implementing a new VM:
 1) my.controller:
-class MyVMController(vimma.controllers.VMController):
+class VMController(vimma.controllers.VMController):
     pass
 
 2) my.models:
 
-class My(VM):
-    controller_cls = ('my.controller', 'MyVMController')
-    config = models.ForeignKey('my.MyVMConfig', on_delete=models.PROTECT, related_name="vm")
-    firewallrules = models.ManyToManyField('my.MyFirewallRule', blank=True)
+class VM(vimma.models.VM):
+    controller_cls = ('my.controller', 'VMController')
+    config = models.ForeignKey('my.Config', on_delete=models.PROTECT, related_name="vm")
 
-class MyProvider(Provider):
+class Provider(vimma.models.Provider):
     pass
 
-class MyVMConfig(VMConfig):
-    vm_model = MyVM
-    provider = models.ForeignKey('my.MyProvider', on_delete=models.PROTECT, related_name="config")
+class Config(vimma.models.Config):
+    vm_model = VM
+    provider = models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name="config")
 
-class MyFirewallRule(FirewallRule, models.Model):
-    pass
+class FirewallRule(vimma.models.FirewallRule, models.Model):
+    vm = models.ForeignKey('my.VM', related_name="firewallrule")
 
-class MyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
-    firewallrule = models.OneToOneField('my.MyFirewallRule', related_name="expiration")
+class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration, models.Model):
+    firewallrule = models.OneToOneField('my.FirewallRule', related_name="expiration")
 
-class MyVMExpiration(VMExpiration):
-    vm = models.OneToOneField('my.MyVM', related_name="expiration")
+class Expiration(vimma.models.Expiration):
+    vm = models.OneToOneField('my.VM', related_name="expiration")
 
-class MyAudit(Audit, models.Model):
-    vm = models.ForeignKey('my.MyVM', related_name="audit")
+class Audit(vimma.models.Audit, models.Model):
+    vm = models.ForeignKey('my.VM', related_name="audit")
 
-class MyPowerLog(PowerLog, models.Model):
-    vm = models.ForeignKey('my.MyVM', related_name="powerlog")
+class PowerLog(vimma.models.PowerLog, models.Model):
+    vm = models.ForeignKey('my.VM', related_name="powerlog")
 """
 
 class CleanModel(models.Model):
@@ -140,7 +139,7 @@ class Schedule(CleanModel):
     second is [0:30, 1:00), last column is [23:30, 24:00).
     """
     name = models.CharField(max_length=50, unique=True)
-    timezone = models.ForeignKey(TimeZone, on_delete=models.PROTECT)
+    timezone = models.ForeignKey(TimeZone, on_delete=models.PROTECT, related_name='%(class)s_destroy_requested_vms')
     matrix = models.TextField(validators=[schedule_matrix_validator])
     # ‘special’ schedules can't be used by everyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
@@ -218,11 +217,10 @@ class VM(CleanModel):
     A virtual machine. This model holds only the data common for all VMs from
     any provider.
     """
-    config = NotImplementedError("models.ForeignKey('my.VMConfig', on_delete=models.PROTECT, related_name='vm')")
-    firewallrules = NotImplementedError("models.ManyToManyField('my.FirewallRule', blank=True")
+    config = NotImplementedError("models.ForeignKey('my.Config', on_delete=models.PROTECT, related_name='vm')")
 
-    project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
-    schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+    project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
+    schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
 
     name = models.CharField(max_length=255)
     # A ‘schedule override’: keep ON or OFF until a timestamp
@@ -234,7 +232,7 @@ class VM(CleanModel):
 
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('vimma.User', null=True, blank=True,
-            on_delete=models.SET_NULL, related_name='%(class)s_created_vms')
+            on_delete=models.SET_NULL, related_name='%(app_label)s_%(class)s_created_by')
     comment = models.CharField(max_length=200, blank=True)
 
     # When the VM status was updated from the remote provider. The status
@@ -245,7 +243,7 @@ class VM(CleanModel):
     # First a user requests destruction
     destroy_request_at = models.DateTimeField(blank=True, null=True)
     destroy_request_by = models.ForeignKey('vimma.User', null=True, blank=True,
-            on_delete=models.SET_NULL, related_name='%(class)s_destroy_requested_vms')
+            on_delete=models.SET_NULL, related_name='%(app_label)s_%(class)s_destroy_request_by')
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
 
@@ -275,7 +273,7 @@ class VM(CleanModel):
     class Meta:
         abstract = True
 
-class VMConfig(CleanModel):
+class Config(CleanModel):
     """
     Configuration for a Provider. A provider may have several Configs.
 
@@ -286,12 +284,12 @@ class VMConfig(CleanModel):
     # The default schedule for this VM config. Users are allowed to choose this
     # schedule for VMs made from this config, even if the schedule itself
     # requires additional permissions.
-    default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
+    default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s")
 
     name = models.CharField(max_length=50, unique=True)
     # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
     is_special = models.BooleanField(default=False)
-    # flag showing which VMConfig is the default one for its provider,
+    # flag showing which Config is the default one for its provider,
     # preselected in the UI
     default = models.BooleanField(default=False)
 
@@ -335,8 +333,8 @@ class Expiration(CleanModel):
     class Meta:
         abstract = True
 
-class VMExpiration(Expiration):
-    expiration_controller_cls = ('vimma.expiry', 'VMExpirationController')
+class Expiration(Expiration):
+    expiration_controller_cls = ('vimma.expiry', 'ExpirationController')
 
     class Meta:
         abstract = True
@@ -384,8 +382,7 @@ class Audit(CleanModel):
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     text = models.TextField()
 
-    user = models.ForeignKey('vimma.User', null=True, blank=True,
-            on_delete=models.SET_NULL)
+    user = models.ForeignKey('vimma.User', null=True, blank=True, on_delete=models.SET_NULL, related_name="%(app_label)s_%(class)s")
 
     def __str__(self):
         return "%s..."%self.text[:40]

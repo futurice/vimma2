@@ -8,7 +8,7 @@ Polymer({
     },
 
     _vmUrl: function(vmid) {
-      return '/api/dummyvms/'+vmid+'/';
+      return '/api/dummy/vm/'+vmid+'/';
     },
 
     properties: {

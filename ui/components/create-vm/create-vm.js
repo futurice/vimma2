@@ -28,19 +28,19 @@ Polymer({
       value: vimmaApiProjectList
     },
 
-    providersDummyUrl: {
+    providersUrl: {
       type: String,
-      value: vimmaApiDummyProviderList
+      value: vimmaApiProviderList
     },
 
     providersAwsUrl: {
       type: String,
-      value: vimmaApiAWSProviderList
+      value: vimmaApiProviderList
     },
 
     providers: {
       type: Array,
-      computed: 'computeProviders(providersDummy,providersAws)'
+      computed: 'computeProviders(providers,providersAws)'
     },
 
     schedulesUrl: {

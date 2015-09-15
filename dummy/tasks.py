@@ -3,9 +3,9 @@ from vimma.celery import app
 @app.task
 def power_on_vm(vm_id, user_id=None):
     aud.info('Power ON', user_id=user_id, vm_id=vm_id)
-    vm = DummyVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
     if vm.destroyed or vm.poweredon:
-        aud.error(('Can\'t power on DummyVM {0.id} ‘{0.name}’ with ' +
+        aud.error(('Can\'t power on VM {0.id} ‘{0.name}’ with ' +
             'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
             ).format(vm), user_id=user_id, vm_id=vm_id)
         return
@@ -15,9 +15,9 @@ def power_on_vm(vm_id, user_id=None):
 @app.task
 def power_off_vm(vm_id, user_id=None):
     aud.info('Power OFF', user_id=user_id, vm_id=vm_id)
-    vm = DummyVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
     if vm.destroyed or not vm.poweredon:
-        aud.error(('Can\'t power off DummyVM {0.id} ‘{0.name}’ with ' +
+        aud.error(('Can\'t power off VM {0.id} ‘{0.name}’ with ' +
             'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
             ).format(vm), user_id=user_id, vm_id=vm_id)
         return
@@ -27,9 +27,9 @@ def power_off_vm(vm_id, user_id=None):
 @app.task
 def reboot_vm(vm_id, user_id=None):
     aud.info('Reboot', user_id=user_id, vm_id=vm_id)
-    vm = DummyVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
     if vm.destroyed:
-        aud.error(('Can\'t reboot DummyVM {0.id} ‘{0.name}’ with ' +
+        aud.error(('Can\'t reboot VM {0.id} ‘{0.name}’ with ' +
             'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
             ).format(vm), user_id=user_id, vm_id=vm_id)
         return
@@ -39,9 +39,9 @@ def reboot_vm(vm_id, user_id=None):
 @app.task
 def destroy_vm(vm_id, user_id=None):
     aud.info('Destroy', user_id=user_id, vm_id=vm_id)
-    vm = DummyVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
     if vm.destroyed:
-        aud.error(('Can\'t destroy DummyVM {0.id} ‘{0.name}’ with ' +
+        aud.error(('Can\'t destroy VM {0.id} ‘{0.name}’ with ' +
             'poweredon ‘{0.poweredon}’, destroyed ‘{0.destroyed}’'
             ).format(vm), user_id=user_id, vm_id=vm_id)
         return
@@ -53,7 +53,7 @@ def destroy_vm(vm_id, user_id=None):
 @app.task
 def update_vm_status(vm_id):
     with aud.ctx_mgr(vm_id=vm_id):
-        vm = DummyVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         if vm.destroyed:
             new_status = 'destroyed'
         else:

@@ -1,11 +1,9 @@
 from django.contrib import admin
+from django.db import models
 
-from dummy.models import (
-    DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog, DummyVMExpiration, DummyFirewallRule, DummyFirewallRuleExpiration
-)
+from vimma.tools import get_types
 
+models = get_types('dummy.models', models.Model)
 
-for model in (
-    DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog, DummyVMExpiration, DummyFirewallRule, DummyFirewallRuleExpiration
-    ):
+for model in models:
     admin.site.register(model)

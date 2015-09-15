@@ -12,3 +12,12 @@ def subclasses(c):
 def get_import(module, thing):
     m = importlib.import_module(module)
     return getattr(m, thing)
+
+def get_classes(module, match):
+    mo = importlib.import_module(module)
+    return [getattr(mo, name) for name in dir(mo) if match in name]
+
+def get_types(module, match, p=None):
+    mo = importlib.import_module(module)
+    matches = [getattr(mo, name) for name in dir(mo) if type(getattr(mo, name)) == type(match)]
+    return matches if not p else filter(p, matches)

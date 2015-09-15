@@ -10,18 +10,15 @@ import sys
 import traceback
 
 from vimma.audit import Auditor
-from vimma.models import (
-    FirewallRule, Expiration, FirewallRuleExpiration,
-)
 from vimma.util import retry_in_transaction
-from vimma.controllers import VMController
+import vimma.controllers
 
-from aws.models import AWSVMConfig, AWSVM, AWSFirewallRule, AWSPowerLog
+from aws.models import Config, VM, FirewallRule, PowerLog, FirewallRuleExpiration
 from aws.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status, do_create_vm, route53_add
 
 aud = Auditor(__name__)
 
-class AWSVMController(VMController):
+class VMController(vimma.controllers.VMController):
     def power_on(self, user_id=None):
         power_on_vm.delay(self.vm.pk, user_id=user_id)
 
@@ -42,7 +39,7 @@ class AWSVMController(VMController):
                 user_id=user_id)
 
     def delete_firewall_rule(self, fw_rule_id, user_id=None):
-        fwr = AWSFirewallRule.objects.get(id=fw_rule_id)
+        fwr = FirewallRule.objects.get(id=fw_rule_id)
 
         with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
             conn = ec2_connect_to_aws_vm_region(self.vm.id)
@@ -52,13 +49,13 @@ class AWSVMController(VMController):
                     to_port=fwr.to_port,
                     cidr_ip=fwr.cidr_ip)
             fwr.delete()
-            aud.info('Deleted a firewall rule', vm_id=vm_id, user_id=user_id)
+            aud.info('Deleted firewall rule', vm_id=vm_id, user_id=user_id)
 
     def power_log(self, powered_on):
-        AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
+        PowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
     def create_vm_details(self, name, comment, project, schedule, config, user, expires_at, sched_override_tstamp):
-        vm = AWSVM.objects.create(
+        vm = VM.objects.create(
                 name=name,
                 comment=comment,
 
@@ -70,7 +67,7 @@ class AWSVMController(VMController):
                 sched_override_state=True,
                 sched_override_tstamp=sched_override_tstamp,
                 )
-        expiration,_ = AWSVMExpiration.objects.get_or_create(vm=vm, expires_at=expires_at)
+        expiration,_ = Expiration.objects.get_or_create(vm=vm, expires_at=expires_at)
 
         callables = [lambda: do_create_vm.delay(config.id,
             vm.config.root_device_size, config.root_device_volume_type,
@@ -78,21 +75,21 @@ class AWSVMController(VMController):
         return vm, callables
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):
-    vm = AWSVM.objects.get(id=aws_vm_id)
+    vm = VM.objects.get(id=aws_vm_id)
     return boto.ec2.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
             aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
 
 
 def route53_connect_to_aws_vm_region(aws_vm_id):
-    vm = AWSVM.objects.get(id=aws_vm_id)
+    vm = VM.objects.get(id=aws_vm_id)
     return boto.route53.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
             aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
 
 
 def vpc_connect_to_aws_vm_region(aws_vm_id):
-    vm = AWSVM.objects.get(id=aws_vm_id)
+    vm = VM.objects.get(id=aws_vm_id)
     return boto.vpc.connect_to_region(vm.region,
             aws_access_key_id=os.getenv(vm.config.provider.access_key_id),
             aws_secret_access_key=os.getenv(vm.config.provider.access_key_secret),)
@@ -108,10 +105,8 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
 
     This function provides the functionality, the task does exception handling.
     """
-    # Make the API calls only once. Retrying failed DB transactions must only
-    # include idempotent code, not the AWS API calls which create more VMs.
 
-    vm = AWSVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
 
     ssh_key_name = vm.config.provider.ssh_key_name
     default_security_group_id = vm.config.provider.default_security_group_id
@@ -128,7 +123,7 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
             '{}-{}'.format(name, vm_id), 'Vimma-generated', vpc_id=vpc_id)
     sec_grp_id = security_group.id
 
-    AWSVM.objects.filter(id=vm_id).update(security_group_id=sec_grp_id)
+    VM.objects.filter(id=vm_id).update(security_group_id=sec_grp_id)
 
     security_group_ids = [sec_grp_id]
     if default_security_group_id:
@@ -157,12 +152,12 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
             key_name=ssh_key_name or None,
             user_data=user_data or None)
 
-    aud.info('Got AWS reservation', user_id=user_id, vm_id=vm_id)
+    aud.info('Got reservation', user_id=user_id, vm_id=vm_id)
 
     inst = None
     inst_id = ''
     if len(reservation.instances) != 1:
-        aud.error('AWS reservation has {} instances, expected 1'.format(
+        aud.error(' reservation has {} instances, expected 1'.format(
             len(reservation.instances)), user_id=user_id, vm_id=vm_id)
     else:
         inst = reservation.instances[0]
@@ -172,7 +167,7 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
     # Don't overwrite the DB with our stale field values (from before the API
     # calls). Instead, read&update the DB.
 
-    AWSVM.objects.filter(id=vm_id).update(reservation_id=reservation.id,
+    VM.objects.filter(id=vm_id).update(reservation_id=reservation.id,
         instance_id=inst_id)
 
     if inst:
@@ -195,14 +190,14 @@ def create_firewall_rule(vm_id, data, user_id=None):
     """
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         with transaction.atomic():
-            vm = AWSVM.objects.get(id=vm_id)
+            vm = VM.objects.get(id=vm_id)
             raise('TODO: FireWallRule(vm=vm) is deprecated')
             base_fw_rule = FirewallRule.objects.create(vm=vm)
 
             ip_protocol = data['ip_protocol']
             from_port, to_port = data['from_port'], data['to_port']
             cidr_ip = data['cidr_ip']
-            aws_fw_rule = AWSFirewallRule.objects.create(
+            aws_fw_rule = FirewallRule.objects.create(
                     firewallrule=base_fw_rule,
                     ip_protocol=ip_protocol,
                     from_port=from_port,
@@ -227,5 +222,5 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     to_port=to_port,
                     cidr_ip=cidr_ip)
 
-        aud.info('Created a firewall rule', vm_id=vm_id, user_id=user_id)
+        aud.info('Created firewall rule', vm_id=vm_id, user_id=user_id)
 

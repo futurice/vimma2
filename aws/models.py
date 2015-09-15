@@ -6,21 +6,21 @@ import logging
 import ipaddress
 import re
 
-from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog, FirewallRule, FirewallRuleExpiration, VMExpiration
+import vimma.models
 
 def aws_vm_name_validator(val):
     if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
         raise ValidationError({'name':'Must be alphanumeric and dashes (-).'.format(val)})
 
-class AWSVM(VM, models.Model):
-    vm_controller_cls = ('aws.controller', 'AWSVMController')
+class VM(vimma.models.VM, models.Model):
+    vm_controller_cls = ('aws.controller', 'VMController')
 
-    config = models.ForeignKey('aws.AWSVMConfig', on_delete=models.PROTECT, related_name="vm")
+    config = models.ForeignKey('aws.Config', on_delete=models.PROTECT, related_name="vm")
 
-    # Free-form text, shown to the user. Stores the VM state reported by AWS.
+    # Free-form text, shown to the user. Stores the VM state reported by .
     # Synced regularly by the update tasks.
     state = models.CharField(max_length=100, blank=True)
-    # AWS fields:
+    #  fields:
     region = models.CharField(max_length=20, default=settings.EC2_DEFAULT_REGION)
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
@@ -46,7 +46,7 @@ class AWSVM(VM, models.Model):
                 else None)
         return powered_on
 
-class AWSProvider(Provider):
+class Provider(vimma.models.Provider):
     # names of environment variables for actual lookups
     access_key_id = models.CharField(max_length=100, blank=True)
     access_key_secret = models.CharField(max_length=100, blank=True)
@@ -60,7 +60,7 @@ class AWSProvider(Provider):
     # The ID of the VPC in which to create VMs. A random subnet will be chosen
     # at VM creation time.
     vpc_id = models.CharField(max_length=50, null=True, blank=True)
-    # User data (e.g. a script) provided to the AWS Instances. Python Template
+    # User data (e.g. a script) provided to the  Instances. Python Template
     # https://docs.python.org/3/library/string.html#format-string-syntax
     # given the ‘vm’ keyword argument. E.g.:
     # """#!/usr/bin/env bash
@@ -73,9 +73,9 @@ class AWSProvider(Provider):
     def __str__(self):
         return '{} ({})'.format(self.name, self.route_53_zone)
 
-class AWSVMConfig(VMConfig, models.Model):
-    vm_model = AWSVM
-    provider = models.ForeignKey('aws.AWSProvider', on_delete=models.PROTECT, related_name="config")
+class Config(vimma.models.Config, models.Model):
+    vm_model = VM
+    provider = models.ForeignKey('aws.Provider', on_delete=models.PROTECT, related_name="config")
 
     regions = sorted([
         'ap-northeast-1',
@@ -116,10 +116,10 @@ class AWSVMConfig(VMConfig, models.Model):
                 self.name)
 
 
-class AWSFirewallRule(FirewallRule, models.Model):
-    vm = models.ForeignKey('aws.AWSVM', related_name="firewallrule")
+class FirewallRule(vimma.models.FirewallRule, models.Model):
+    vm = models.ForeignKey('aws.VM', related_name="firewallrule")
 
-    # ip_protocol, from_port, to_port and cidr_ip correspond to  AWS call params.
+    # ip_protocol, from_port, to_port and cidr_ip correspond to   call params.
     cidr_ip = models.CharField(max_length=50)
 
     def is_special(self):
@@ -136,17 +136,17 @@ class AWSFirewallRule(FirewallRule, models.Model):
     def __str__(self):
         return '{} {}->{} @{} (VM: {})'.format(self.ip_protocol.upper(), self.from_port, self.to_port, self.cidr_ip, self.vm_id)
 
-class AWSFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
-    firewallrule = models.OneToOneField('aws.AWSFirewallRule', related_name="expiration")
+class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration, models.Model):
+    firewallrule = models.OneToOneField('aws.FirewallRule', related_name="expiration")
 
     def __str__(self):
         return '{} for {}'.format(self.expires_at, self.firewallrule)
 
-class AWSVMExpiration(VMExpiration):
-    vm = models.OneToOneField('aws.AWSVM', related_name="expiration")
+class Expiration(vimma.models.Expiration):
+    vm = models.OneToOneField('aws.VM', related_name="expiration")
 
-class AWSAudit(Audit, models.Model):
-    vm = models.ForeignKey('aws.AWSVM', related_name="audit")
+class Audit(vimma.models.Audit, models.Model):
+    vm = models.ForeignKey('aws.VM', related_name="audit")
 
-class AWSPowerLog(PowerLog, models.Model):
-    vm = models.ForeignKey('aws.AWSVM', related_name="powerlog")
+class PowerLog(vimma.models.PowerLog, models.Model):
+    vm = models.ForeignKey('aws.VM', related_name="powerlog")

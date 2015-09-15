@@ -1,6 +1,7 @@
 from vimma.celery import app
 
-from aws.models import AWSVM
+from aws.models import VM
+# TODO: circular: from aws.controller import ec2_connect_to_aws_vm_region
 
 @app.task
 def do_create_vm(aws_vm_config_id, root_device_size, root_device_volume_type,
@@ -18,7 +19,7 @@ def do_create_vm(aws_vm_config_id, root_device_size, root_device_volume_type,
 @app.task
 def power_on_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.start_instances(instance_ids=[vm.instance_id])
         aud.info('Started instance', vm_id=vm.pk, user_id=user_id)
@@ -28,7 +29,7 @@ def power_on_vm(vm_id, user_id=None):
 @app.task
 def power_off_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.stop_instances(instance_ids=[vm.instance_id])
         aud.info('Stopped instance', vm_id=vm.pk, user_id=user_id)
@@ -37,7 +38,7 @@ def power_off_vm(vm_id, user_id=None):
 @app.task
 def reboot_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.reboot_instances(instance_ids=[vm.instance_id])
         aud.info('Rebooted instance', vm_id=vm.pk, user_id=user_id)
@@ -66,7 +67,7 @@ def mark_vm_destroyed_if_needed(vm):
 def delete_security_group(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         if vm.security_group_id:
             conn = ec2_connect_to_aws_vm_region(vm.pk)
             conn.delete_security_group(group_id=vm.security_group_id)
@@ -80,7 +81,7 @@ def delete_security_group(self, vm_id, user_id=None):
 def terminate_instance(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'terminate instance', **aud_kw):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         if vm.instance_id:
             conn = ec2_connect_to_aws_vm_region(vm.pk)
             conn.terminate_instances(instance_ids=[vm.instance_id])
@@ -92,12 +93,12 @@ def terminate_instance(self, vm_id, user_id=None):
 
 @app.task
 def update_vm_status(vm_id):
-    vm = AWSVM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
 
     conn = ec2_connect_to_aws_vm_region(vm.pk)
     instances = conn.get_only_instances(instance_ids=[vm.pk])
     if len(instances) != 1:
-        aud.warning('AWS returned {} instances, expected 1'.format(
+        aud.warning(' returned {} instances, expected 1'.format(
             len(instances)), vm_id=vm.pk)
         new_state = 'Error'
         new_ip_address = None
@@ -116,7 +117,7 @@ def update_vm_status(vm_id):
 
     vm.controller().set_vm_status_updated_at_now()
 
-    powered_on = AWSVM().isOn(new_state)
+    powered_on = VM().isOn(new_state)
     vm.controller().power_log(powered_on)
     if new_state != 'terminated':
         vm.controller().switch_on_off(powered_on)
@@ -132,13 +133,13 @@ def route53_add(self, vm_id, user_id=None):
     """
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'add route53 cname', **aud_kw):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         vm_cname = (vm.name + '.' + vm.config.provider.route_53_zone).lower()
 
         ec2_conn = ec2_connect_to_aws_vm_region(vm.pk)
         instances = ec2_conn.get_only_instances(instance_ids=[vm.instance_id])
         if len(instances) != 1:
-            aud.warning('AWS returned {} instances, expected 1'.format(
+            aud.warning(' returned {} instances, expected 1'.format(
                 len(instances)), **aud_kw)
             self.retry()
         instance = instances[0]
@@ -200,7 +201,7 @@ def route53_delete(self, vm_id, user_id=None):
     """
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
     with aud.celery_retry_ctx_mgr(self, 'delete route53 cname', **aud_kw):
-        vm = AWSVM.objects.get(id=vm_id)
+        vm = VM.objects.get(id=vm_id)
         vm_cname = (vm.name + '.' + vm.config.provider.route_53_zone).lower()
 
         r53_conn = route53_connect_to_aws_vm_region(vm.pk)

@@ -1,11 +1,9 @@
 from django.contrib import admin
+from django.db import models
 
-from aws.models import (
-    AWSProvider, AWSVMConfig, AWSVM, AWSAudit, AWSPowerLog, AWSVMExpiration, AWSFirewallRule, AWSFirewallRuleExpiration,
-)
+from vimma.tools import get_types
 
+models = get_types('aws.models', models.Model)
 
-for model in (
-    AWSProvider, AWSVMConfig, AWSVM, AWSAudit, AWSPowerLog, AWSVMExpiration, AWSFirewallRule, AWSFirewallRuleExpiration,
-    ):
+for model in models:
     admin.site.register(model)

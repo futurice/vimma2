@@ -5,12 +5,12 @@ from vimma.audit import Auditor
 from vimma.util import retry_in_transaction
 from vimma.controllers import VMController
 
-from dummy.models import DummyVM, DummyPowerLog
+from dummy.models import VM, PowerLog
 from dummy.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status
 
 aud = Auditor(__name__)
 
-class DummyVMController(VMController):
+class VMController(VMController):
     def power_on(self, user_id=None):
         power_on_vm.delay(self.vm.pk, user_id=user_id)
 
@@ -27,11 +27,11 @@ class DummyVMController(VMController):
         update_vm_status.delay(self.vm.pk)
 
     def power_log(self, powered_on):
-        DummyPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
+        PowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
     def create_vm_details(self, *args, **kw):
-        vm = DummyVM.objects.create(name=kw['name'], config=kw['config'], project=kw['project'], schedule=kw['schedule'])
-        expiration, _ = DummyVMExpiration.objects.get_or_create(vm=vm, expires_at=kw['expires_at'])
+        vm = VM.objects.create(name=kw['name'], config=kw['config'], project=kw['project'], schedule=kw['schedule'])
+        expiration, _ = Expiration.objects.get_or_create(vm=vm, expires_at=kw['expires_at'])
 
         delay = 5
         countdown = min(max(0, 5), 60)

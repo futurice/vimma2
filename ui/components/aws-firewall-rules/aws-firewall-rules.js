@@ -1,5 +1,5 @@
 (function() {
-    /* Load all AWS firewall rule models and call successCallback(model-array)
+    /* Load all  firewall rule models and call successCallback(model-array)
      * or errCallback(errorText).
      */
     function loadModels(vmid, successCallback, errCallback) {
@@ -10,7 +10,7 @@
             var fw_rules = resArr[0];
             var urls = [];
             fw_rules.forEach(function(fwr) {
-                urls.push(vimmaApiAWSFirewallRuleList +
+                urls.push(vimmaApiFirewallRuleList +
                         '?firewallrule=' + fwr.id);
                 urls.push(vimmaApiFirewallRuleExpirationList +
                         '?firewallrule=' + fwr.id);

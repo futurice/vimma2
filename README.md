@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/futurice/vimma2.svg?branch=master)](https://travis-ci.org/futurice/vimma2)
 
-# Provision and manage virtual machines from cloud providers (AWS)
+# Provision and manage virtual machines from cloud providers ()
 
 Vimma is Free Software published under the BSD 3-clause license.
 See the file `COPYING`.
@@ -21,8 +21,13 @@ docker run --rm -it -p 8000:8000 --name vimma \
     -e DB_PASSWORD=mysecretpassword \
     -e DEBUG=true \
     -e CELERY_LOG_LEVEL=debug \
-    -v ~/vimma2/vimma:/opt/app/vimma:ro \
-    -v ~/vimma2/vimmasite:/opt/app/vimmasite:ro \
+    -e AWS_ACCESS_KEY_ID="" \
+    -e AWS_ACCESS_KEY_SECRET="" \
+    -e AWS_SSH_KEY_NAME="" \
+    -e AWS_ROUTE_53_NAME="" \
+    -e AWS_DEFAULT_SECURITY_GROUP_ID="" \
+    -e AWS_VPC_ID="" \
+    -v ~/vimma/:/opt/app/:rw \
     --link postgres:postgres \
     futurice/vimmadev
 ```
@@ -38,18 +43,6 @@ su postgres; createdb vimma;
 docker exec -it vimma python3 manage.py createsuperuser --username vimma --email vimma@company.com
 
 # run tests
-docker exec -it vimma xvfb-run python3 manage.py test vimma --noinput
-docker exec -it vimma xvfb-run node_modules/.bin/wct vimma/static/vimma/components/test/
-```
-
-### Configuration:
-
-```
-    -e AWS_ACCESS_KEY_ID="" \
-    -e AWS_ACCESS_KEY_SECRET="" \
-    -e AWS_SSH_KEY_NAME="" \
-    -e AWS_ROUTE_53_NAME="" \
-    -e AWS_DEFAULT_SECURITY_GROUP_ID="" \
-    -e AWS_VPC_ID="" \
-    -e AWS_AMI_ID="" \
+docker exec -it vimma xvfb-run python3 manage.py test --noinput
+docker exec -it vimma xvfb-run ../static/node_modules/.bin/wct ui/components/test/
 ```
