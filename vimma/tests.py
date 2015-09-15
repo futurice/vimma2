@@ -1,4 +1,4 @@
-import datetime
+import datetime, urllib
 from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
@@ -17,15 +17,15 @@ from vimma import util
 from vimma.actions import Actions
 from vimma import expiry
 from vimma.models import (
-    Permission, Role, Project, TimeZone, Schedule,
-    Provider, VMConfig, User, VM,
-    Audit, PowerLog, Expiration, VMExpiration,
-    FirewallRule, FirewallRuleExpiration,
+    Permission, Role,
+    Project, TimeZone, Schedule,
+    User,
+    Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyVMExpiration
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSVMExpiration, AWSFirewallRuleExpiration
+from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyVMExpiration, DummyPowerLog
+from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSPowerLog, AWSFirewallRule, AWSVMExpiration, AWSFirewallRuleExpiration
 
 class PermissionTests(TestCase):
 
@@ -318,8 +318,7 @@ class ProfileTest(APITestCase):
         self.assertEqual(set(i['id'] for i in items),
                 {u_a.id, u_b.id, u_c.id})
 
-        response = self.client.get('{}?id={}'.format(
-            reverse('user-list'), u_a.id))
+        response = self.client.get('{}?id={}'.format(reverse('user-list'), u_a.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual(set(i['id'] for i in items), {u_a.id})
@@ -1341,9 +1340,11 @@ class DummyVMTests(APITestCase):
         vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
         vm.delete()
-        prv.delete()
+        with self.assertRaises(ProtectedError):
+            prv.delete()
         prj.delete()
-        s.delete()
+        with self.assertRaises(ProtectedError):
+            s.delete()
         tz.delete()
 
     def test_api_permissions(self):
@@ -1392,8 +1393,7 @@ class DummyVMTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # filter by .vm field
-        response = self.client.get(reverse('dummyvm-list') +
-                '?vm=' + str(dvm1.id))
+        response = self.client.get(reverse('dummyvm-list') + '?id=' + str(dvm1.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({dvm1.id}, {x['id'] for x in items})
@@ -1545,16 +1545,13 @@ class AWSVMTests(APITestCase):
         response = self.client.get(reverse('awsvm-detail', args=[avm3.id]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.get(reverse('awsvm-list') +
-                '?vm=' + str(avm1.id))
+        response = self.client.get(reverse('awsvm-detail', args=[avm1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        items = response.data['results']
-        self.assertEqual({avm1.id}, {x['id'] for x in items})
+        self.assertEqual({avm1.id}, {response.data['id']})
 
         # filter by .name field
-        # TODO: escape query param value
         response = self.client.get(reverse('awsvm-list') +
-                '?name=' + avm1.name)
+                '?name=' + urllib.parse.quote(avm1.name))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({avm1.id}, {x['id'] for x in items})
@@ -1579,10 +1576,8 @@ class AWSVMTests(APITestCase):
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('awsvm-detail',
-            args=[item['id']]))
-        self.assertEqual(response.status_code,
-                status.HTTP_405_METHOD_NOT_ALLOWED)
+        response = self.client.delete(reverse('awsvm-detail', args=[item['id']]))
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
@@ -2087,7 +2082,7 @@ class SetExpirationTests(TestCase):
         future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
         future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
         past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
-        exp = VMExpiration.objects.create(expires_at=now, vm=vm)
+        exp = DummyVMExpiration.objects.create(expires_at=now, vm=vm)
 
         url = reverse('setExpiration')
 
@@ -2096,7 +2091,7 @@ class SetExpirationTests(TestCase):
             Check that exp_id expires at timestamp.
             """
             self.assertEqual(
-                int(VMExpiration.objects.get(id=exp_id).expires_at.timestamp()),
+                int(DummyVMExpiration.objects.get(id=exp_id).expires_at.timestamp()),
                 timestamp)
 
         checkExpiration(exp.id, now_ts)
@@ -2171,9 +2166,7 @@ class SetExpirationTests(TestCase):
         config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
         vm = AWSVM.objects.create(name="my-vm", config=config, project=prj, schedule=s)
-        fw_rule = FirewallRule.objects.create(vm=vm)
-        AWSFirewallRule.objects.create(firewallrule=fw_rule,
-                ip_protocol=AWSFirewallRule.PROTO_TCP,
+        fw_rule = AWSFirewallRule.objects.create(ip_protocol=AWSFirewallRule.PROTO_TCP,
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/32')
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
@@ -2181,7 +2174,7 @@ class SetExpirationTests(TestCase):
         future_ts = int((now + datetime.timedelta(hours=1)).timestamp())
         future2_ts = int((now + datetime.timedelta(hours=2)).timestamp())
         past_ts = int((now - datetime.timedelta(hours=1)).timestamp())
-        exp = FirewallRuleExpiration.objects.create(expires_at=now,
+        exp = AWSFirewallRuleExpiration.objects.create(expires_at=now,
                 firewallrule=fw_rule)
 
         url = reverse('setExpiration')
@@ -2191,7 +2184,7 @@ class SetExpirationTests(TestCase):
             Check that exp_id expires at timestamp.
             """
             self.assertEqual(
-                int(FirewallRuleExpiration.objects.get(id=exp_id).expires_at.timestamp()),
+                int(AWSFirewallRuleExpiration.objects.get(id=exp_id).expires_at.timestamp()),
                 timestamp)
 
         checkExpiration(exp.id, now_ts)
@@ -2317,7 +2310,7 @@ class CreateDeleteFirewallRuleTests(TestCase):
                 data=json.dumps({'vmid': vm.id, 'data': None}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        fw_rule = FirewallRule.objects.create()
+        fw_rule = AWSFirewallRule.objects.create()
         vm.firewallrules.add(fw_rule)
 
         response = self.client.post(delete_url,
@@ -2589,13 +2582,12 @@ class PowerLogTests(TestCase):
         prv = DummyProvider.objects.create(name='My Prov')
         prj = Project.objects.create(name='Prj', email='a@b.com')
         config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
-        vm = DummyVM.objects.create(name="My-VM", config=config, project=prj, schedule=s)
+        vm = DummyVM.objects.create(name="my-vm", config=config, project=prj, schedule=s)
 
-        for kw in ({}, {'vm': vm}, {'powered_on': True}):
-            with transaction.atomic():
-                with self.assertRaises(IntegrityError):
-                    PowerLog.objects.create(**kw)
-        PowerLog.objects.create(vm=vm, powered_on=True)
+        for kw in ({}, {'powered_on': True}):
+            with self.assertRaises(ValidationError):
+                DummyPowerLog.objects.create(**kw)
+        DummyPowerLog.objects.create(vm=vm, powered_on=True)
 
     def test_on_delete_constraints(self):
         """
@@ -2609,13 +2601,13 @@ class PowerLogTests(TestCase):
         config = DummyVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         vm = DummyVM.objects.create(config=config, project=prj, schedule=s)
 
-        pl = PowerLog.objects.create(vm=vm, powered_on=False)
+        pl = DummyPowerLog.objects.create(vm=vm, powered_on=False)
         pl_id = pl.id
         del pl
         vm.delete()
 
         with self.assertRaises(ObjectDoesNotExist):
-            PowerLog.objects.get(id=pl_id)
+            DummyPowerLog.objects.get(id=pl_id)
 
     def test_api_permissions(self):
         """
@@ -2646,10 +2638,10 @@ class PowerLogTests(TestCase):
         role.permissions.add(perm)
         uB.roles.add(role)
 
-        plD1 = PowerLog.objects.create(vm=vmD, powered_on=True)
-        plD2 = PowerLog.objects.create(vm=vmD, powered_on=True)
-        plS1 = PowerLog.objects.create(vm=vmS, powered_on=False)
-        plS2 = PowerLog.objects.create(vm=vmS, powered_on=True)
+        plD1 = DummyPowerLog.objects.create(vm=vmD, powered_on=True)
+        plD2 = DummyPowerLog.objects.create(vm=vmD, powered_on=True)
+        plS1 = DummyPowerLog.objects.create(vm=vmS, powered_on=False)
+        plS2 = DummyPowerLog.objects.create(vm=vmS, powered_on=True)
 
         def check_user_sees(username, powerlog_id_set):
             """
@@ -2932,12 +2924,10 @@ class FirewallRule_AWSFirewallRule_Tests(TestCase):
         vmD = AWSVM.objects.create(config=config, project=pD, schedule=s)
         vmS = AWSVM.objects.create(config=config, project=pS, schedule=s)
 
-        fw_ruleD = FirewallRule.objects.create(vm=vmD)
-        aws_fw_ruleD = AWSFirewallRule.objects.create(firewallrule=fw_ruleD,
+        fw_ruleD = AWSFirewallRule.objects.create(
                 ip_protocol=AWSFirewallRule.PROTO_TCP,
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
-        fw_ruleS = FirewallRule.objects.create(vm=vmS)
-        aws_fw_ruleS = AWSFirewallRule.objects.create(firewallrule=fw_ruleS,
+        fw_ruleS = AWSFirewallRule.objects.create(
                 ip_protocol=AWSFirewallRule.PROTO_TCP,
                 from_port=80, to_port=80, cidr_ip='1.2.3.4/0')
 
@@ -2949,26 +2939,20 @@ class FirewallRule_AWSFirewallRule_Tests(TestCase):
         role.permissions.add(perm)
         uB.roles.add(role)
 
-        def check_user_sees(username, fw_id_set, aws_fw_id_set):
-            """
-            Check that username sees all FirewallRule and AWSFirewallRule
-            in the sets and nothing else.
-            """
+        def check_user_sees(username, aws_fw_id_set):
             self.assertTrue(self.client.login(username=username, password='-'))
             for view_root, id_set in (
-                    ('firewallrule', fw_id_set),
                     ('awsfirewallrule', aws_fw_id_set),
                     ):
                 response = self.client.get(reverse(view_root + '-list'))
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 items = response.data['results']
+                print(items)
                 self.assertEqual({x['id'] for x in items}, id_set)
 
-        check_user_sees('Fry', {fw_ruleD.id}, {aws_fw_ruleD.id})
-        check_user_sees('Hubert', {fw_ruleD.id, fw_ruleS.id},
-                {aws_fw_ruleD.id, aws_fw_ruleS.id})
-        check_user_sees('Bender', {fw_ruleD.id, fw_ruleS.id},
-                {aws_fw_ruleD.id, aws_fw_ruleS.id})
+        check_user_sees('Fry', {fw_ruleD.id, fw_ruleD.id})
+        check_user_sees('Hubert', {fw_ruleD.id, fw_ruleS.id})
+        check_user_sees('Bender', {fw_ruleD.id, fw_ruleS.id})
 
         # Test Filtering
 

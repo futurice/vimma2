@@ -10,20 +10,17 @@ from vimma.models import CleanModel, VM, VMConfig, Provider, Audit, PowerLog, Fi
 
 def aws_vm_name_validator(val):
     if not re.fullmatch('^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$', val):
-        raise ValidationError(('Invalid AWS VM name ‘{}’, ' +
-                'must be alphanumeric and dashes (-).').format(val))
+        raise ValidationError({'name':'Must be alphanumeric and dashes (-).'.format(val)})
 
 class AWSVM(VM, models.Model):
     vm_controller_cls = ('aws.controller', 'AWSVMController')
 
     config = models.ForeignKey('aws.AWSVMConfig', on_delete=models.PROTECT, related_name="vm")
-    firewallrules = models.ManyToManyField('aws.AWSFirewallRule', blank=True)
 
     # Free-form text, shown to the user. Stores the VM state reported by AWS.
     # Synced regularly by the update tasks.
     state = models.CharField(max_length=100, blank=True)
     # AWS fields:
-    name = models.CharField(max_length=50, validators=[aws_vm_name_validator])
     region = models.CharField(max_length=20, default=settings.EC2_DEFAULT_REGION)
     security_group_id = models.CharField(max_length=50, blank=True)
     reservation_id = models.CharField(max_length=50, blank=True)
@@ -36,6 +33,9 @@ class AWSVM(VM, models.Model):
     # fields when they succeed. When all fields are True we can mark the model as destroyed.
     instance_terminated = models.BooleanField(default=False)
     security_group_deleted = models.BooleanField(default=False)
+
+    def clean(self):
+        aws_vm_name_validator(self.name)
 
     def isOn(self, state=None):
         new_state = state or self.state
@@ -117,19 +117,9 @@ class AWSVMConfig(VMConfig, models.Model):
 
 
 class AWSFirewallRule(FirewallRule, models.Model):
-    # ip_protocol, from_port, to_port and cidr_ip correspond to
-    # AWS call params.
+    vm = models.ForeignKey('aws.AWSVM', related_name="firewallrule")
 
-    PROTO_TCP = 'tcp'
-    PROTO_UDP = 'udp'
-    IP_PROTOCOL_CHOICES = (
-        (PROTO_TCP, 'TCP'),
-        (PROTO_UDP, 'UDP'),
-    )
-    ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
-
-    from_port = models.PositiveIntegerField()
-    to_port = models.PositiveIntegerField()
+    # ip_protocol, from_port, to_port and cidr_ip correspond to  AWS call params.
     cidr_ip = models.CharField(max_length=50)
 
     def is_special(self):
@@ -143,8 +133,14 @@ class AWSFirewallRule(FirewallRule, models.Model):
             return True
         return False
 
+    def __str__(self):
+        return '{} {}->{} @{} (VM: {})'.format(self.ip_protocol.upper(), self.from_port, self.to_port, self.cidr_ip, self.vm_id)
+
 class AWSFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
     firewallrule = models.OneToOneField('aws.AWSFirewallRule', related_name="expiration")
+
+    def __str__(self):
+        return '{} for {}'.format(self.expires_at, self.firewallrule)
 
 class AWSVMExpiration(VMExpiration):
     vm = models.OneToOneField('aws.AWSVM', related_name="expiration")

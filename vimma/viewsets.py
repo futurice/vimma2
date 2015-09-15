@@ -39,6 +39,14 @@ def default_fields(model, serializer=None, exclude=[]):
 class BaseSerializer(serializers.ModelSerializer):
     content_type = serializers.SerializerMethodField()
 
+    def __init__(self, *args, **kwargs):
+        if self.get_meta_fields():
+            self.Meta.fields = self.get_meta_fields()
+        super().__init__(*args, **kwargs)
+
+    def get_meta_fields(self):
+        return None
+
     def get_content_type(self, obj):
         value = ContentType.objects.get_for_model(obj)
         return {'id': value.id, 'name': value.model, 'url': reverse('{}-list'.format(value.model)),}
@@ -122,9 +130,16 @@ class VMSerializer(BaseSerializer):
     def get_isOn(self, obj):
         return obj.isOn()
 
+    def get_meta_fields(self):
+        return default_fields(self.Meta.model)+('expiration','firewallrule',)
+
+    class Meta:
+        model = VM
+        depth = 2
+
 class VMViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('project','name',)
+    filter_fields = ('project','name','id',)
 
     def get_queryset(self):
         user = self.request.user
@@ -281,6 +296,8 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
     @detail_route(methods=['post'])
     def set_expiration(self, request, pk=None):
+        # TODO: move to vmexpiration viewset, or add controller() signature
+        model = self.serializer_class.Meta.model
         body = json.loads(request.read().decode('utf-8'))
         exp_id = body['expid']
         tstamp = body['timestamp']
@@ -354,8 +371,7 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
             return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
 
 class VMExpirationSerializer(BaseSerializer):
-    class Meta:
-        model = VMExpiration
+    pass
 
 class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VMExpirationSerializer
@@ -364,19 +380,40 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        model = self.serializer_class.Meta.model
 
         if can_do(user, Actions.READ_ANY_PROJECT):
-            return VMExpiration.objects.filter()
+            return model.objects.filter()
 
-        return VMExpiration.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
+        return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
+
+class FirewallRuleSerializer(BaseSerializer):
+
+    def get_meta_fields(self):
+        return default_fields(self.Meta.model)+('expiration',)
+
+    class Meta:
+        depth = 1
+
+class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('id',)
+
+    def get_queryset(self):
+        user = self.request.user
+        model = self.serializer_class.Meta.model
+        if can_do(user, Actions.READ_ANY_PROJECT):
+            return model.objects.filter()
+
+        return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
+
 
 class FirewallRuleExpirationSerializer(BaseSerializer):
+
     class Meta:
-        model = FirewallRuleExpiration
-        depth = 2
+        depth = 1
 
 class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = FirewallRuleExpirationSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('firewallrule',)
 
@@ -389,25 +426,3 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
 
         return model.objects.filter(
                 firewallrule__vm__project__id__in=user.projects.all().values_list('id'))
-
-class FirewallRuleSerializer(BaseSerializer):
-    expiration = FirewallRuleExpirationSerializer()
-
-    class Meta:
-        model = FirewallRule
-        fields = ('id','expiration',)
-        depth = 1
-
-class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = FirewallRuleSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('id',)
-
-    def get_queryset(self):
-        user = self.request.user
-        model = self.serializer_class.Meta.model
-        if can_do(user, Actions.READ_ANY_PROJECT):
-            return model.objects.filter()
-
-        return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
-

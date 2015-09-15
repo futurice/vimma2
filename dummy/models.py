@@ -6,9 +6,7 @@ class DummyVM(VM):
     vm_controller_cls = ('dummy.controller', 'DummyVMController')
 
     config = models.ForeignKey('dummy.DummyVMConfig', on_delete=models.PROTECT, related_name="vm")
-    firewallrules = models.ManyToManyField('dummy.DummyFirewallRule', blank=True)
 
-    name = models.CharField(max_length=50)
     # Free-form text, meant to be read by the user. Simulates Vimma's local
     # copy of the remote machine state, synced regularly by the update tasks.
     status = models.CharField(max_length=50, blank=True)
@@ -28,7 +26,7 @@ class DummyVMConfig(VMConfig):
     provider = models.ForeignKey('dummy.DummyProvider', on_delete=models.PROTECT, related_name="config")
 
 class DummyFirewallRule(FirewallRule, models.Model):
-    pass
+    vm = models.ForeignKey('dummy.DummyVM', related_name="firewallrule")
 
 class DummyFirewallRuleExpiration(FirewallRuleExpiration, models.Model):
     firewallrule = models.OneToOneField('dummy.DummyFirewallRule', related_name="expiration")

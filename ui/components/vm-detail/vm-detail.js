@@ -79,9 +79,8 @@ Polymer({
         return 'expand-more';
     },
 
-    /* Call VMModel methods (we can't do it in the template directly). */
     getExpiryDate: function() {
-        return this.vm.expires_at;
+        return this.vm.expiration.expires_at || null;
     },
     _getExpiryClass: function(vm) {
         var d = new Date(this.getExpiryDate()).valueOf(),
@@ -95,7 +94,7 @@ Polymer({
         }
         return '';
     },
-    getName: function() {
+    getName: function(vm) {
       return this.vm.name;
     },
     _getProjectName: function() {

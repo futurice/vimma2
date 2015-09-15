@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
 RUN apt-get update && apt-get install -y google-chrome-stable
-RUN wget -P /tmp https://chromedriver.storage.googleapis.com/2.12/chromedriver_linux64.zip
+RUN wget -P /tmp https://chromedriver.storage.googleapis.com/2.18/chromedriver_linux64.zip
 RUN unzip /tmp/chromedriver_linux64.zip -d /usr/bin
 RUN chmod +rx /usr/bin/chromedriver
 

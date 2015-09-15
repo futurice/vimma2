@@ -7,7 +7,6 @@ import datetime
 from vimma.audit import Auditor
 from vimma.util import schedule_at_tstamp
 from vimma.celery import app
-from vimma.models import VMExpiration
 
 aud = Auditor(__name__)
 
@@ -165,8 +164,6 @@ class VMController():
             sched_override_tstamp = (now.timestamp() + settings.VM_CREATION_OVERRIDE_SECS)
             expire_dt = now + datetime.timedelta(seconds=settings.DEFAULT_VM_EXPIRY_SECS)
 
-            expiration = VMExpiration.objects.create(expires_at=expire_dt)
-
             vm, callables = self.create_vm_details(
                     name=name,
                     comment=comment,
@@ -175,7 +172,7 @@ class VMController():
                     schedule=schedule,
                     config=config,
                     user=user,
-                    expiration=expiration,
+                    expires_at=expire_dt,
 
                     sched_override_tstamp=sched_override_tstamp,
                     )

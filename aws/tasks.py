@@ -68,7 +68,6 @@ def delete_security_group(self, vm_id, user_id=None):
         if vm.security_group_id:
             conn = ec2_connect_to_aws_vm_region(vm.pk)
             conn.delete_security_group(group_id=vm.security_group_id)
-        vm = AWSVM.objects.get(id=vm_id)
         vm.security_group_deleted = True
         vm.save()
         mark_vm_destroyed_if_needed(vm)
@@ -83,7 +82,6 @@ def terminate_instance(self, vm_id, user_id=None):
         if vm.instance_id:
             conn = ec2_connect_to_aws_vm_region(vm.pk)
             conn.terminate_instances(instance_ids=[vm.instance_id])
-        vm = AWSVM.objects.get(id=vm_id)
         vm.instance_terminated = True
         vm.save()
         mark_vm_destroyed_if_needed(vm)

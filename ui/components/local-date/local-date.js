@@ -42,7 +42,6 @@
         },
 
         _computeDate: function(epochMillis, dateString) {
-            if(!dateString) { return null; }
             var val = 0;
             if (epochMillis !== null) {
                 val = epochMillis;

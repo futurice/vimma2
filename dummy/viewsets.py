@@ -3,9 +3,12 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog, DummyVMExpiration
+from dummy.models import (DummyProvider, DummyVMConfig, DummyVM, DummyAudit, DummyPowerLog,
+        DummyVMExpiration, DummyFirewallRule, DummyFirewallRuleExpiration,)
 
-from vimma.viewsets import BaseSerializer, VMSerializer, AuditViewSet, PowerLogViewSet, VMViewSet, default_fields
+from vimma.viewsets import (BaseSerializer, VMSerializer, VMExpirationSerializer, FirewallRuleSerializer, FirewallRuleExpirationSerializer,
+        AuditViewSet, PowerLogViewSet, VMViewSet, VMExpirationViewSet, FirewallRuleViewSet, FirewallRuleExpirationViewSet,
+        default_fields,)
 
 class DummyProviderSerializer(BaseSerializer):
     class Meta:
@@ -18,9 +21,8 @@ class DummyVMConfigSerializer(BaseSerializer):
         model = DummyVMConfig
 
 class DummyVMSerializer(VMSerializer):
-    class Meta:
+    class Meta(VMSerializer.Meta):
         model = DummyVM
-        depth = 1
 
 class DummyAuditSerializer(BaseSerializer):
     class Meta:
@@ -30,9 +32,22 @@ class DummyPowerLogSerializer(BaseSerializer):
     class Meta:
         model = DummyPowerLog
 
-class DummyVMExpiration(BaseSerializer):
+class DummyVMExpirationSerializer(VMExpirationSerializer):
     class Meta:
         model = DummyVMExpiration
+        depth = 1
+
+class DummyFirewallRuleSerializer(FirewallRuleSerializer):
+    class Meta:
+        model = DummyFirewallRule
+
+class DummyFirewallRuleExpirationSerializer(FirewallRuleExpirationSerializer):
+    class Meta:
+        model = DummyFirewallRuleExpiration
+
+# 
+# 
+# 
 
 class DummyProviderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DummyProviderSerializer
@@ -45,8 +60,17 @@ class DummyVMConfigViewSet(viewsets.ReadOnlyModelViewSet):
 class DummyVMViewSet(VMViewSet):
     serializer_class = DummyVMSerializer
 
+class DummyVMExpirationViewSet(VMExpirationViewSet):
+    serializer_class = DummyVMExpirationSerializer
+
 class DummyAuditViewSet(AuditViewSet):
     serializer_class = DummyAuditSerializer
 
 class DummyPowerLogViewSet(PowerLogViewSet):
     serializer_class = DummyPowerLogSerializer
+
+class DummyFirewallRuleViewSet(FirewallRuleViewSet):
+    serializer_class = DummyFirewallRuleSerializer
+
+class DummyFirewallRuleExpirationViewSet(FirewallRuleExpirationViewSet):
+    serializer_class = DummyFirewallRuleExpirationSerializer

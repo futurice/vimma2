@@ -192,10 +192,22 @@ class Provider(CleanModel):
 
 
 class FirewallRule(CleanModel):
-    expiration = NotImplementedError("models.ForeignKey('my.FirewallRuleExpiration', on_delete=models.CASCADE, related_name='firewallrule')")
+    PROTO_TCP = 'tcp'
+    PROTO_UDP = 'udp'
+    IP_PROTOCOL_CHOICES = (
+        (PROTO_TCP, 'TCP'),
+        (PROTO_UDP, 'UDP'),
+    )
+    ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
+
+    from_port = models.PositiveIntegerField()
+    to_port = models.PositiveIntegerField()
 
     def is_special(self):
         return False
+
+    def __str__(self):
+        return '{} {}->{}'.format(self.ip_protocol.upper(), self.from_port, self.to_port)
 
     class Meta:
         abstract = True
@@ -207,12 +219,12 @@ class VM(CleanModel):
     any provider.
     """
     config = NotImplementedError("models.ForeignKey('my.VMConfig', on_delete=models.PROTECT, related_name='vm')")
-    expiration = NotImplementedError("models.OneToOneField('my.VMExpiration', on_delete=models.CASCADE, null=True, blank=True)")
     firewallrules = NotImplementedError("models.ManyToManyField('my.FirewallRule', blank=True")
 
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT)
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT)
 
+    name = models.CharField(max_length=255)
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
     sched_override_state = models.NullBooleanField(default=None)
@@ -340,8 +352,8 @@ class PowerLog(CleanModel):
     The power state (ON or OFF) of a VM at a point in time.
     """
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    # True → ON, False → OFF. Can't be None, so the value must be explicit.
-    powered_on = models.BooleanField(default=None)
+    # True → ON, False → OFF.
+    powered_on = models.BooleanField(default=False)
 
     class Meta:
         abstract = True

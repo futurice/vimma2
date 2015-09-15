@@ -18,17 +18,22 @@ from dummy.viewsets import (
     DummyProviderViewSet,
     DummyVMConfigViewSet,
     DummyVMViewSet,
+    DummyVMExpirationViewSet,
     DummyAuditViewSet,
     DummyPowerLogViewSet,
+    DummyFirewallRuleViewSet,
+    DummyFirewallRuleExpirationViewSet,
 )
 
 from aws.viewsets import (
     AWSProviderViewSet,
     AWSVMConfigViewSet,
     AWSVMViewSet,
+    AWSVMExpirationViewSet,
     AWSAuditViewSet,
     AWSPowerLogViewSet,
     AWSFirewallRuleViewSet,
+    AWSFirewallRuleExpirationViewSet,
 )
 
 from vimma.views import (
@@ -47,6 +52,9 @@ router.register(r'dummyproviders', DummyProviderViewSet)
 router.register(r'dummyvmconfigs', DummyVMConfigViewSet)
 router.register(r'dummyaudit', DummyAuditViewSet, 'dummyaudit')
 router.register(r'dummypowerlog', DummyPowerLogViewSet, 'dummypowerlog')
+router.register(r'dummyvmexpiration', DummyVMExpirationViewSet, 'dummyvmexpiration')
+router.register(r'dummyfirewallrule', DummyFirewallRuleViewSet, 'dummyfirewallrule')
+router.register(r'dummyfirewallruleexpiration', DummyFirewallRuleExpirationViewSet, 'dummyfirewallruleexpiration')
 
 router.register(r'awsvm', AWSVMViewSet, 'awsvm')
 router.register(r'awsproviders', AWSProviderViewSet)
@@ -54,11 +62,9 @@ router.register(r'awsvmconfigs', AWSVMConfigViewSet)
 router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
 router.register(r'awsaudit', AWSAuditViewSet, 'awsaudit')
 router.register(r'awspowerlog', AWSPowerLogViewSet, 'awspowerlog')
-
-router.register(r'vmexpiration', VMExpirationViewSet, 'vmexpiration')
-router.register(r'firewallruleexpiration', FirewallRuleExpirationViewSet,
-        'firewallruleexpiration')
-router.register(r'firewallrule', FirewallRuleViewSet, 'firewallrule')
+router.register(r'awsvmexpiration', AWSVMExpirationViewSet, 'awsvmexpiration')
+router.register(r'awsfirewallrule', AWSFirewallRuleViewSet, 'awsfirewallrule')
+router.register(r'awsfirewallruleexpiration', AWSFirewallRuleExpirationViewSet, 'awsfirewallruleexpiration')
 
 urlpatterns = [
     url(r'^api/', include(router.urls)),

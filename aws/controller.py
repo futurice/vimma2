@@ -57,7 +57,7 @@ class AWSVMController(VMController):
     def power_log(self, powered_on):
         AWSPowerLog.objects.create(vm=self.vm, powered_on=powered_on)
 
-    def create_vm_details(self, name, comment, project, schedule, config, user, expiration, sched_override_tstamp):
+    def create_vm_details(self, name, comment, project, schedule, config, user, expires_at, sched_override_tstamp):
         aws_vm = AWSVM.objects.create(
                 name=name,
                 comment=comment,
@@ -66,11 +66,11 @@ class AWSVMController(VMController):
                 schedule=schedule,
                 config=config,
                 created_by=user,
-                expiration=expiration,
 
                 sched_override_state=True,
                 sched_override_tstamp=sched_override_tstamp,
                 )
+        expiration,_ = AWSVMExpiration.objects.get_or_create(vm=aws_vm, expires_at=expires_at)
 
         callables = [lambda: do_create_vm.delay(config.id,
             aws_vm_config.root_device_size, config.root_device_volume_type,

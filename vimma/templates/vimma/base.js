@@ -32,13 +32,10 @@ var indexUrl = '{% url "index" %}',
             '{% url "awsfirewallrule-detail" 0 %}'),
     vimmaApiAWSAuditList = '{% url "awsaudit-list" %}',
     vimmaApiAWSPowerLogList = '{% url "awspowerlog-list" %}',
-    vimmaApiVMExpirationDetailRoot = apiDetailRootUrl(
-            '{% url "vmexpiration-detail" 0 %}'),
 
-    vimmaApiFirewallRuleExpirationList =
-        '{% url "firewallruleexpiration-list" %}',
-    vimmaApiFirewallRuleList = '{% url "firewallrule-list" %}',
-
+    vimmaApiVMExpirationDetailRoot = '',
+    vimmaApiFirewallRuleExpirationList = '',
+    vimmaApiFirewallRuleList = '',
     vimmaEndpointCreateVM = '',
     vimmaEndpointPowerOnVM = '',
     vimmaEndpointPowerOffVM = '',

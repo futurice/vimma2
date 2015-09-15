@@ -61,7 +61,7 @@
         id="smr-name"
         on-tap="_toggle"
         on-track="_summaryTrack"
-        >[[getName()]]</span>
+        >[[getName(vm)]]</span>
       <span class="vborder"></span>
       <span
         id="smr-state"
@@ -88,7 +88,7 @@
         class$="[[_getExpiryClass(vm)]]"
         >
         <local-date
-          date-string="[[getExpiryDate()]]"
+          date-string="[[getExpiryDate(vm)]]"
           hide-millis
           ></local-date>
       </span>
