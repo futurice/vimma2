@@ -132,8 +132,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return model.objects.filter()
 
-        prj_ids = [p.id for p in user.projects.all()]
-        return model.objects.filter(project__id__in=prj_ids)
+        return model.objects.filter(project__id__in=user.projects.all().values_list('id'))
 
     @list_route(methods=['post'])
     def create(self, request):
@@ -332,9 +331,8 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ALL_AUDITS):
             queryset = model.objects.filter()
         else:
-            projects = user.projects.all()
-            prj_ids = [p.id for p in projects]
-            queryset = model.objects.filter(Q(vm__project__id__in=prj_ids) |
+            queryset = model.objects.filter(
+                    Q(vm__project__id__in=user.projects.all().values_list('id')) |
                     Q(user__id=user.id))
 
         min_lvl = self.request.query_params.get('min_level', None)
@@ -353,9 +351,7 @@ class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ALL_POWER_LOGS):
             return model.objects.filter()
         else:
-            projects = user.projects.all()
-            prj_ids = [p.id for p in projects]
-            return model.objects.filter(vm__project__id__in=prj_ids)
+            return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
 
 class VMExpirationSerializer(BaseSerializer):
     class Meta:
@@ -372,9 +368,7 @@ class VMExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return VMExpiration.objects.filter()
 
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return VMExpiration.objects.filter(vm__project__id__in=prj_ids)
+        return VMExpiration.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
 
 class FirewallRuleExpirationSerializer(BaseSerializer):
     class Meta:
@@ -393,10 +387,8 @@ class FirewallRuleExpirationViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return model.objects.filter()
 
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
         return model.objects.filter(
-                firewallrule__vm__project__id__in=prj_ids)
+                firewallrule__vm__project__id__in=user.projects.all().values_list('id'))
 
 class FirewallRuleSerializer(BaseSerializer):
     expiration = FirewallRuleExpirationSerializer()
@@ -417,7 +409,5 @@ class FirewallRuleViewSet(viewsets.ReadOnlyModelViewSet):
         if can_do(user, Actions.READ_ANY_PROJECT):
             return model.objects.filter()
 
-        projects = user.projects.all()
-        prj_ids = [p.id for p in projects]
-        return model.objects.filter(vm__project__id__in=prj_ids)
+        return model.objects.filter(vm__project__id__in=user.projects.all().values_list('id'))
 

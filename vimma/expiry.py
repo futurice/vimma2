@@ -78,12 +78,9 @@ class ExpirationController:
         for that.
         """
         naive = datetime.datetime.utcfromtimestamp(tstamp)
-        aware = pytz.utc.localize(naive)
-        def write():
-            e = Expiration.objects.get(id=self.exp_id)
-            e.expires_at = aware
-            e.save()
-        retry_in_transaction(write)
+        e = self.parent
+        e.expires_at = pytz.utc.localize(naive)
+        e.save()
 
     def can_set_expiry_date(self, tstamp, user_id):
         raise NotImplementedError()
@@ -98,16 +95,11 @@ class ExpirationController:
         """
         Check if the grace-end action hasn't been performed and it's due.
         """
-        def read():
-            e = Expiration.objects.get(id=self.exp_id)
-            if e.grace_end_action_performed:
-                return True, None
-            ts = e.expires_at.timestamp() + self.get_grace_interval()
-            return False, ts
-        already_performed, grace_end_tstamp = retry_in_transaction(read)
-
-        if already_performed:
+        e = self.parent
+        if e.grace_end_action_performed:
             return False
+
+        grace_end_tstamp = e.expires_at.timestamp() + self.get_grace_interval()
         now_tstamp = int(
                 datetime.datetime.utcnow().replace(tzinfo=utc).timestamp())
         return now_tstamp >= grace_end_tstamp
@@ -131,17 +123,15 @@ class VMExpirationController(ExpirationController):
         now_tstamp = int(
                 datetime.datetime.utcnow().replace(tzinfo=utc).timestamp())
 
-        def call():
-            user = User.objects.get(id=user_id)
-            exp = VMExpiration.objects.get(id=self.exp_id)
-            prj = exp.vm.project
-            if tstamp < now_tstamp:
-                return False
-            if tstamp - now_tstamp > settings.DEFAULT_VM_EXPIRY_SECS and not can_do(user, Actions.SET_ANY_EXPIRATION):
-                return False
-                
-            return can_do(user, Actions.CREATE_VM_IN_PROJECT, prj)
-        return retry_in_transaction(call)
+        user = User.objects.get(id=user_id)
+        prj = self.parent.vm.project
+        if tstamp < now_tstamp:
+            return False
+        if tstamp - now_tstamp > settings.DEFAULT_VM_EXPIRY_SECS \
+                and not can_do(user, Actions.SET_ANY_EXPIRATION):
+            return False
+            
+        return can_do(user, Actions.CREATE_VM_IN_PROJECT, prj)
 
     def get_grace_interval(self):
         return settings.VM_GRACE_INTERVAL
@@ -163,22 +153,19 @@ class FirewallRuleExpirationController(ExpirationController):
         if tstamp < now_tstamp:
             return False
 
-        def call():
-            user = User.objects.get(id=user_id)
-            exp = Expiration.objects.get(id=self.exp_id)
-            fw_rule = exp.firewallruleexpiration.firewallrule
-            prj = fw_rule.vm.project
-            if not can_do(user, Actions.CREATE_VM_IN_PROJECT, prj):
-                return False
+        user = User.objects.get(id=user_id)
+        fw_rule = self.parent.firewallrule
+        prj = fw_rule.vm.project
+        if not can_do(user, Actions.CREATE_VM_IN_PROJECT, prj):
+            return False
 
-            max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
-                    if fw_rule.is_special()
-                    else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
-            if tstamp - now_tstamp > max_duration and not can_do(user, Actions.SET_ANY_EXPIRATION):
-                return False
+        max_duration = (settings.SPECIAL_FIREWALL_RULE_EXPIRY_SECS
+                if fw_rule.is_special()
+                else settings.NORMAL_FIREWALL_RULE_EXPIRY_SECS)
+        if tstamp - now_tstamp > max_duration and not can_do(user, Actions.SET_ANY_EXPIRATION):
+            return False
 
-            return True
-        return retry_in_transaction(call)
+        return True
 
     def get_grace_interval(self):
         return 0

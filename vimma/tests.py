@@ -25,7 +25,7 @@ from vimma.models import (
 from vimma.perms import ALL_PERMS, Perms
 
 from dummy.models import DummyProvider, DummyVMConfig, DummyVM, DummyVMExpiration
-from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule
+from aws.models import AWSProvider, AWSVMConfig, AWSVM, AWSFirewallRule, AWSVMExpiration, AWSFirewallRuleExpiration
 
 class PermissionTests(TestCase):
 
@@ -623,7 +623,7 @@ class ApiTests(TestCase):
         matrix = 7*[16*[True, True, False]]
         page_size = settings.REST_FRAMEWORK['PAGE_SIZE']
         for i in range(page_size+1):
-            Schedule.objects.create(name=str(i), timezone=tz, matrix=matrix)
+            Schedule.objects.create(name=str(i), timezone=tz, matrix=json.dumps(matrix))
 
         n, pages = 0, 0
         url = reverse('schedule-list')
@@ -1099,7 +1099,7 @@ class AWSVMConfigTests(APITestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         p = AWSProvider.objects.create(name='My Prov')
         AWSVMConfig.objects.create(name="My Conf", region=region, root_device_size=10,
-                root_device_volume_type=vol_type, vmconfig=vmc, default_schedule=s, provider=p)
+                root_device_volume_type=vol_type, default_schedule=s, provider=p)
 
     def test_protected(self):
         """
@@ -1113,8 +1113,8 @@ class AWSVMConfigTests(APITestCase):
                 provider=p)
         region = AWSVMConfig.regions[0]
         vol_type = AWSVMConfig.VOLUME_TYPE_CHOICES[0][0]
-        config = AWSVMConfig.objects.create(provider=p, region=region,
-                root_device_size=10, root_device_volume_type=vol_type)
+        config = AWSVMConfig.objects.create(name="My Config", provider=p, region=region,
+                root_device_size=10, root_device_volume_type=vol_type, default_schedule=s)
 
         config.delete()
         vmc.delete()
@@ -1133,7 +1133,7 @@ class AWSVMConfigTests(APITestCase):
                 matrix=json.dumps(7 * [48 * [True]]))
         p = AWSProvider.objects.create(name='My Prov')
         awsc = AWSVMConfig.objects.create(name="My Conf", provider=p, region='ap-northeast-1',
-                default_schedule=s, root_device_size=10, root_device_volume_type='Magnetic')
+                default_schedule=s, root_device_size=10, root_device_volume_type='standard')
 
         self.assertTrue(self.client.login(username='a', password='p'))
         response = self.client.get(reverse('awsvmconfig-list'))
@@ -1445,13 +1445,11 @@ class AWSVMTests(APITestCase):
         config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
 
-        for kwargs in ({'vm': vm}, {'name': 'a'}, {'region': 'a'},
-                {'vm': vm, 'name': 'a'}, {'vm': vm, 'region': 'a'},
+        for kwargs in ({'name': 'a'}, {'region': 'a'},
+                {'name': 'a'}, {'region': 'a'},
                 {'name': 'a', 'region': 'a'}):
             with self.assertRaises(ValidationError):
-                AWSVM(**kwargs)
-
-        AWSVM.objects.create(name='a', region='a')
+                AWSVM.objects.create(**kwargs)
 
     def test_name_validator(self):
         """
@@ -1497,12 +1495,11 @@ class AWSVMTests(APITestCase):
         config = AWSVMConfig.objects.create(name='My Config', default_schedule=s, provider=prv)
 
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s)
-        self.assertEqual(awsvm.ip_address, '')
+        self.assertEqual(vm.ip_address, '')
 
         vm = AWSVM.objects.create(config=config, project=prj, schedule=s, name='ip', region='a', ip_address='192.168.0.1')
-        with self.assertRaises(IntegrityError):
-            AWSVM.objects.create(vm=vm, name='ip', region='a',
-                    ip_address=None)
+        with self.assertRaises(ValidationError):
+            AWSVM.objects.create(name='ip', region='a', ip_address=None)
 
     def test_api_permissions(self):
         """
@@ -2781,17 +2778,17 @@ class ExpirationTests(TestCase):
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
-        vm_expD = VMExpiration.objects.create(expires_at=now, vm=vmD)
-        vm_expS = VMExpiration.objects.create(expires_at=now, vm=vmS)
+        vm_expD = AWSVMExpiration.objects.create(expires_at=now, vm=vmD)
+        vm_expS = AWSVMExpiration.objects.create(expires_at=now, vm=vmS)
 
-        fw_rule_D = AWSFirewallRule.objects.create()
+        fw_rule_D = AWSFirewallRule.objects.create(from_port=80, to_port=80, cidr_ip="10.10.0.0/24", ip_protocol=AWSFirewallRule.PROTO_TCP)
         vmD.firewallrules.add(fw_rule_D)
-        fw_rule_S = AWSFirewallRule.objects.create()
+        fw_rule_S = AWSFirewallRule.objects.create(from_port=80, to_port=81, cidr_ip="11.11.1.1/24", ip_protocol=AWSFirewallRule.PROTO_TCP)
         vmS.firewallrules.add(fw_rule_S)
 
-        fw_expD = FirewallRuleExpiration.objects.create(
+        fw_expD = AWSFirewallRuleExpiration.objects.create(
                 expires_at=now, firewallrule=fw_rule_D)
-        fw_expS = FirewallRuleExpiration.objects.create(
+        fw_expS = AWSFirewallRuleExpiration.objects.create(
                 expires_at=now, firewallrule=fw_rule_S)
 
         def check_user_sees(username, vm_exp_id_set, fw_rule_exp_id_set):
