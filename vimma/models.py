@@ -7,48 +7,16 @@ import logging
 
 from vimma.haikunator import heroku
 from vimma.tools import subclassmodels, get_import
-"""
-vimma.models provides an interface for building VM implementations.
-
-Implementing a new VM:
-1) my.controller:
-class VMController(vimma.controllers.VMController):
-    pass
-
-2) my.models:
-
-class VM(vimma.models.VM):
-    controller_cls = ('my.controller', 'VMController')
-    config = models.ForeignKey('my.Config', on_delete=models.PROTECT, related_name="vm")
-
-class Provider(vimma.models.Provider):
-    pass
-
-class Config(vimma.models.Config):
-    vm_model = VM
-    provider = models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name="config")
-
-class FirewallRule(vimma.models.FirewallRule, models.Model):
-    vm = models.ForeignKey('my.VM', related_name="firewallrule")
-
-class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration, models.Model):
-    firewallrule = models.OneToOneField('my.FirewallRule', related_name="expiration")
-
-class Expiration(vimma.models.Expiration):
-    vm = models.OneToOneField('my.VM', related_name="expiration")
-
-class Audit(vimma.models.Audit, models.Model):
-    vm = models.ForeignKey('my.VM', related_name="audit")
-
-class PowerLog(vimma.models.PowerLog, models.Model):
-    vm = models.ForeignKey('my.VM', related_name="powerlog")
-"""
 
 class CleanModel(models.Model):
     """
     Force full_clean() on Model.save()
     https://docs.djangoproject.com/en/1.8/ref/models/instances/#validating-objects
     """
+
+    @classmethod
+    def choices(cls):
+        return {k().__class__.__name__.lower():k for k in cls.implementations()}
 
     @classmethod
     def implementations(cls):
@@ -67,20 +35,14 @@ class CleanModel(models.Model):
         abstract = True
 
 class Permission(CleanModel):
-    """
-    There is a special omnipotent permission used to grant all permissions.
-    """
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.name
 
 
 class Role(CleanModel):
-    """
-    A user is assigned a set of Roles and has all permissions in those roles.
-    """
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     permissions = models.ManyToManyField(Permission)
 
     def __str__(self):
@@ -91,7 +53,7 @@ class Project(CleanModel):
     """
     Projects group Users and VMs.
     """
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     email = models.EmailField()
 
     def __str__(self):
@@ -106,7 +68,7 @@ if settings.REMOTE_USER_ENABLED:
     User._meta.get_field('password').blank = True
 
 class TimeZone(CleanModel):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.name
@@ -138,9 +100,9 @@ class Schedule(CleanModel):
     Each column is a 30-min time interval. First column is [0:00, 0:30),
     second is [0:30, 1:00), last column is [23:30, 24:00).
     """
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     timezone = models.ForeignKey(TimeZone, on_delete=models.PROTECT, related_name='%(class)s_destroy_requested_vms')
-    matrix = models.TextField(validators=[schedule_matrix_validator])
+    matrix = models.TextField(validators=[schedule_matrix_validator], blank=True)
     # ‘special’ schedules can't be used by everyone. E.g. 24h turned on.
     # Users need the USE_SPECIAL_SCHEDULE permission to use them.
     is_special = models.BooleanField(default=False)
@@ -163,7 +125,7 @@ class Provider(CleanModel):
 
     This abstract model holds fields common across all models.
     """
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     # the maximum length of a schedule override which users may place on a VM
     max_override_seconds = models.BigIntegerField(default=0)
     # To create a VM from a Config belonging to a ‘special’ provider,
@@ -197,7 +159,7 @@ class FirewallRule(CleanModel):
         (PROTO_TCP, 'TCP'),
         (PROTO_UDP, 'UDP'),
     )
-    ip_protocol = models.CharField(max_length=10, choices=IP_PROTOCOL_CHOICES)
+    ip_protocol = models.CharField(max_length=255, choices=IP_PROTOCOL_CHOICES)
 
     from_port = models.PositiveIntegerField()
     to_port = models.PositiveIntegerField()
@@ -222,7 +184,7 @@ class VM(CleanModel):
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, blank=True)
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
     sched_override_state = models.NullBooleanField(default=None)
@@ -233,7 +195,7 @@ class VM(CleanModel):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('vimma.User', null=True, blank=True,
             on_delete=models.SET_NULL, related_name='%(app_label)s_%(class)s_created_by')
-    comment = models.CharField(max_length=200, blank=True)
+    comment = models.CharField(max_length=255, blank=True)
 
     # When the VM status was updated from the remote provider. The status
     # fields are in the provider-specific VM submodels, but updating the status
@@ -247,11 +209,7 @@ class VM(CleanModel):
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
 
-    @classmethod
-    def choices(cls):
-        return {k().__class__.__name__.lower():k for k in cls.implementations()}
-
-    vm_controller_cls = ('vimma.controllers,', 'VMController')
+    vm_controller_cls = ('vimma.controller,', 'VMController')
     def controller(self):
         cls = get_import(*self.vm_controller_cls)
         return cls(vm=self)
@@ -286,7 +244,7 @@ class Config(CleanModel):
     # requires additional permissions.
     default_schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s")
 
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     # Users need Perms.USE_SPECIAL_VM_CONFIG to create a VM from this config.
     is_special = models.BooleanField(default=False)
     # flag showing which Config is the default one for its provider,
@@ -379,7 +337,7 @@ class Audit(CleanModel):
         ERROR: logging.ERROR,
     }
 
-    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+    level = models.CharField(max_length=255, choices=LEVEL_CHOICES)
     text = models.TextField()
 
     user = models.ForeignKey('vimma.User', null=True, blank=True, on_delete=models.SET_NULL, related_name="%(app_label)s_%(class)s")

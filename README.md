@@ -46,3 +46,46 @@ docker exec -it vimma python3 manage.py createsuperuser --username vimma --email
 docker exec -it vimma xvfb-run python3 manage.py test --noinput
 docker exec -it vimma xvfb-run ../static/node_modules/.bin/wct ui/components/test/
 ```
+
+## Adding support for further cloud providers:
+
+A Provider has Config(s), that are used to create VM(s).
+The vimma.models provide an interface for building VM implementations.
+
+### Implementing a new VM:
+
+1) my.controller:
+```python
+class VMController(vimma.controllers.VMController):
+    pass
+```
+
+2) my.models:
+```python
+class VM(vimma.models.VM):
+    controller_cls = ('my.controller', 'VMController')
+    config = models.ForeignKey('my.Config', on_delete=models.PROTECT, related_name="vm")
+
+class Provider(vimma.models.Provider):
+    pass
+
+class Config(vimma.models.Config):
+    vm_model = VM
+    provider = models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name="config")
+
+class FirewallRule(vimma.models.FirewallRule):
+    vm = models.ForeignKey('my.VM', related_name="firewallrule")
+
+class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration):
+    firewallrule = models.OneToOneField('my.FirewallRule', related_name="expiration")
+
+class Expiration(vimma.models.Expiration):
+    vm = models.OneToOneField('my.VM', related_name="expiration")
+
+class Audit(vimma.models.Audit):
+    vm = models.ForeignKey('my.VM', related_name="audit")
+
+class PowerLog(vimma.models.PowerLog):
+    vm = models.ForeignKey('my.VM', related_name="powerlog")
+```
+

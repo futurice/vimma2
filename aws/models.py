@@ -19,15 +19,15 @@ class VM(vimma.models.VM, models.Model):
 
     # Free-form text, shown to the user. Stores the VM state reported by .
     # Synced regularly by the update tasks.
-    state = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=255, blank=True)
     #  fields:
-    region = models.CharField(max_length=20, default=settings.EC2_DEFAULT_REGION)
-    security_group_id = models.CharField(max_length=50, blank=True)
-    reservation_id = models.CharField(max_length=50, blank=True)
-    instance_id = models.CharField(max_length=50, blank=True)
+    region = models.CharField(max_length=255, default=settings.EC2_DEFAULT_REGION)
+    security_group_id = models.CharField(max_length=255, blank=True)
+    reservation_id = models.CharField(max_length=255, blank=True)
+    instance_id = models.CharField(max_length=255, blank=True)
     # public IP address
-    ip_address = models.CharField(max_length=50, blank=True)
-    private_ip_address = models.CharField(max_length=50, blank=True)
+    ip_address = models.CharField(max_length=255, blank=True)
+    private_ip_address = models.CharField(max_length=255, blank=True)
 
     # Destruction happens using several asynchronous tasks, which mark these
     # fields when they succeed. When all fields are True we can mark the model as destroyed.
@@ -48,18 +48,18 @@ class VM(vimma.models.VM, models.Model):
 
 class Provider(vimma.models.Provider):
     # names of environment variables for actual lookups
-    access_key_id = models.CharField(max_length=100, blank=True)
-    access_key_secret = models.CharField(max_length=100, blank=True)
-    ssh_key_name = models.CharField(max_length=50, blank=True)
+    access_key_id = models.CharField(max_length=255, blank=True)
+    access_key_secret = models.CharField(max_length=255, blank=True)
+    ssh_key_name = models.CharField(max_length=255, blank=True)
 
     # 'example.com.'
-    route_53_zone = models.CharField(max_length=100, blank=True)
+    route_53_zone = models.CharField(max_length=255, blank=True)
     # Optional security group added to every vm, in addition to the vm's
     # individual security group.
-    default_security_group_id = models.CharField(max_length=50, blank=True)
+    default_security_group_id = models.CharField(max_length=255, blank=True)
     # The ID of the VPC in which to create VMs. A random subnet will be chosen
     # at VM creation time.
-    vpc_id = models.CharField(max_length=50, null=True, blank=True)
+    vpc_id = models.CharField(max_length=255, null=True, blank=True)
     # User data (e.g. a script) provided to the  Instances. Python Template
     # https://docs.python.org/3/library/string.html#format-string-syntax
     # given the ‘vm’ keyword argument. E.g.:
@@ -92,11 +92,11 @@ class Config(vimma.models.Config, models.Model):
     ])
     REGION_CHOICES = ((r, r) for r in regions)
     DEFAULT_REGION = 'us-east-1'
-    region = models.CharField(max_length=20, default=DEFAULT_REGION, choices=REGION_CHOICES)
+    region = models.CharField(max_length=255, default=DEFAULT_REGION, choices=REGION_CHOICES)
 
     # Amazon Machine Image ID
-    ami_id = models.CharField(max_length=50, blank=True)
-    instance_type = models.CharField(max_length=50, blank=True)
+    ami_id = models.CharField(max_length=255, blank=True)
+    instance_type = models.CharField(max_length=255, blank=True)
 
     # The default root device size in GB for VMs made from this config.
     AMI_DEFAULT_SIZE = 8
@@ -108,7 +108,7 @@ class Config(vimma.models.Config, models.Model):
         ('standard', 'Magnetic'),
         ('gp2', 'SSD'),
     )
-    root_device_volume_type = models.CharField(max_length=20,
+    root_device_volume_type = models.CharField(max_length=255,
             choices=VOLUME_TYPE_CHOICES, default=VOLUME_TYPE_CHOICES[0][0])
 
     def __str__(self):
@@ -120,7 +120,7 @@ class FirewallRule(vimma.models.FirewallRule, models.Model):
     vm = models.ForeignKey('aws.VM', related_name="firewallrule")
 
     # ip_protocol, from_port, to_port and cidr_ip correspond to   call params.
-    cidr_ip = models.CharField(max_length=50)
+    cidr_ip = models.CharField(max_length=255)
 
     def is_special(self):
         net = ipaddress.IPv4Network(self.cidr_ip, strict=False)

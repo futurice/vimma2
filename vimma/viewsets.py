@@ -15,7 +15,7 @@ from rest_framework.reverse import reverse
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
-    Audit, Expiration, Expiration,
+    Audit, Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
 from vimma.actions import Actions
@@ -61,11 +61,17 @@ class BaseSerializer(serializers.ModelSerializer):
         except Exception as e:
             print("Missing ViewSet for {}: {}".format(relation_info.related_model, e))
             base_cls = serializers.ModelSerializer
+            base_cls.Meta = object
+
+        # TODO: configurable nested depths
+        if relation_info.related_model == User:
+            nested_depth = min(nested_depth, 1)
 
         class NestedSerializer(base_cls):
-            class Meta:
+            class Meta(base_cls.Meta):
                 model = relation_info.related_model
                 depth = nested_depth - 1
+
         field_class = NestedSerializer
         field_kwargs = get_nested_relation_kwargs(relation_info)
         return field_class, field_kwargs
@@ -73,7 +79,8 @@ class BaseSerializer(serializers.ModelSerializer):
 class UserSerializer(BaseSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'projects',) + ('content_type',)
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'projects', 'roles',) + ('content_type',)
+        depth = 2
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer

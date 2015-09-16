@@ -9,7 +9,7 @@ class VM(vimma.models.VM):
 
     # Free-form text, meant to be read by the user. Simulates Vimma's local
     # copy of the remote machine state, synced regularly by the update tasks.
-    status = models.CharField(max_length=50, blank=True)
+    status = models.CharField(max_length=255, blank=True)
 
     # these fields simulate the machine state, managed remotely by the Provider
     destroyed = models.BooleanField(default=False)
