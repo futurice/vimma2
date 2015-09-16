@@ -94,7 +94,6 @@ Polymer({
     },
 
     _discardChanges: function() {
-      console.log("discarding", this.schedule, this._schedule);
       this.schedule = this._schedule;
     },
 

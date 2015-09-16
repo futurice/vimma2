@@ -58,21 +58,17 @@ Polymer({
   },
 
   scheduleSelected: function(k, detail) {
-    console.log("scheduleSelected",k,detail);
     this.$$('#schedule').value = k.currentTarget.dataItem;
     this.chosen(k.currentTarget, '.schedule-container div.box')
   },
 
   providerSelected: function(k, detail) {
-    console.log("providerSelected",k,detail);
     this.$$('#provider').value = k.currentTarget.dataItem;
     this.$$('#providerconfig').value = k.currentTarget.dataConfig;
     this.chosen(k.currentTarget, '.provider-container div.box')
   },
 
   chosen: function(el, container) {
-    console.log(el, container);
-    console.log($(container));
     $(container).removeClass('chosen');
     $(el).toggleClass('chosen');
   },

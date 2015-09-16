@@ -160,7 +160,6 @@
         },
 
         vmDataChanged: function(newV, oldV) {
-          console.log('vmDataChanged',newV);
           this.$.projectAjax.url = '/api/projects/'+newV.project;
           this.$.projectAjax.generateRequest();
         },

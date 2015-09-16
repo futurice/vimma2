@@ -321,6 +321,12 @@ class PowerLog(CleanModel):
     # True → ON, False → OFF.
     powered_on = models.BooleanField(default=False)
 
+    def onfmt(self):
+        return 'ON' if self.powered_on else 'OFF'
+
+    def __str__(self):
+        return '{} @{}: {}'.format(self.vm.name, self.timestamp.strftime('%H:%M'), self.onfmt())
+
     class Meta:
         abstract = True
 
