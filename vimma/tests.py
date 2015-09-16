@@ -20,7 +20,6 @@ from vimma.models import (
     Permission, Role,
     Project, TimeZone, Schedule,
     User,
-    Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 
@@ -220,7 +219,7 @@ class UserTest(APITestCase):
 
         # check fields
         self.assertEqual(set(item.keys()), {'id', 'username',
-            'first_name', 'last_name', 'email', 'projects', 'content_type'})
+            'first_name', 'last_name', 'email', 'projects', 'content_type', 'roles',})
 
         # can't modify
         response = self.client.put(reverse('user-detail',
@@ -264,7 +263,7 @@ class ProfileTest(APITestCase):
 
         # check fields
         self.assertEqual(set(item.keys()), {'id', 'first_name', 'last_name',
-            'username', 'email', 'projects', 'content_type'})
+            'username', 'email', 'projects', 'content_type', 'roles',})
 
         # can't modify
         response = self.client.put(reverse('user-detail',
@@ -814,86 +813,6 @@ class CanDoTests(TestCase):
         u1.roles.add(role)
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj1))
         self.assertTrue(util.can_do(u1, Actions.CREATE_VM_IN_PROJECT, prj2))
-
-
-class AuditTests(TestCase):
-
-    def test_required_fields(self):
-        """
-        Test required fields: level, text.
-        """
-        Audit.objects.create(level=Audit.DEBUG, text='hello')
-        with self.assertRaises(ValidationError):
-            Audit.objects.create()
-        with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.DEBUG)
-        with self.assertRaises(ValidationError):
-            Audit.objects.create(text='hello')
-
-
-    def test_text_length(self):
-        """
-        Test that 0 < text length ≤ max_length.
-        """
-        with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.DEBUG, text='')
-
-        Audit.objects.create(level=Audit.DEBUG, text='a')
-        Audit.objects.create(level=Audit.DEBUG,
-                text='a'*Audit.TEXT_MAX_LENGTH)
-
-        # SQLite3 raises ValidationError, PostgreSQL raises DataError
-        with self.assertRaises((ValidationError, DataError)):
-            Audit.objects.create(level=Audit.DEBUG,
-                    text='a'*(Audit.TEXT_MAX_LENGTH+1))
-
-
-    def test_timestamp(self):
-        """
-        Test that timestamp is the time of creation.
-        """
-        a = Audit.objects.create(level=Audit.DEBUG, text='a')
-        now = datetime.datetime.utcnow().replace(tzinfo=utc)
-        delta = now - a.timestamp
-        self.assertTrue(delta <= datetime.timedelta(minutes=1))
-
-
-    def test_min_level(self):
-        """
-        Check the min_level API filter.
-        """
-        u = util.create_vimma_user('user', 'user@example.com', '-')
-
-        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d')
-        Audit.objects.create(level=Audit.WARNING, user=u,
-                text='-w')
-        Audit.objects.create(level=Audit.ERROR, user=u, text='-e')
-
-        def check_results(min_level, text_set):
-            """
-            Check that username sees all audits in text_set and nothing else.
-            """
-            self.assertTrue(self.client.login(username=u.username,
-                password='-'))
-            response = self.client.get(reverse('audit-list'),
-                    {'min_level': min_level})
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            items = response.data['results']
-            self.assertEqual({x['text'] for x in items}, text_set)
-
-        def check_filtering():
-            check_results(Audit.DEBUG, {'-d', '-w', '-e'})
-            check_results(Audit.WARNING, {'-w', '-e'})
-            check_results(Audit.ERROR, {'-e'})
-
-        check_filtering()
-
-        # regression: filtering by min_level not working for omnipotent user
-        perm_omni = Permission.objects.create(name=Perms.OMNIPOTENT)
-        omni_role = Role.objects.create(name='Omni Role')
-        omni_role.permissions.add(perm_omni)
-        u.roles.add(omni_role)
-        check_filtering()
 
 
 class ExpirationTests(TestCase):

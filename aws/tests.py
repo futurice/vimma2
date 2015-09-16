@@ -18,7 +18,6 @@ from vimma.models import (
     Permission, Role,
     Project, TimeZone, Schedule,
     User,
-    Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 

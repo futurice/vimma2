@@ -2,6 +2,7 @@ import json, copy
 
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import utc
+from django.db.models import Q
 
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route, list_route
@@ -15,7 +16,7 @@ from rest_framework.reverse import reverse
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM,
-    Audit, Expiration,
+    Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
 from vimma.actions import Actions
@@ -206,7 +207,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
                 Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
             return Response('You may not power on VMs in this project',
                     status=status.HTTP_403_FORBIDDEN)
-        #  aud.debug('Request to Power ON', vm_id=vm_id, user_id=request.user.id)
+        obj.auditor.debug('Request to Power ON', user_id=request.user.id)
         obj.controller().power_on(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -217,7 +218,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
                 Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
             return Response('You may not power off VMs in this project',
                     status=status.HTTP_403_FORBIDDEN)
-        #  aud.debug('Request to Power OFF', vm_id=vm_id, user_id=request.user.id)
+        obj.auditor.debug('Request to Power OFF', user_id=request.user.id)
         obj.controller().power_off(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -228,7 +229,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
                 Actions.POWER_ONOFF_REBOOT_DESTROY_VM_IN_PROJECT, obj.project):
             return Response('You may not reboot VMs in this project',
                     status=status.HTTP_403_FORBIDDEN)
-        # aud.debug('Request to Reboot', vm_id=vm_id, user_id=request.user.id)
+        obj.auditor.debug('Request to Reboot', user_id=request.user.id)
         obj.controller().reboot(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -244,7 +245,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         obj.destroy_request_by = request.user
         obj.save()
 
-        # aud.debug('Request to Destroy', vm_id=vm_id, user_id=request.user.id)
+        obj.auditor.debug('Request to Destroy', user_id=request.user.id)
         obj.controller().destroy(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -281,7 +282,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             msg = 'Override schedule, keep {} for {} seconds'.format(
                     'ON' if state else 'OFF', seconds)
-        #aud.info(msg, user_id=request.user.id, vm_id=vm.id)
+        obj.auditor.info(msg, user_id=request.user.id)
         obj.controller().update_status(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -299,7 +300,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
         obj.schedule = schedule
         obj.save()
-        #  aud.info('Changed schedule to {}'.format(schedule_id), user_id=request.user.id, vm_id=vm_id)
+        obj.auditor.info('Changed schedule to {}'.format(schedule_id), user_id=request.user.id)
         obj.controller().update_status(user_id=self.request.user)
         return Response({}, status=status.HTTP_200_OK)
 
@@ -322,7 +323,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         exp.expires_at = aware
         exp.save()
 
-        #  aud.info('Changed expiration id {} to {}'.format(exp_id, aware), user_id=request.user.id, vm_id=vm_id)
+        obj.auditor.info('Changed expiration id {} to {}'.format(exp_id, aware), user_id=request.user.id)
 
         return Response({}, status=status.HTTP_200_OK)
 
@@ -359,8 +360,7 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             queryset = model.objects.filter(
                     Q(vm__project__id__in=user.projects.all().values_list('id')) |
-                    Q(user__id=user.id))
-
+                    Q(user_id=user.id))
         min_lvl = self.request.query_params.get('min_level', None)
         if min_lvl is not None:
             queryset = queryset.filter(level__gte=min_lvl)

@@ -99,7 +99,7 @@ class VMController():
         Returns True if an expired override was discarded, else False.
         """
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
-        aud.debug('Discarded expired schedule override', vm_id=self.vm.pk)
+        self.vm.auditor.debug('Discarded expired schedule override')
 
         if self.vm.sched_override_state == None:
             return False
@@ -131,8 +131,7 @@ class VMController():
 
     @app.task
     def expiration_notify(self):
-        aud.warning('Notify of VM expiration on ' + str(exp_date),
-                vm_id=self.vm.pk)
+        self.vm.auditor.warning('Notify of VM expiration on ' + str(exp_date))
         return self.vm.expiration.expires_at
 
 
@@ -176,7 +175,7 @@ class VMController():
 
                     sched_override_tstamp=sched_override_tstamp,
                     )
-            aud.info('Created VM', user_id=user.pk, vm_id=vm.id)
+            vm.auditor.info('Created VM', user_id=user.pk)
         # background tasks
         for c in callables:
             c()

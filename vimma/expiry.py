@@ -9,10 +9,6 @@ from vimma.util import retry_in_transaction, can_do
 from vimma.models import Expiration, Expiration, User
 from vimma.vmutil import expiration_grace_action
 
-
-aud = Auditor(__name__)
-
-
 def needs_notification(expires_at, last_notification, notif_intervals):
     """
     Returns whether a notification should be sent (bool).

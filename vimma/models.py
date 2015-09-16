@@ -175,10 +175,6 @@ class FirewallRule(CleanModel):
 
 
 class VM(CleanModel):
-    """
-    A virtual machine. This model holds only the data common for all VMs from
-    any provider.
-    """
     config = NotImplementedError("models.ForeignKey('my.Config', on_delete=models.PROTECT, related_name='vm')")
 
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
@@ -217,6 +213,11 @@ class VM(CleanModel):
     @classmethod
     def create_vm(cls, *args, **kwargs):
         cls().controller().create_vm(*args, **kwargs)
+
+    @property
+    def auditor(self):
+        cls = get_import(*('vimma.audit', 'Auditor'))
+        return cls(name=__name__, vm=self)
 
     def generate_name(self):
         return heroku()

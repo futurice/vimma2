@@ -1,14 +1,10 @@
 import celery.exceptions
-from django.db import transaction
-from django.db.utils import OperationalError
 import logging
 import traceback
 
-from vimma.models import Audit, VM, User
-
+from vimma.models import Audit
 
 log = logging.getLogger(__name__)
-
 
 class Auditor():
     """
@@ -27,9 +23,37 @@ class Auditor():
         log.warning(…)
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name, vm=None):
         self.name = name
+        self.vm = vm
+        self.audit = vm.audit.model if vm else None
         self.logger = logging.getLogger(self.name)
+
+    def log(self, level, msg, *args, user_id=None):
+        """
+        Log audit message with Audit.* level and VM and User with given IDs.
+
+        The message goes to both a new Audit object and Python's Standard
+        Logging.
+        This method tries to suppress all exceptions raised from its
+        implementation (other than incorrect usage of this method itself).
+        """
+        from vimma.models import User
+        if args:
+            raise TypeError('{} extra positional args'.format(len(args)))
+
+        try:
+            if not self.audit:
+                return
+            text = '{}'.format(msg)
+            user = User.objects.get(id=user_id) if user_id else None
+            self.vm.audit.add(
+                    self.audit(**dict(text=text, level=level, user=user)),
+                    bulk=False)
+        except:
+            log.error(traceback.format_exc())
+        finally:
+            self._std_log(level, msg, vm_id=self.vm.id if self.vm else None, user_id=user_id)
 
     def _std_log(self, level, msg, *args, vm_id=None, user_id=None):
         """
@@ -45,34 +69,6 @@ class Auditor():
 
         self.logger.log(std_lvl, '{}, vm_id={}, user_id={}'.format(
             msg, vm_id, user_id))
-
-    def log(self, level, msg, *args, vm_id=None, user_id=None):
-        """
-        Log audit message with Audit.* level and VM and User with given IDs.
-
-        The message goes to both a new Audit object and Python's Standard
-        Logging.
-        This method tries to suppress all exceptions raised from its
-        implementation (other than incorrect usage of this method itself).
-        """
-        if args:
-            raise TypeError('{} extra positional args'.format(len(args)))
-
-        try:
-            text = '{}: {}'.format(self.name, msg)
-            # TODO: VM INFORMATION
-            vm = None
-            user = User.objects.get(id=user_id) if user_id else None
-            #  TODO: Audit via vm.audit
-            # Audit.objects.create(level=level, text=text, user=user)
-        except OperationalError as e:
-            # Likely the DB is locked. Don't pollute the logs with a stack
-            # trace in this case.
-            log.warning('OperationalError: ' + str(e))
-        except:
-            log.error(traceback.format_exc())
-        finally:
-            self._std_log(level, msg, vm_id=vm, user_id=user_id)
 
     def debug(self, *args, **kwargs):
         self.log(Audit.DEBUG, *args, **kwargs)

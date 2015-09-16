@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
+from django.db.models import Q
 from django.db.utils import IntegrityError, DataError
 from django.test import TestCase
 from django.utils.timezone import utc
@@ -18,12 +19,19 @@ from vimma.models import (
     Permission, Role,
     Project, TimeZone, Schedule,
     User,
-    Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 
 
-from dummy.models import Provider, Config, VM, Expiration, PowerLog
+from dummy.models import Provider, Config, VM, Expiration, PowerLog, Audit
+
+def create_vm(name='A', tz='Europe/Helsinki'):
+    tz,_ = TimeZone.objects.get_or_create(name=tz)
+    s,_ = Schedule.objects.get_or_create(name='DefaultSchedule', timezone=tz, matrix=json.dumps(7 * [48 * [True]]))
+    prv,_ = Provider.objects.get_or_create(name='DefaultProvider')
+    config,_ = Config.objects.get_or_create(name='DefaultConfig', default_schedule=s, provider=prv)
+    prj,_ = Project.objects.get_or_create(name='DefaultProject', email='default@email.com')
+    return VM.objects.create(name=name, config=config, project=prj, schedule=s)
 
 class ProviderTests(APITestCase):
 
@@ -1106,129 +1114,6 @@ class SetExpirationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         checkExpiration(exp.id, superuser_ts)
 
-class AuditTests(TestCase):
-    def test_on_delete_constraints(self):
-        """
-        Test on_delete constraints for user and vm fields.
-        """
-        u = util.create_vimma_user('a', 'a@example.com', 'pass')
-
-        tz = TimeZone.objects.create(name='Europe/Helsinki')
-        s = Schedule.objects.create(name='s', timezone=tz,
-                matrix=json.dumps(7 * [48 * [True]]))
-        prv = Provider.objects.create(name='My Prov')
-        prj = Project.objects.create(name='Prj', email='a@b.com')
-        config = Config.objects.create(name='My Config', default_schedule=s, provider=prv)
-
-        vm = VM.objects.create(config=config, project=prj, schedule=s)
-
-        a = Audit.objects.create(level=Audit.INFO, text='hi',
-                user=u, vm=vm)
-        a_id = a.id
-        del a
-
-        u.delete()
-        self.assertEqual(Audit.objects.get(id=a_id).user, None)
-        vm.delete()
-        self.assertEqual(Audit.objects.get(id=a_id).vm, None)
-
-    def test_api_permissions(self):
-        """
-        Users can read Audit objects if they are in the ‘user’ field or a VM
-        in one of their projects is in the ‘vm’ field.
-        The API is read-only.
-        """
-        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
-        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
-        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
-
-        tz = TimeZone.objects.create(name='Europe/Helsinki')
-        s = Schedule.objects.create(name='s', timezone=tz,
-                matrix=json.dumps(7 * [48 * [True]]))
-
-        prv = Provider.objects.create(name='My Prov')
-        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
-        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
-        config = Config.objects.create(name='My Config', default_schedule=s, provider=prv)
-
-        vmD = VM.objects.create(config=config, project=pD, schedule=s)
-        vmS = VM.objects.create(config=config, project=pS, schedule=s)
-
-        uF.projects.add(pD)
-        uH.projects.add(pD, pS)
-
-        perm = Permission.objects.create(name=Perms.READ_ALL_AUDITS)
-        role = Role.objects.create(name='All Seeing')
-        role.permissions.add(perm)
-        uB.roles.add(role)
-
-        Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
-                text='vmd-')
-        Audit.objects.create(level=Audit.INFO, vm=None, user=uF,
-                text='-fry')
-        Audit.objects.create(level=Audit.INFO, vm=vmS, user=uF,
-                text='vms-fry')
-        Audit.objects.create(level=Audit.INFO, vm=vmS, user=None,
-                text='vms-')
-        Audit.objects.create(level=Audit.INFO, vm=None, user=None,
-                text='-')
-
-        def check_user_sees(username, text_set):
-            """
-            Check that username sees all audits in text_set and nothing else.
-            """
-            self.assertTrue(self.client.login(username=username, password='-'))
-            response = self.client.get(reverse('audit-list'))
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            items = response.data['results']
-            self.assertEqual({x['text'] for x in items}, text_set)
-
-        check_user_sees('Fry', {'vmd-', '-fry', 'vms-fry'})
-        check_user_sees('Hubert', {'vmd-', 'vms-fry', 'vms-'})
-        check_user_sees('Bender', {'vmd-', '-fry', 'vms-fry', 'vms-', '-'})
-
-        # Test Filtering
-
-        # filter by .vm field
-        self.assertTrue(self.client.login(username='Fry', password='-'))
-        response = self.client.get(reverse('audit-list') + '?vm=' + str(vmS.id))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        items = response.data['results']
-        self.assertEqual({x['text'] for x in items}, {'vms-fry'})
-
-        # filter by .user field
-        self.assertTrue(self.client.login(username='Bender', password='-'))
-        response = self.client.get(reverse('audit-list') +
-                '?user=' + str(uF.id))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        items = response.data['results']
-        self.assertEqual({x['text'] for x in items}, {'-fry', 'vms-fry'})
-
-        # test write operations
-
-        self.assertTrue(self.client.login(username='Fry', password='-'))
-        a_id = Audit.objects.filter(vm=vmS, user=uF)[0].id
-        response = self.client.get(reverse('audit-detail', args=[a_id]))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        item = response.data
-
-        # can't modify
-        response = self.client.put(reverse('audit-detail', args=[a_id]),
-                item, format='json')
-        self.assertEqual(response.status_code,
-                status.HTTP_405_METHOD_NOT_ALLOWED)
-
-        # can't delete
-        response = self.client.delete(reverse('audit-detail', args=[a_id]))
-        self.assertEqual(response.status_code,
-                status.HTTP_405_METHOD_NOT_ALLOWED)
-
-        # can't create
-        del item['id']
-        response = self.client.post(reverse('audit-list'), item, format='json')
-        self.assertEqual(response.status_code,
-                status.HTTP_405_METHOD_NOT_ALLOWED)
-
 class PowerLogTests(TestCase):
     def test_required_fields(self):
         """
@@ -1358,3 +1243,196 @@ class PowerLogTests(TestCase):
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
+class AuditTests(TestCase):
+
+    def test_required_fields(self):
+        """
+        Test required fields: level, text.
+        """
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.DEBUG, text='hello')
+        with self.assertRaises(ValidationError):
+            Audit.objects.create()
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.DEBUG)
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(text='hello')
+
+
+    def test_text_length(self):
+        """
+        Test that 0 < text length ≤ max_length.
+        """
+        with self.assertRaises(ValidationError):
+            Audit.objects.create(level=Audit.DEBUG, text='')
+
+        vm = create_vm(name='AuditVM')
+        Audit.objects.create(level=Audit.DEBUG, text='a', vm=vm)
+        max_length = 255
+        vm.auditor.debug(msg='a'*max_length)
+
+        # SQLite3 raises ValidationError, PostgreSQL raises DataError
+        with self.assertRaises((ValidationError, DataError)):
+            Audit.objects.create(level=Audit.DEBUG,
+                    text='a'*(max_length+1))
+
+
+    def test_timestamp(self):
+        """
+        Test that timestamp is the time of creation.
+        """
+        vm = create_vm(name='AuditVM')
+        a = Audit.objects.create(level=Audit.DEBUG, text='a', vm=vm)
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
+        delta = now - a.timestamp
+        self.assertTrue(delta <= datetime.timedelta(minutes=1))
+
+
+    def test_min_level(self):
+        """
+        Check the min_level API filter.
+        """
+        u = util.create_vimma_user('user', 'user@example.com', '-')
+        vm = create_vm(name='AuditVM')
+
+        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d', vm=vm)
+        Audit.objects.create(level=Audit.WARNING, user=u, text='-w', vm=vm)
+        # TODO: test that this really goes to standard output
+        vm.auditor.error(msg='-e', user_id=u.id)
+
+        def check_results(min_level, text_set):
+            """
+            Check that username sees all audits in text_set and nothing else.
+            """
+            self.assertTrue(self.client.login(username=u.username,
+                password='-'))
+            response = self.client.get(reverse('dummyaudit-list'),
+                    {'min_level': min_level})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = response.data['results']
+            self.assertEqual({x['text'] for x in items}, text_set)
+
+        def check_filtering():
+            check_results(Audit.DEBUG, {'-d', '-w', '-e'})
+            check_results(Audit.WARNING, {'-w', '-e'})
+            check_results(Audit.ERROR, {'-e'})
+
+        check_filtering()
+
+        # regression: filtering by min_level not working for omnipotent user
+        perm_omni = Permission.objects.create(name=Perms.OMNIPOTENT)
+        omni_role = Role.objects.create(name='Omni Role')
+        omni_role.permissions.add(perm_omni)
+        u.roles.add(omni_role)
+        check_filtering()
+
+    def test_on_delete_constraints(self):
+        """
+        Test on_delete constraints for user and vm fields.
+        """
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+
+        vm = create_vm(name='AuditVM')
+
+        a = Audit.objects.create(level=Audit.INFO, text='hi', user=u, vm=vm)
+        a_id = a.id
+        del a
+
+        u.delete()
+        self.assertEqual(Audit.objects.get(id=a_id).user, None)
+        vm.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            Audit.objects.get(id=a_id)
+
+    def test_api_permissions(self):
+        """
+        Users can read Audit objects if they are in the ‘user’ field or a VM
+        in one of their projects is in the ‘vm’ field.
+        The API is read-only.
+        """
+        uF = util.create_vimma_user('Fry', 'fry@pe.com', '-')
+        uH = util.create_vimma_user('Hubert', 'hubert@pe.com', '-')
+        uB = util.create_vimma_user('Bender', 'bender@pe.com', '-')
+
+        tz = TimeZone.objects.create(name='Europe/Helsinki')
+        s = Schedule.objects.create(name='s', timezone=tz,
+                matrix=json.dumps(7 * [48 * [True]]))
+
+        prv = Provider.objects.create(name='My Prov')
+        pD = Project.objects.create(name='Prj Delivery', email='p-d@pe.com')
+        pS = Project.objects.create(name='Prj Smelloscope', email='p-s@pe.com')
+        config = Config.objects.create(name='My Config', default_schedule=s, provider=prv)
+
+        vmD = VM.objects.create(config=config, project=pD, schedule=s)
+        vmS = VM.objects.create(config=config, project=pS, schedule=s)
+
+        uF.projects.add(pD)
+        uH.projects.add(pD, pS)
+
+        perm = Permission.objects.create(name=Perms.READ_ALL_AUDITS)
+        role = Role.objects.create(name='All Seeing')
+        role.permissions.add(perm)
+        uB.roles.add(role)
+
+        Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
+                text='vmd-')
+        Audit.objects.create(level=Audit.INFO, vm=vmS, user=uF,
+                text='vms-fry')
+        Audit.objects.create(level=Audit.INFO, vm=vmS, user=None,
+                text='vms-')
+
+        def check_user_sees(username, text_set):
+            """
+            Check that username sees all audits in text_set and nothing else.
+            """
+            self.assertTrue(self.client.login(username=username, password='-'))
+            response = self.client.get(reverse('dummyaudit-list'))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            items = response.data['results']
+            self.assertEqual({x['text'] for x in items}, text_set)
+
+        check_user_sees('Fry', {'vmd-', 'vms-fry'})
+        check_user_sees('Hubert', {'vmd-', 'vms-fry', 'vms-'})
+        check_user_sees('Bender', {'vmd-', 'vms-fry', 'vms-'})
+
+        # Test Filtering
+
+        # filter by .vm field
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        response = self.client.get(reverse('dummyaudit-list') + '?vm=' + str(vmS.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['text'] for x in items}, {'vms-fry'})
+
+        # filter by .user field
+        self.assertTrue(self.client.login(username='Bender', password='-'))
+        response = self.client.get(reverse('dummyaudit-list') +
+                '?user=' + str(uF.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        items = response.data['results']
+        self.assertEqual({x['text'] for x in items}, {'vms-fry'})
+
+        # test write operations
+        self.assertTrue(self.client.login(username='Fry', password='-'))
+        a_id = Audit.objects.filter(vm=vmS, user=uF)[0].id
+        response = self.client.get(reverse('dummyaudit-detail', args=[a_id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data
+
+        # can't modify
+        response = self.client.put(reverse('dummyaudit-detail', args=[a_id]),
+                item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't delete
+        response = self.client.delete(reverse('dummyaudit-detail', args=[a_id]))
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # can't create
+        del item['id']
+        response = self.client.post(reverse('dummyaudit-list'), item, format='json')
+        self.assertEqual(response.status_code,
+                status.HTTP_405_METHOD_NOT_ALLOWED)

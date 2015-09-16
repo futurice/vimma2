@@ -1,16 +1,13 @@
 import datetime
 from django.utils.timezone import utc
 
-from vimma.audit import Auditor
 from vimma.util import retry_in_transaction
-from vimma.controllers import VMController
+import vimma.controller
 
 from dummy.models import VM, PowerLog
 from dummy.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status
 
-aud = Auditor(__name__)
-
-class VMController(VMController):
+class VMController(vimma.controller.VMController):
     def power_on(self, user_id=None):
         power_on_vm.delay(self.vm.pk, user_id=user_id)
 

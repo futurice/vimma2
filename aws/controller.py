@@ -11,14 +11,14 @@ import traceback
 
 from vimma.audit import Auditor
 from vimma.util import retry_in_transaction
-import vimma.controllers
+import vimma.controller
 
 from aws.models import Config, VM, FirewallRule, PowerLog, FirewallRuleExpiration
 from aws.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status, do_create_vm, route53_add
 
 aud = Auditor(__name__)
 
-class VMController(vimma.controllers.VMController):
+class VMController(vimma.controller.VMController):
     def power_on(self, user_id=None):
         power_on_vm.delay(self.vm.pk, user_id=user_id)
 
@@ -49,7 +49,7 @@ class VMController(vimma.controllers.VMController):
                     to_port=fwr.to_port,
                     cidr_ip=fwr.cidr_ip)
             fwr.delete()
-            aud.info('Deleted firewall rule', vm_id=vm_id, user_id=user_id)
+            self.vm.auditor.info('Deleted firewall rule', user_id=user_id)
 
     def power_log(self, powered_on):
         PowerLog.objects.create(vm=self.vm, powered_on=powered_on)
@@ -152,13 +152,13 @@ def do_create_vm_impl(aws_vm_config_id, root_device_size,
             key_name=ssh_key_name or None,
             user_data=user_data or None)
 
-    aud.info('Got reservation', user_id=user_id, vm_id=vm_id)
+    vm.auditor.info('Got reservation', user_id=user_id)
 
     inst = None
     inst_id = ''
     if len(reservation.instances) != 1:
-        aud.error(' reservation has {} instances, expected 1'.format(
-            len(reservation.instances)), user_id=user_id, vm_id=vm_id)
+        vm.auditor.error(' reservation has {} instances, expected 1'.format(
+            len(reservation.instances)), user_id=user_id)
     else:
         inst = reservation.instances[0]
         inst_id = inst.id
@@ -191,7 +191,6 @@ def create_firewall_rule(vm_id, data, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
         with transaction.atomic():
             vm = VM.objects.get(id=vm_id)
-            raise('TODO: FireWallRule(vm=vm) is deprecated')
             base_fw_rule = FirewallRule.objects.create(vm=vm)
 
             ip_protocol = data['ip_protocol']
@@ -222,5 +221,5 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     to_port=to_port,
                     cidr_ip=cidr_ip)
 
-        aud.info('Created firewall rule', vm_id=vm_id, user_id=user_id)
+        vm.auditor.info('Created firewall rule', user_id=user_id)
 

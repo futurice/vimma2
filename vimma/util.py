@@ -15,9 +15,6 @@ from vimma.audit import Auditor
 from vimma.models import VM, User
 from vimma.perms import Perms
 
-
-aud = Auditor(__name__)
-
 @transaction.atomic
 def create_vimma_user(username, email, password, first_name='', last_name=''):
     user,_ = User.objects.get_or_create(username=username, defaults=dict(email=email,
@@ -113,8 +110,7 @@ def can_do(user, what, data=None):
         # only omnipotent users can do this
         return False
     else:
-        aud.warning('Unknown action “{}”'.format(action))
-        return False
+        raise Exception("Unknown action {}".format(action))
 
 
 def schedule_at_tstamp(schedule, tstamp):
