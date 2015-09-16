@@ -1,4 +1,5 @@
 from vimma.celery import app
+from vimma.audit import Auditor
 
 from aws.models import VM
 # TODO: circular: from aws.controller import ec2_connect_to_aws_vm_region
@@ -40,10 +41,11 @@ def reboot_vm(vm_id, user_id=None):
 @app.task
 def destroy_vm(vm_id, user_id=None):
     with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        vm = VM.objects.get(id=vm_id)
         terminate_instance.delay(vm_id, user_id=user_id)
         delete_security_group.delay(vm_id, user_id=user_id)
         route53_delete.delay(vm_id, user_id=user_id)
-    aud.info('Scheduled destruction tasks', vm_id=vm_id, user_id=user_id)
+        vm.auditor.info('Scheduled destruction tasks', user_id=user_id)
 
 def mark_vm_destroyed_if_needed(vm):
     """

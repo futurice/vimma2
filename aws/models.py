@@ -145,8 +145,5 @@ class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration, models.Model):
 class Expiration(vimma.models.Expiration):
     vm = models.OneToOneField('aws.VM', related_name="expiration")
 
-class Audit(vimma.models.Audit, models.Model):
-    vm = models.ForeignKey('aws.VM', related_name="audit")
-
 class PowerLog(vimma.models.PowerLog, models.Model):
     vm = models.ForeignKey('aws.VM', related_name="powerlog")

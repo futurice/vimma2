@@ -82,9 +82,6 @@ class FirewallRuleExpiration(vimma.models.FirewallRuleExpiration):
 class Expiration(vimma.models.Expiration):
     vm = models.OneToOneField('my.VM', related_name="expiration")
 
-class Audit(vimma.models.Audit):
-    vm = models.ForeignKey('my.VM', related_name="audit")
-
 class PowerLog(vimma.models.PowerLog):
     vm = models.ForeignKey('my.VM', related_name="powerlog")
 ```

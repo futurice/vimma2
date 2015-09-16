@@ -3,11 +3,11 @@ from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated
 )
 
-from dummy.models import (Provider, Config, VM, Audit, PowerLog,
+from dummy.models import (Provider, Config, VM, PowerLog,
         Expiration, FirewallRule, FirewallRuleExpiration,)
 
 from vimma.viewsets import (BaseSerializer, VMSerializer, ExpirationSerializer, FirewallRuleSerializer, FirewallRuleExpirationSerializer,
-        AuditViewSet, PowerLogViewSet, VMViewSet, ExpirationViewSet, FirewallRuleViewSet, FirewallRuleExpirationViewSet,
+        PowerLogViewSet, VMViewSet, ExpirationViewSet, FirewallRuleViewSet, FirewallRuleExpirationViewSet,
         default_fields,)
 
 class ProviderSerializer(BaseSerializer):
@@ -23,10 +23,6 @@ class ConfigSerializer(BaseSerializer):
 class VMSerializer(VMSerializer):
     class Meta(VMSerializer.Meta):
         model = VM
-
-class AuditSerializer(BaseSerializer):
-    class Meta:
-        model = Audit
 
 class PowerLogSerializer(BaseSerializer):
     class Meta:
@@ -62,9 +58,6 @@ class VMViewSet(VMViewSet):
 
 class ExpirationViewSet(ExpirationViewSet):
     serializer_class = ExpirationSerializer
-
-class AuditViewSet(AuditViewSet):
-    serializer_class = AuditSerializer
 
 class PowerLogViewSet(PowerLogViewSet):
     serializer_class = PowerLogSerializer

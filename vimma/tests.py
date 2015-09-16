@@ -113,15 +113,11 @@ class ProjectTests(APITestCase):
 
     def test_project_requires_name_and_email(self):
         """
-        Project requires a non-empty name and email.
+        Project requires a non-empty name
         """
         with self.assertRaises(ValidationError):
             obj = Project.objects.create()
             obj.delete()
-        with self.assertRaises(ValidationError):
-            Project.objects.create(email='a@b.com')
-        with self.assertRaises(ValidationError):
-            Project.objects.create(name='prj1')
         Project.objects.create(name='prj2', email='a@b.com')
 
     def test_project_name_unique(self):
@@ -130,7 +126,7 @@ class ProjectTests(APITestCase):
         """
         Project.objects.create(name='prj', email='a@b.com')
         with self.assertRaises(ValidationError):
-            Project.objects.create(name='prj', email='a@c.com')
+            Project.objects.create(email='a@c.com')
 
     def test_api_permissions(self):
         """

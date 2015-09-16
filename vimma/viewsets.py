@@ -15,7 +15,7 @@ from rest_framework.reverse import reverse
 
 from vimma.models import (
     Schedule, TimeZone, Project,
-    User, VM,
+    User, VM, Audit,
     Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
@@ -187,7 +187,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
                 return get_http_json_err('You may not use this schedule',
                         status.HTTP_403_FORBIDDEN)
 
-        #  aud.debug('Request to create VM', vm_id=vm_id, user_id=request.user.id)
+        request.user.auditor.debug('Request to create VM')
 
         model = self.serializer_class.Meta.model
         vmconf.vm_model.create_vm(
@@ -347,9 +347,14 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({}, status=status.HTTP_200_OK)
     
 
+class AuditSerializer(BaseSerializer):
+    class Meta:
+        model = Audit
+
 class AuditViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AuditSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('user','vm',)
+    filter_fields = ('user','object_content_type','object_id','project',)
     ordering = ('-timestamp')
 
     def get_queryset(self):
@@ -359,7 +364,7 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = model.objects.filter()
         else:
             queryset = model.objects.filter(
-                    Q(vm__project__id__in=user.projects.all().values_list('id')) |
+                    Q(project_id__in=list(user.projects.all().values_list('id'))) |
                     Q(user_id=user.id))
         min_lvl = self.request.query_params.get('min_level', None)
         if min_lvl is not None:

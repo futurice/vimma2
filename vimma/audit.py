@@ -2,7 +2,7 @@ import celery.exceptions
 import logging
 import traceback
 
-from vimma.models import Audit
+from vimma.models import Audit, User
 
 log = logging.getLogger(__name__)
 
@@ -23,10 +23,10 @@ class Auditor():
         log.warning(…)
     """
 
-    def __init__(self, name, vm=None):
+    def __init__(self, name, obj=None, user=None):
         self.name = name
-        self.vm = vm
-        self.audit = vm.audit.model if vm else None
+        self.obj = obj # VM
+        self.user = user
         self.logger = logging.getLogger(self.name)
 
     def log(self, level, msg, *args, user_id=None):
@@ -38,22 +38,23 @@ class Auditor():
         This method tries to suppress all exceptions raised from its
         implementation (other than incorrect usage of this method itself).
         """
-        from vimma.models import User
         if args:
             raise TypeError('{} extra positional args'.format(len(args)))
 
         try:
-            if not self.audit:
-                return
             text = '{}'.format(msg)
+            user_id = user_id or (self.user.pk if self.user else None)
             user = User.objects.get(id=user_id) if user_id else None
-            self.vm.audit.add(
-                    self.audit(**dict(text=text, level=level, user=user)),
-                    bulk=False)
+            project = self.obj.project if self.obj else None
+            a = Audit.objects.create(text=text,
+                    level=level,
+                    user=user,
+                    project=project,
+                    content_object=self.obj)
         except:
             log.error(traceback.format_exc())
         finally:
-            self._std_log(level, msg, vm_id=self.vm.id if self.vm else None, user_id=user_id)
+            self._std_log(level, msg, vm_id=self.obj.id if self.obj else None, user_id=user_id)
 
     def _std_log(self, level, msg, *args, vm_id=None, user_id=None):
         """
@@ -123,7 +124,6 @@ class Auditor():
 
         return _CeleryRetryCtxMgr(self, task_obj, task_description,
                 user_id=user_id, vm_id=vm_id)
-
 
 class _CtxMgr():
     """

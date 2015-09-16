@@ -1,5 +1,6 @@
 import datetime, urllib
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -18,12 +19,11 @@ from vimma import util
 from vimma.models import (
     Permission, Role,
     Project, TimeZone, Schedule,
-    User,
+    User, Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
 
-
-from dummy.models import Provider, Config, VM, Expiration, PowerLog, Audit
+from dummy.models import Provider, Config, VM, Expiration, PowerLog
 
 def create_vm(name='A', tz='Europe/Helsinki'):
     tz,_ = TimeZone.objects.get_or_create(name=tz)
@@ -32,6 +32,10 @@ def create_vm(name='A', tz='Europe/Helsinki'):
     config,_ = Config.objects.get_or_create(name='DefaultConfig', default_schedule=s, provider=prv)
     prj,_ = Project.objects.get_or_create(name='DefaultProject', email='default@email.com')
     return VM.objects.create(name=name, config=config, project=prj, schedule=s)
+
+def byVm(vm):
+    ct = ContentType.objects.get_for_model(vm)
+    return 'content_object_type={ct.id}&object_id={vm.id}'.format(ct=ct, vm=vm)
 
 class ProviderTests(APITestCase):
 
@@ -1205,7 +1209,7 @@ class PowerLogTests(TestCase):
         # filter by .vm field
         self.assertTrue(self.client.login(username='Fry', password='-'))
         response = self.client.get(reverse('powerlog-list') +
-                '?vm=' + str(vmS.id))
+                '?' + byVm(vmS))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({x['id'] for x in items}, set())
@@ -1246,12 +1250,15 @@ class PowerLogTests(TestCase):
 
 class AuditTests(TestCase):
 
+    def test_user_audit(self):
+        u = util.create_vimma_user('user', 'user@example.com', '-')
+        u.auditor.info("Hello World")
+
     def test_required_fields(self):
         """
         Test required fields: level, text.
         """
-        with self.assertRaises(ValidationError):
-            Audit.objects.create(level=Audit.DEBUG, text='hello')
+        Audit.objects.create(level=Audit.DEBUG, text='hello')
         with self.assertRaises(ValidationError):
             Audit.objects.create()
         with self.assertRaises(ValidationError):
@@ -1261,21 +1268,12 @@ class AuditTests(TestCase):
 
 
     def test_text_length(self):
-        """
-        Test that 0 < text length ≤ max_length.
-        """
         with self.assertRaises(ValidationError):
             Audit.objects.create(level=Audit.DEBUG, text='')
 
         vm = create_vm(name='AuditVM')
-        Audit.objects.create(level=Audit.DEBUG, text='a', vm=vm)
-        max_length = 255
-        vm.auditor.debug(msg='a'*max_length)
-
-        # SQLite3 raises ValidationError, PostgreSQL raises DataError
-        with self.assertRaises((ValidationError, DataError)):
-            Audit.objects.create(level=Audit.DEBUG,
-                    text='a'*(max_length+1))
+        Audit.objects.create(level=Audit.DEBUG, text='a', content_object=vm)
+        vm.auditor.debug(msg='a')
 
 
     def test_timestamp(self):
@@ -1283,7 +1281,7 @@ class AuditTests(TestCase):
         Test that timestamp is the time of creation.
         """
         vm = create_vm(name='AuditVM')
-        a = Audit.objects.create(level=Audit.DEBUG, text='a', vm=vm)
+        a = Audit.objects.create(level=Audit.DEBUG, text='a', content_object=vm)
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         delta = now - a.timestamp
         self.assertTrue(delta <= datetime.timedelta(minutes=1))
@@ -1296,8 +1294,8 @@ class AuditTests(TestCase):
         u = util.create_vimma_user('user', 'user@example.com', '-')
         vm = create_vm(name='AuditVM')
 
-        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d', vm=vm)
-        Audit.objects.create(level=Audit.WARNING, user=u, text='-w', vm=vm)
+        Audit.objects.create(level=Audit.DEBUG, user=u, text='-d', content_object=vm)
+        Audit.objects.create(level=Audit.WARNING, user=u, text='-w', content_object=vm)
         # TODO: test that this really goes to standard output
         vm.auditor.error(msg='-e', user_id=u.id)
 
@@ -1307,7 +1305,7 @@ class AuditTests(TestCase):
             """
             self.assertTrue(self.client.login(username=u.username,
                 password='-'))
-            response = self.client.get(reverse('dummyaudit-list'),
+            response = self.client.get(reverse('audit-list'),
                     {'min_level': min_level})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = response.data['results']
@@ -1335,7 +1333,7 @@ class AuditTests(TestCase):
 
         vm = create_vm(name='AuditVM')
 
-        a = Audit.objects.create(level=Audit.INFO, text='hi', user=u, vm=vm)
+        a = Audit.objects.create(level=Audit.INFO, text='hi', user=u, content_object=vm)
         a_id = a.id
         del a
 
@@ -1375,19 +1373,16 @@ class AuditTests(TestCase):
         role.permissions.add(perm)
         uB.roles.add(role)
 
-        Audit.objects.create(level=Audit.INFO, vm=vmD, user=None,
-                text='vmd-')
-        Audit.objects.create(level=Audit.INFO, vm=vmS, user=uF,
-                text='vms-fry')
-        Audit.objects.create(level=Audit.INFO, vm=vmS, user=None,
-                text='vms-')
+        vmD.auditor.info(msg='vmd-', user_id=None)
+        vmS.auditor.info(msg='vms-fry', user_id=uF.pk)
+        vmS.auditor.info(msg='vms-', user_id=None)
 
         def check_user_sees(username, text_set):
             """
             Check that username sees all audits in text_set and nothing else.
             """
             self.assertTrue(self.client.login(username=username, password='-'))
-            response = self.client.get(reverse('dummyaudit-list'))
+            response = self.client.get(reverse('audit-list'))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             items = response.data['results']
             self.assertEqual({x['text'] for x in items}, text_set)
@@ -1397,17 +1392,16 @@ class AuditTests(TestCase):
         check_user_sees('Bender', {'vmd-', 'vms-fry', 'vms-'})
 
         # Test Filtering
-
-        # filter by .vm field
+        # filter by VM
         self.assertTrue(self.client.login(username='Fry', password='-'))
-        response = self.client.get(reverse('dummyaudit-list') + '?vm=' + str(vmS.id))
+        response = self.client.get(reverse('audit-list') + '?' + byVm(vmS))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
         self.assertEqual({x['text'] for x in items}, {'vms-fry'})
 
-        # filter by .user field
+        # filter by User
         self.assertTrue(self.client.login(username='Bender', password='-'))
-        response = self.client.get(reverse('dummyaudit-list') +
+        response = self.client.get(reverse('audit-list') +
                 '?user=' + str(uF.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         items = response.data['results']
@@ -1415,24 +1409,24 @@ class AuditTests(TestCase):
 
         # test write operations
         self.assertTrue(self.client.login(username='Fry', password='-'))
-        a_id = Audit.objects.filter(vm=vmS, user=uF)[0].id
-        response = self.client.get(reverse('dummyaudit-detail', args=[a_id]))
+        a_id = vmS.audits.all()[0].id
+        response = self.client.get(reverse('audit-detail', args=[a_id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data
 
         # can't modify
-        response = self.client.put(reverse('dummyaudit-detail', args=[a_id]),
+        response = self.client.put(reverse('audit-detail', args=[a_id]),
                 item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't delete
-        response = self.client.delete(reverse('dummyaudit-detail', args=[a_id]))
+        response = self.client.delete(reverse('audit-detail', args=[a_id]))
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # can't create
         del item['id']
-        response = self.client.post(reverse('dummyaudit-list'), item, format='json')
+        response = self.client.post(reverse('audit-list'), item, format='json')
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)

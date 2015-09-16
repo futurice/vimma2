@@ -11,6 +11,7 @@ from vimma.viewsets import (
     TimeZoneViewSet,
     ScheduleViewSet,
     ProjectViewSet,
+    AuditViewSet,
 )
 from vimma.views import (
     index, base_js, test,
@@ -20,10 +21,11 @@ dummy_viewsets = get_classes('dummy.viewsets', 'ViewSet')
 aws_viewsets = get_classes('aws.viewsets', 'ViewSet')
 
 router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
-router.register(r'timezones', TimeZoneViewSet)
-router.register(r'schedules', ScheduleViewSet)
-router.register(r'projects', ProjectViewSet, 'project')
+router.register(r'user', UserViewSet)
+router.register(r'timezone', TimeZoneViewSet)
+router.register(r'schedule', ScheduleViewSet)
+router.register(r'project', ProjectViewSet, 'project')
+router.register(r'audit', AuditViewSet, 'audit')
 
 def register_viewsets(namespace, viewsets):
     for vs in viewsets:

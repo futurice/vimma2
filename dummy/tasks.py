@@ -1,5 +1,7 @@
 from vimma.celery import app
 
+from dummy.models import VM
+
 @app.task
 def power_on_vm(vm_id, user_id=None):
     vm = VM.objects.get(id=vm_id)

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User as DefaultUser, AbstractBaseUser, AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 import json
 import logging
@@ -50,11 +52,11 @@ class Role(CleanModel):
 
 
 class Project(CleanModel):
-    """
-    Projects group Users and VMs.
-    """
-    name = models.CharField(max_length=255, unique=True)
-    email = models.EmailField()
+    name = models.CharField(max_length=255)
+    email = models.EmailField(null=True, blank=True)
+
+    class Meta:
+        unique_together = (('name', 'email'),)
 
     def __str__(self):
         return self.name
@@ -62,6 +64,11 @@ class Project(CleanModel):
 class User(AbstractUser):
     projects = models.ManyToManyField(Project, blank=True)
     roles = models.ManyToManyField(Role, blank=True)
+
+    @property
+    def auditor(self):
+        cls = get_import(*('vimma.audit', 'Auditor'))
+        return cls(name=__name__, obj=None, user=self)
 
 if settings.REMOTE_USER_ENABLED:
     User._meta.get_field('password').null = True
@@ -180,6 +187,8 @@ class VM(CleanModel):
     project = models.ForeignKey('vimma.Project', on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='%(app_label)s_%(class)s')
 
+    audits = GenericRelation('vimma.Audit', content_type_field='object_content_type', object_id_field='object_id')
+
     name = models.CharField(max_length=255, blank=True)
     # A ‘schedule override’: keep ON or OFF until a timestamp
     # True → Powered ON, False → Powered OFF, None → no override
@@ -217,7 +226,7 @@ class VM(CleanModel):
     @property
     def auditor(self):
         cls = get_import(*('vimma.audit', 'Auditor'))
-        return cls(name=__name__, vm=self)
+        return cls(name=__name__, obj=self)
 
     def generate_name(self):
         return heroku()
@@ -316,6 +325,12 @@ class PowerLog(CleanModel):
         abstract = True
 
 class Audit(CleanModel):
+    """
+    Audit logs events for:
+    - a User
+    - a VM
+    - <nobody in particular>
+    """
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # Imitating https://docs.python.org/3/library/logging.html#logging-levels
@@ -342,11 +357,12 @@ class Audit(CleanModel):
     text = models.TextField()
 
     user = models.ForeignKey('vimma.User', null=True, blank=True, on_delete=models.SET_NULL, related_name="%(app_label)s_%(class)s")
+    project = models.ForeignKey('vimma.Project', null=True, blank=True, on_delete=models.SET_NULL, related_name="%(app_label)s_%(class)s")
+
+    object_content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('object_content_type', 'object_id')
 
     def __str__(self):
         return "%s..."%self.text[:40]
-
-    class Meta:
-        abstract = True
-
 

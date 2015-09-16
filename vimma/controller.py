@@ -147,14 +147,13 @@ class VMController():
         The data arg is specific to the provider type.
         This function must not be called inside a transaction.
         """
-        aud.debug(('Request to create VM: ' +
+        user.auditor.debug(('Request to create VM: ' +
             'config {config.id} ({config.name}), ' +
             'project {project.id} ({project.name}’), ' +
             'schedule {schedule.id} ({schedule.name}), ' +
             'comment ‘{comment}’, data ‘{data}’').format(
                 config=config, project=project, schedule=schedule,
-                comment=comment, data={}),
-            user_id=user.pk)
+                comment=comment, data={}))
 
         callables = []
         # database
