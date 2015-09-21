@@ -70,7 +70,6 @@ class Provider(vimma.models.Provider):
     pass
 
 class Config(vimma.models.Config):
-    vm_model = VM
     provider = models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name="config")
 
 class FirewallRule(vimma.models.FirewallRule):

@@ -41,7 +41,7 @@ class VMController(vimma.controller.VMController):
     def delete_firewall_rule(self, fw_rule_id, user_id=None):
         fwr = FirewallRule.objects.get(id=fw_rule_id)
 
-        with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+        with aud.ctx_mgr(vm=self.vm, user_id=user_id):
             conn = ec2_connect_to_aws_vm_region(self.vm.id)
             conn.revoke_security_group(group_id=self.vm.security_group_id,
                     ip_protocol=fwr.ip_protocol,
@@ -188,9 +188,10 @@ def create_firewall_rule(vm_id, data, user_id=None):
         cidr_ip: string,
     }
     """
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
+    vm = VM.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm, user_id=user_id):
+        conn = ec2_connect_to_aws_vm_region(vm.id)
         with transaction.atomic():
-            vm = VM.objects.get(id=vm_id)
             base_fw_rule = FirewallRule.objects.create(vm=vm)
 
             ip_protocol = data['ip_protocol']
@@ -214,12 +215,12 @@ def create_firewall_rule(vm_id, data, user_id=None):
                     expiration=expiration,
                     firewallrule=base_fw_rule)
 
-            conn = ec2_connect_to_aws_vm_region(vm.id)
+            # TODO: move outside transaction
             conn.authorize_security_group(group_id=vm.security_group_id,
                     ip_protocol=ip_protocol,
                     from_port=from_port,
                     to_port=to_port,
                     cidr_ip=cidr_ip)
 
-        vm.auditor.info('Created firewall rule', user_id=user_id)
+    vm.auditor.info('Created firewall rule', user_id=user_id)
 

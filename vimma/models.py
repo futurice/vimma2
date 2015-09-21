@@ -247,7 +247,6 @@ class Config(CleanModel):
 
     A config knows how to create a VM.
     """
-    vm_model = VM
     provider = NotImplementedError("models.ForeignKey('my.Provider', on_delete=models.PROTECT, related_name='config')")
     # The default schedule for this VM config. Users are allowed to choose this
     # schedule for VMs made from this config, even if the schedule itself
@@ -276,8 +275,11 @@ class Config(CleanModel):
                 self.default = True
             super().save(*args, **kwargs)
 
+    def vm_model(self):
+        return self._meta.get_field('vm').related_model
+
     def create_vm(self, *args, **kwargs):
-        self.vm_model.create_vm(*args, config=self, **kwargs)
+        self.vm_model().create_vm(*args, config=self, **kwargs)
 
     class Meta:
         abstract = True

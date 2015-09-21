@@ -22,6 +22,7 @@ from vimma.models import (
     User, Audit,
 )
 from vimma.perms import ALL_PERMS, Perms
+from vimma.audit import Auditor
 
 from dummy.models import Provider, Config, VM, Expiration, PowerLog
 
@@ -1249,6 +1250,15 @@ class PowerLogTests(TestCase):
 
 
 class AuditTests(TestCase):
+
+    def test_audit_context_manager(self):
+        aud = Auditor('foo')
+        with self.assertRaises(Exception):
+            with aud.ctx_mgr():
+                raise Exception("hello world")
+
+        with aud.ctx_mgr():
+            print("hello world")
 
     def test_user_audit(self):
         u = util.create_vimma_user('user', 'user@example.com', '-')

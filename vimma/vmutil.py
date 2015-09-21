@@ -23,9 +23,8 @@ def update_all_vms_status():
 
 @app.task
 def expiration_grace_action(cls, vm_id):
-    with aud.ctx_mgr(vm_id=vm_id):
-        vm = cls.objects.get(id=vm_id)
-        exp_date = vm.expiration.expires_at
+    vm = cls.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm):
         vm.controller().destroy()
 
 @app.task

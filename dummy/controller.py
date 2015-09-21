@@ -37,4 +37,3 @@ class VMController(vimma.controller.VMController):
                     countdown=countdown),
                 ]
         return vm, callables
-

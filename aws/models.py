@@ -74,7 +74,6 @@ class Provider(vimma.models.Provider):
         return '{} ({})'.format(self.name, self.route_53_zone)
 
 class Config(vimma.models.Config, models.Model):
-    vm_model = VM
     provider = models.ForeignKey('aws.Provider', on_delete=models.PROTECT, related_name="config")
 
     regions = sorted([

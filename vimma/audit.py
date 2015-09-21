@@ -83,12 +83,12 @@ class Auditor():
     def error(self, *args, **kwargs):
         self.log(Audit.ERROR, *args, **kwargs)
 
-    def ctx_mgr(self, *args, user_id=None, vm_id=None):
+    def ctx_mgr(self, *args, user_id=None, vm=None):
         """
         Return a new Context Manager which audits if an exception is raised.
 
         Usage (args are optional):
-            with aud.ctx_mgr(user_id=…, vm_id=…):
+            with aud.ctx_mgr(user_id=…, vm=…):
                 «code»
 
         If the with-block doesn't raise an exception, nothing is audited.
@@ -99,7 +99,7 @@ class Auditor():
         if args:
             raise TypeError('{} extra positional args'.format(len(args)))
 
-        return _CtxMgr(self, user_id=user_id, vm_id=vm_id)
+        return _CtxMgr(self, user_id=user_id, vm=vm)
 
     def celery_retry_ctx_mgr(self, task_obj, task_description,
             *args, user_id=None, vm_id=None):
@@ -130,10 +130,10 @@ class _CtxMgr():
     Context Manager, meant to be used via Auditor(…).ctx_mgr(…).
     """
 
-    def __init__(self, auditor, *args, user_id=None, vm_id=None):
+    def __init__(self, auditor, *args, vm=None, user_id=None):
         self.auditor = auditor
         self.user_id = user_id
-        self.vm_id = vm_id
+        self.vm = vm
 
     def __enter__(self):
         return self
@@ -142,7 +142,10 @@ class _CtxMgr():
         if exc_type is None and exc_value is None and tb is None:
             return
         msg = ''.join(traceback.format_exception(exc_type, exc_value, tb))
-        self.auditor.error(msg, vm_id=self.vm_id, user_id=self.user_id)
+        if self.vm:
+            self.vm.auditor.error(msg, user_id=self.user_id)
+        else:
+            self.auditor.error(msg, user_id=self.user_id)
         return False
 
 

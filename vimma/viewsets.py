@@ -16,7 +16,6 @@ from rest_framework.reverse import reverse
 from vimma.models import (
     Schedule, TimeZone, Project,
     User, VM, Audit,
-    Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
 from vimma.actions import Actions
@@ -190,7 +189,7 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         request.user.auditor.debug('Request to create VM')
 
         model = self.serializer_class.Meta.model
-        vmconf.vm_model.create_vm(
+        vmconf.vm_model().create_vm(
                 project=project,
                 schedule=schedule,
                 config=vmconf,
@@ -319,7 +318,8 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
         naive = datetime.datetime.utcfromtimestamp(tstamp)
         aware = pytz.utc.localize(naive)
 
-        exp = Expiration.objects.get(id=exp_id)
+        exp_model = obj._meta.get_field('expiration').related_model
+        exp = exp_model.objects.get(id=exp_id)
         exp.expires_at = aware
         exp.save()
 

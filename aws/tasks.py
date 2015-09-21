@@ -12,8 +12,8 @@ def do_create_vm(aws_vm_config_id, root_device_size, root_device_volume_type,
 
 @app.task
 def power_on_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = VM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm, user_id=user_id):
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.start_instances(instance_ids=[vm.instance_id])
         vm.auditor.info('Started instance', user_id=user_id)
@@ -22,8 +22,8 @@ def power_on_vm(vm_id, user_id=None):
 
 @app.task
 def power_off_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = VM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm, user_id=user_id):
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.stop_instances(instance_ids=[vm.instance_id])
         vm.auditor.info('Stopped instance', user_id=user_id)
@@ -31,8 +31,8 @@ def power_off_vm(vm_id, user_id=None):
 
 @app.task
 def reboot_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = VM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm, user_id=user_id):
         conn = ec2_connect_to_aws_vm_region(vm.pk)
         conn.reboot_instances(instance_ids=[vm.instance_id])
         vm.auditor.info('Rebooted instance', user_id=user_id)
@@ -40,8 +40,8 @@ def reboot_vm(vm_id, user_id=None):
 
 @app.task
 def destroy_vm(vm_id, user_id=None):
-    with aud.ctx_mgr(vm_id=vm_id, user_id=user_id):
-        vm = VM.objects.get(id=vm_id)
+    vm = VM.objects.get(id=vm_id)
+    with aud.ctx_mgr(vm=vm, user_id=user_id):
         terminate_instance.delay(vm_id, user_id=user_id)
         delete_security_group.delay(vm_id, user_id=user_id)
         route53_delete.delay(vm_id, user_id=user_id)
@@ -60,8 +60,8 @@ def mark_vm_destroyed_if_needed(vm):
 @app.task(bind=True, max_retries=15, default_retry_delay=60)
 def delete_security_group(self, vm_id, user_id=None):
     aud_kw = {'vm_id': vm_id, 'user_id': user_id}
+    vm = VM.objects.get(id=vm_id)
     with aud.celery_retry_ctx_mgr(self, 'delete security group', **aud_kw):
-        vm = VM.objects.get(id=vm_id)
         if vm.security_group_id:
             conn = ec2_connect_to_aws_vm_region(vm.pk)
             conn.delete_security_group(group_id=vm.security_group_id)

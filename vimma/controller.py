@@ -70,7 +70,7 @@ class VMController():
         If the vm's power state should be different, a power_on or power_off task
         is submitted.
         """
-        with aud.ctx_mgr(vm_id=self.vm.pk):
+        with aud.ctx_mgr(vm=self.vm):
             if type(powered_on) is not bool:
                 raise ValueError('powered_on ‘{}’ has type ‘{}’, want ‘{}’'.format(
                     powered_on, type(powered_on), bool))
