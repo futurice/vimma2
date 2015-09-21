@@ -161,11 +161,11 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
     @list_route(methods=['post'])
     def create(self, request):
         body = json.loads(request.read().decode('utf-8'))
+        config_model = self.serializer_class.Meta._meta.get_field('config').related_model
         try:
             project = Project.objects.get(id=body['project'])
-            vmconfcls = ContentType.objects.get_for_id(body['providerconfig']['content_type']['id']).model_class()
-            vmconf = vmconfcls.objects.get(id=body['providerconfig']['id'])
-            schedule = Schedule.objects.get(id=body['schedule']['id'])
+            vmconf = config_model.objects.get(id=body['config'])
+            schedule = Schedule.objects.get(id=body['schedule'])
         except ObjectDoesNotExist as e:
             return Response('{}'.format(e), status=status.HTTP_404_NOT_FOUND)
 

@@ -14,6 +14,7 @@ import pytz
 import ipaddress
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.reverse import reverse as api_reverse
 
 from vimma import util
 from vimma.models import (
@@ -652,6 +653,18 @@ class VMTests(APITestCase):
         self.assertEqual(response.status_code,
                 status.HTTP_405_METHOD_NOT_ALLOWED)
 
+class APITests(TestCase):
+    def test_create(self):
+        u = util.create_vimma_user('a', 'a@example.com', 'pass')
+        self.assertTrue(self.client.login(username='a', password='pass'))
+        prj = Project.objects.create(name='prj', email='prj@x.com')
+        url = reverse('dummyvm-create')
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': prj.id,
+                    'config': vmc.id,
+                    'schedule': s.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 class CreatePowerOnOffRebootDestroyVMTests(TestCase):
     def test_create_perms_and_not_found(self):
@@ -671,7 +684,7 @@ class CreatePowerOnOffRebootDestroyVMTests(TestCase):
         vmc = Config.objects.create(name='My Conf', default_schedule=s,
                 provider=prov)
 
-        url = reverse('createVM')
+        url = reverse('dummyvm-create')
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
                     'project': prj.id,
