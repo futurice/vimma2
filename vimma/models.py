@@ -200,7 +200,7 @@ class VM(CleanModel):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('vimma.User', null=True, blank=True,
             on_delete=models.SET_NULL, related_name='%(app_label)s_%(class)s_created_by')
-    comment = models.CharField(max_length=255, blank=True)
+    comment = models.CharField(max_length=255, null=True, blank=True)
 
     # When the VM status was updated from the remote provider. The status
     # fields are in the provider-specific VM submodels, but updating the status
@@ -211,6 +211,7 @@ class VM(CleanModel):
     destroy_request_at = models.DateTimeField(blank=True, null=True)
     destroy_request_by = models.ForeignKey('vimma.User', null=True, blank=True,
             on_delete=models.SET_NULL, related_name='%(app_label)s_%(class)s_destroy_request_by')
+
     # When all destruction tasks succeed, mark the VM as destroyed
     destroyed_at = models.DateTimeField(blank=True, null=True)
 

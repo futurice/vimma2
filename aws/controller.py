@@ -13,7 +13,7 @@ from vimma.audit import Auditor
 from vimma.util import retry_in_transaction
 import vimma.controller
 
-from aws.models import Config, VM, FirewallRule, PowerLog, FirewallRuleExpiration
+from aws.models import Config, VM, FirewallRule, PowerLog, FirewallRuleExpiration, Expiration
 from aws.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status, do_create_vm, route53_add
 
 aud = Auditor(__name__)
@@ -71,7 +71,7 @@ class VMController(vimma.controller.VMController):
 
         callables = [lambda: do_create_vm.delay(config.id,
             vm.config.root_device_size, config.root_device_volume_type,
-            vm.id, user_id)]
+            vm.id, user.id)]
         return vm, callables
 
 def ec2_connect_to_aws_vm_region(aws_vm_id):

@@ -50,8 +50,6 @@ def destroy_vm(vm_id, user_id=None):
 def mark_vm_destroyed_if_needed(vm):
     """
     Mark the parent .vm model destroyed if the awsvm is destroyed, else no-op.
-
-    This function may only be called inside a transaction.
     """
     if vm.instance_terminated and vm.security_group_deleted:
         vm.destroyed_at = datetime.datetime.utcnow().replace(tzinfo=utc)
