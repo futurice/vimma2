@@ -20,7 +20,7 @@ Polymer({
 
     createUrl: {
       type: String,
-      value: '/api/dummy/vm/'
+      value: '#'
     },
 
     projectsUrl: {
@@ -66,6 +66,7 @@ Polymer({
     this.$$('#provider').value = k.currentTarget.dataItem.id;
     this.$$('#config').value = k.currentTarget.dataConfig.id;
     this.chosen(k.currentTarget, '.provider-container div.box')
+    this.createUrl = url(k.currentTarget.dataConfig.content_type.app_label+'vm-create');
   },
 
   chosen: function(el, container) {
