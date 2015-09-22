@@ -657,13 +657,27 @@ class APITests(TestCase):
     def test_create(self):
         u = util.create_vimma_user('a', 'a@example.com', 'pass')
         self.assertTrue(self.client.login(username='a', password='pass'))
-        prj = Project.objects.create(name='prj', email='prj@x.com')
+
+        tz,_ = TimeZone.objects.get_or_create(name='Europe/Helsinki')
+        schedule,_ = Schedule.objects.get_or_create(name='DefaultSchedule', timezone=tz, matrix=json.dumps(7 * [48 * [True]]))
+        provider,_ = Provider.objects.get_or_create(name='DefaultProvider')
+        config,_ = Config.objects.get_or_create(name='DefaultConfig', default_schedule=schedule, provider=provider)
+        project,_ = Project.objects.get_or_create(name='DefaultProject', email='default@email.com')
+
         url = reverse('dummyvm-create')
         response = self.client.post(url, content_type='application/json',
                 data=json.dumps({
-                    'project': prj.id,
-                    'config': vmc.id,
-                    'schedule': s.id}))
+                    'project': project.id,
+                    'config': config.id,
+                    'schedule': schedule.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        u.projects.add(project)
+        response = self.client.post(url, content_type='application/json',
+                data=json.dumps({
+                    'project': project.id,
+                    'config': config.id,
+                    'schedule': schedule.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 class CreatePowerOnOffRebootDestroyVMTests(TestCase):

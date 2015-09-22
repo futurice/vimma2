@@ -118,7 +118,7 @@ class VMController():
         If the VM has expired → OFF. Else if there's a schedule override, use that.
         Else computed from the vm's schedule.
         """
-        if not self.vm.expiration:
+        if not hasattr(self.vm, 'expiration'):
             return False
 
         now = datetime.datetime.utcnow().replace(tzinfo=utc).timestamp()
@@ -132,7 +132,7 @@ class VMController():
     @app.task
     def expiration_notify(self):
         self.vm.auditor.warning('Notify of VM expiration on ' + str(exp_date))
-        return self.vm.expiration.expires_at
+        return self.vm.expiration.expires_at if hasattr(self.vm, 'expiration') else None
 
 
     def create_vm_details(self, data, user_id, *args, **kwargs):

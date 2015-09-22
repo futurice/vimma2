@@ -161,7 +161,8 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
     @list_route(methods=['post'])
     def create(self, request):
         body = json.loads(request.read().decode('utf-8'))
-        config_model = self.serializer_class.Meta._meta.get_field('config').related_model
+        model = self.serializer_class.Meta.model
+        config_model = model._meta.get_field('config').related_model
         try:
             project = Project.objects.get(id=body['project'])
             vmconf = config_model.objects.get(id=body['config'])
@@ -188,15 +189,14 @@ class VMViewSet(viewsets.ReadOnlyModelViewSet):
 
         request.user.auditor.debug('Request to create VM')
 
-        model = self.serializer_class.Meta.model
-        vmconf.vm_model().create_vm(
+        model().controller().create_vm(
                 project=project,
                 schedule=schedule,
                 config=vmconf,
                 user=request.user,
 
-                name=body['name'],
-                comment=body['comment'],)
+                name=body.get('name'),
+                comment=body.get('comment'),)
         return Response({}, status=status.HTTP_200_OK)
 
     @detail_route(methods=['post'])

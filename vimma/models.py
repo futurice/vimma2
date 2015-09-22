@@ -219,10 +219,6 @@ class VM(CleanModel):
         cls = get_import(*self.vm_controller_cls)
         return cls(vm=self)
 
-    @classmethod
-    def create_vm(cls, *args, **kwargs):
-        cls().controller().create_vm(*args, **kwargs)
-
     @property
     def auditor(self):
         cls = get_import(*('vimma.audit', 'Auditor'))
@@ -277,9 +273,6 @@ class Config(CleanModel):
 
     def vm_model(self):
         return self._meta.get_field('vm').related_model
-
-    def create_vm(self, *args, **kwargs):
-        self.vm_model().create_vm(*args, config=self, **kwargs)
 
     class Meta:
         abstract = True

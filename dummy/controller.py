@@ -4,7 +4,7 @@ from django.utils.timezone import utc
 from vimma.util import retry_in_transaction
 import vimma.controller
 
-from dummy.models import VM, PowerLog
+from dummy.models import VM, PowerLog, Expiration
 from dummy.tasks import power_on_vm, power_off_vm, reboot_vm, destroy_vm, update_vm_status
 
 class VMController(vimma.controller.VMController):
