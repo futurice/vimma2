@@ -5,6 +5,7 @@
     "polymer": "Polymer/polymer#^1.1.0",
     "iron-elements": "PolymerElements/iron-elements#1.0.3",
     "paper-elements": "PolymerElements/paper-elements#1.0.5",
+    "neon-elements": "PolymerElements/neon-elements#1.0.0",
 
     "jquery": "2.1.4",
     "jquery.cookie": "1.4.1",
