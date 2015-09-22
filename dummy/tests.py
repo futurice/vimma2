@@ -27,13 +27,17 @@ from vimma.audit import Auditor
 
 from dummy.models import Provider, Config, VM, Expiration, PowerLog
 
+def defaultdata(tz='Europe/Helsinki'):
+    tz,_ = TimeZone.objects.get_or_create(name='Europe/Helsinki')
+    schedule,_ = Schedule.objects.get_or_create(name='DefaultSchedule', timezone=tz, matrix=json.dumps(7 * [48 * [True]]))
+    provider,_ = Provider.objects.get_or_create(name='DefaultProvider')
+    config,_ = Config.objects.get_or_create(name='DefaultConfig', default_schedule=schedule, provider=provider)
+    project,_ = Project.objects.get_or_create(name='DefaultProject', email='default@email.com')
+    return tz,schedule,provider,config,project
+
 def create_vm(name='A', tz='Europe/Helsinki'):
-    tz,_ = TimeZone.objects.get_or_create(name=tz)
-    s,_ = Schedule.objects.get_or_create(name='DefaultSchedule', timezone=tz, matrix=json.dumps(7 * [48 * [True]]))
-    prv,_ = Provider.objects.get_or_create(name='DefaultProvider')
-    config,_ = Config.objects.get_or_create(name='DefaultConfig', default_schedule=s, provider=prv)
-    prj,_ = Project.objects.get_or_create(name='DefaultProject', email='default@email.com')
-    return VM.objects.create(name=name, config=config, project=prj, schedule=s)
+    tz,schedule,provider,config,project = defaultdata(tz=tz)
+    return VM.objects.create(name=name, config=config, project=project, schedule=schedule)
 
 def byVm(vm):
     ct = ContentType.objects.get_for_model(vm)

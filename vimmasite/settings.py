@@ -40,16 +40,17 @@ INSTALLED_APPS = (
 
     'rest_framework',
     'django_extensions',
+    'django_js_utils',
 )
 
 STATICFILES_DIRS = list(DEFAULT_SETTINGS.STATICFILES_DIRS)
-if DEBUG:
-    STATICFILES_DIRS = STATICFILES_DIRS + [
-        os.path.join(BASE_DIR, '..', 'static/'),
-        os.path.join(BASE_DIR, 'ui'),
-        '/usr/local/lib/python3.4/dist-packages/django/contrib/admin/static/',
-        '/usr/local/lib/python3.4/dist-packages/rest_framework/static/',
-        '/usr/local/lib/python3.4/dist-packages/django_extensions/static/',
+STATICFILES_DIRS += [
+    os.path.join(BASE_DIR, '..', 'static/'),
+    os.path.join(BASE_DIR, 'ui'),
+    '/usr/local/lib/python3.4/dist-packages/django/contrib/admin/static/',
+    '/usr/local/lib/python3.4/dist-packages/rest_framework/static/',
+    '/usr/local/lib/python3.4/dist-packages/django_extensions/static/',
+    '/usr/local/lib/python3.4/dist-packages/django_js_utils/static/',
     ]
 
 MIDDLEWARE_CLASSES = (
@@ -137,6 +138,10 @@ SPECIAL_FIREWALL_RULE_EXPIRY_SECS = secs_in_day * 7
 TRUSTED_NETWORKS = ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12']
 
 EC2_DEFAULT_REGION = 'us-east-1'
+
+# django_js_utils
+URLS_EXCLUDE_PREFIX = ['^admin',]
+URLS_EXCLUDE_PATTERN = ['.(?P<format>[a-z0-9]+)','.(?P<format>+)','__debug__',]
 
 del secs_in_day
 

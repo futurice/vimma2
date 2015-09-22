@@ -20,7 +20,7 @@ Polymer({
 
     createUrl: {
       type: String,
-      value: vimmaEndpointCreateVM
+      value: '/api/dummy/vm/'
     },
 
     projectsUrl: {
@@ -58,13 +58,13 @@ Polymer({
   },
 
   scheduleSelected: function(k, detail) {
-    this.$$('#schedule').value = k.currentTarget.dataItem;
+    this.$$('#schedule').value = k.currentTarget.dataItem.id;
     this.chosen(k.currentTarget, '.schedule-container div.box')
   },
 
   providerSelected: function(k, detail) {
-    this.$$('#provider').value = k.currentTarget.dataItem;
-    this.$$('#providerconfig').value = k.currentTarget.dataConfig;
+    this.$$('#provider').value = k.currentTarget.dataItem.id;
+    this.$$('#config').value = k.currentTarget.dataConfig.id;
     this.chosen(k.currentTarget, '.provider-container div.box')
   },
 
