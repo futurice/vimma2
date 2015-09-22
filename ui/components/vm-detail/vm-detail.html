@@ -175,17 +175,17 @@
         </h3>
         <template is="dom-if" if="[[_showFirewallRules]]" restamp>
           <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'dummy')]]">
+            if="[[_equal(name, 'dummy')]]">
              VMs have no firewall rules.
           </template>
 
           <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'aws')]]">
+            if="[[_equal(name, 'aws')]]">
             <aws-firewall-rules vmid="[[vm.id]]"></aws-firewall-rules>
           </template>
 
-          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
-            Unknown VM type: <span>[[vm.provider.type]]</span>.
+          <template is="dom-if" if="[[_unknownVMType(name)]]">
+            Unknown VM type: <span>[[name]]</span>.
           </template>
         </template>
 
@@ -200,17 +200,17 @@
         </h3>
         <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
           <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'dummy')]]">
+            if="[[_equal(name, 'dummy')]]">
              VMs have no advanced details.
           </template>
 
           <template is="dom-if" restamp
-            if="[[_equal(vm.provider.type, 'aws')]]">
+            if="[[_equal(name, 'aws')]]">
             <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
           </template>
 
-          <template is="dom-if" if="[[_unknownVMType(vm.provider.type)]]">
-            Unknown VM type: <span>[[vm.provider.type]]</span>.
+          <template is="dom-if" if="[[_unknownVMType(name)]]">
+            Unknown VM type: <span>[[name]]</span>.
           </template>
         </template>
 

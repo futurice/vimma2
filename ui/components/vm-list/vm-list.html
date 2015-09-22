@@ -9,7 +9,7 @@
 <link rel="import" href="../show-count/show-count.html">
 <link rel="import" href="../vm-detail/vm-detail.html">
 
-<dom-module id="vm-list">
+<dom-module id="vm-list" name="">
 <link rel="import" type="css" href="../../css/component-common.css">
 <link rel="import" type="css" href="vm-list.css">
 <template>
@@ -17,7 +17,7 @@
   <iron-ajax
     auto
     id="vmAjax"
-    url="/api/dummy/vm/"
+    url="[[vmUrl]]"
     last-response="{{dummyvms}}">
   </iron-ajax>
 
