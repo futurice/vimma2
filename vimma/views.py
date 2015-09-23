@@ -22,7 +22,7 @@ from vimma.audit import Auditor
 import vimma.expiry
 from vimma.models import (
     Schedule, TimeZone, Project,
-    User, VM,
+    User, VM, Provider,
     Audit, Expiration, Expiration,
     FirewallRule, FirewallRuleExpiration,
 )
@@ -54,6 +54,7 @@ def base_js(request):
     base.js, included by the html template(s).
     """
     return render(request, 'vimma/base.js', {
+        'providers': json.dumps(list(Provider.choices().keys())),
         'pagination': VimmaPagination,
         'audit_level_choices_json': audit_levels_json,
         'aws_firewall_rule_protocol_choices_json':

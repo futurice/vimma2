@@ -9,15 +9,11 @@
   <template>
     <create-vm on-vm-created="_vmCreated"></create-vm>
 
-    <h2>Dummy</h2>
-
-    <vm-list id="list_alive" name="dummy" expanded></vm-list>
-    <vm-list name="dummy" destroyed></vm-list>
-
-    <h2>AWS</h2>
-
-    <vm-list id="list_alive" name="aws" expanded></vm-list>
-    <vm-list name="aws" destroyed></vm-list>
+    <template is="dom-repeat" items="[[providers]]">
+      <h2>[[item]]</h2>
+      <vm-list id="list_alive" name="[[item]]" expanded></vm-list>
+      <vm-list name="[[item]]" destroyed></vm-list>
+    </template>
 
   </template>
 </dom-module>

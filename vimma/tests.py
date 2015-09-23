@@ -18,7 +18,7 @@ from vimma.actions import Actions
 from vimma import expiry
 from vimma.models import (
     Permission, Role,
-    Project, TimeZone, Schedule,
+    Project, TimeZone, Schedule, Provider,
     User,
 )
 from vimma.perms import ALL_PERMS, Perms
@@ -844,4 +844,9 @@ class ExpirationTests(TestCase):
             ):
             self.assertFalse(expiry.needs_notification(exp, last_notif, ints))
 
+
+class ProviderTests(TestCase):
+    def test_provider_choices(self):
+        for k in ['aws','dummy']:
+            self.assertEquals(k in Provider.choices().keys())
 

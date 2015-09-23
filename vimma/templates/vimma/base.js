@@ -68,6 +68,8 @@ var indexUrl = '{% url "index" %}',
     awsFirewallRuleProtocolChoices = JSON.parse(
             '{{aws_firewall_rule_protocol_choices_json|escapejs}}'),
 
+    vimmaProviders = JSON.parse('{{providers|escapejs}}'),
+
     _dummy_end;
 
 function uriparams(uri, name) {

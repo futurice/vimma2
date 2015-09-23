@@ -18,7 +18,7 @@ class CleanModel(models.Model):
 
     @classmethod
     def choices(cls):
-        return {k().__class__.__name__.lower():k for k in cls.implementations()}
+        return {k._meta.app_label:k for k in list(cls.implementations())}
 
     @classmethod
     def implementations(cls):
