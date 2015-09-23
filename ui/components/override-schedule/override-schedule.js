@@ -64,33 +64,7 @@ Polymer({
     },
 
     _performAction: function(jsonBody) {
-        var token = this._loadingToken;
-        this._actionInFlight = true;
-        $.ajax({
-            url: vimmaEndpointOverrideSchedule,
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            headers: {
-                'X-CSRFToken': $.cookie('csrftoken')
-            },
-            data: JSON.stringify(jsonBody),
-            success: (function(data) {
-                if (this._loadingToken != token) {
-                    return;
-                }
-
-                this._reload();
-            }).bind(this),
-            error: (function() {
-                if (this._loadingToken != token) {
-                    return;
-                }
-
-                var errorText = getAjaxErr.apply(this, arguments);
-                this._actionErr = errorText;
-                this._actionInFlight = false;
-            }).bind(this)
-        });
+        // TODO: vimmaEndpointOverrideSchedule override-schedule
     },
 
     _secs2millis: function(epochSecs) {

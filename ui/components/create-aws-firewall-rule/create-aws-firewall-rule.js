@@ -56,31 +56,7 @@ Polymer({
             cidr_ip: this._cidr_ip
         };
 
-        this._createInFlight = true;
-
-        $.ajax({
-            url: vimmaEndpointCreateFirewallRule,
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            headers: {
-                'X-CSRFToken': $.cookie('csrftoken')
-            },
-            data: JSON.stringify({
-                vmid: this.vmid,
-                data: data
-            }),
-            complete: (function(data) {
-                this._createInFlight = false;
-            }).bind(this),
-            success: (function(data) {
-                this._createErr = '';
-                this._toggle();
-                this.fire('aws-firewall-rule-created');
-            }).bind(this),
-            error: (function() {
-                var errorText = getAjaxErr.apply(this, arguments);
-                this._createErr = errorText;
-            }).bind(this)
-        });
+        // TODO: create firewallrule
+        // on success: this.fire('aws-firewall-rule-created');
     }
 });
