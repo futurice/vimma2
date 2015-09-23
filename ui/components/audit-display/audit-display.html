@@ -9,19 +9,19 @@
 <link rel="import" href="../local-date/local-date.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
-<dom-module id="audit-display">
+<dom-module id="audit-display" vm="">
   <link rel="import" type="css" href="../../css/component-common.css">
   <link rel="import" type="css" href="audit-display.css">
 
   <template>
     <iron-ajax
       id="ajax"
-      url="/api/aws/audit/"
+      url="[[auditUrl(vm)]]"
       params='{"page":"1", "min_level":"1-INFO"}'
       handle-as="json"
       last-response="{{pageData}}"
-      auto
-      ></iron-ajax>
+      auto>
+    </iron-ajax>
 
       <div id="box">
         <div id="navigation">
@@ -64,7 +64,7 @@
                   <local-date date-string="[[item.timestamp]]"></local-date>
                 </td>
                 <td>[[_getAuditLvlName(item.level)]]</td>
-                <td>[[item.vm]]</td>
+                <td>[[item.object_id]]</td>
                 <td>
                   <template is="dom-if" if="[[_null(item.user)]]" restamp>
                     –

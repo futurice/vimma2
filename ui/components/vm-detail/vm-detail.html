@@ -111,10 +111,8 @@
         <h3
           class="section-toggle"
           on-click="_toggleBasicDetails"
-          title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]"
-          >
-          <iron-icon
-            icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
+          title$="[[_getSectionTooltip(_showBasicDetails, 'Basic Details')]]">
+          <iron-icon icon="[[_getSectionIcon(_showBasicDetails)]]"></iron-icon>
           Details
         </h3>
         <template is="dom-if" if="[[_showBasicDetails]]" restamp>
@@ -146,20 +144,22 @@
               </template>
             </div>
           </template>
+
+          <template is="dom-if" restamp if="[[_equal(name, 'aws')]]">
+            <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
+          </template>
         </template>
 
         <h3 class="section-toggle"
           on-click="_toggleScheduleAndExpiry"
           title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]">
-          <iron-icon
-            icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
+          <iron-icon icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
           Schedule and Expiration
         </h3>
         <template is="dom-if" if="[[_showScheduleAndExpiry]]" restamp>
           <vm-schedule vm="[[vm]]"></vm-schedule>
           <override-schedule vm="[[vm]]"></override-schedule>
-          <expiration-item expid="[[vm.expiration.id]]">
-          </expiration-item>
+          <expiration-item expid="[[vm.expiration.id]]"></expiration-item>
         </template>
 
         <h3 class="section-toggle"
@@ -172,20 +172,7 @@
         <template is="dom-if" if="[[_showFirewallRules]]" restamp>
           <template is="dom-if" restamp
             if="[[_equal(name, 'aws')]]">
-            <aws-firewall-rules vmid="[[vm.id]]"></aws-firewall-rules>
-          </template>
-        </template>
-
-        <h3 class="section-toggle"
-          on-click="_toggleAdvancedDetails"
-          title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]">
-          <iron-icon
-            icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
-          Advanced Details
-        </h3>
-        <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
-          <template is="dom-if" restamp if="[[_equal(name, 'aws')]]">
-            <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
+            <aws-firewall-rules vm="[[vm]]"></aws-firewall-rules>
           </template>
         </template>
 
@@ -196,7 +183,7 @@
           Logs
         </h3>
         <template is="dom-if" if="[[_showLogs]]" restamp>
-          <audit-display vmid="[[vm.id]]"></audit-display>
+          <audit-display vm="[[vm]]"></audit-display>
         </template>
 
         <h3 class="section-toggle"
@@ -206,7 +193,7 @@
           Power Chart
         </h3>
         <template is="dom-if" if="[[_showPowerLog]]" restamp>
-          <power-log vmid="[[vm.id]]"></power-log>
+          <power-log vm="[[vm]]"></power-log>
         </template>
       </div>
     </template>

@@ -17,20 +17,7 @@ Polymer({
             observer: '_vmidChanged'
         },
 
-        _loadingToken: Object,  /* same logic as in <vm-list> */
-        _loading: Boolean,
-        _error: String, // empty string if no error
-        vm: Object,    // the VM data model
-
-        // User action
-        _actionInFlight: {
-            type: Boolean,
-            value: false
-        },
-        _actionError: {
-            type: String,
-            value: ''
-        },
+        vm: Object,
 
         _expanded: {
             type: Boolean,

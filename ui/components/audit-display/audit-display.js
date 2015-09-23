@@ -4,9 +4,8 @@ Polymer({
   behaviors: [VimmaBehaviors.Equal],
 
   properties: {
-    vmid: {
-      type: Number,
-      value: -1
+    vm: {
+      type: Object,
     },
     userid: {
       type: Number,
@@ -21,6 +20,13 @@ Polymer({
       type: Object,
       value: auditLevels[1]
     }
+  },
+
+  auditUrl: function(vm, name) {
+    if(vm) {
+      return url('audit-list');
+    }
+    return url('audit-list');
   },
 
   _minLevelChange: function(ev) {

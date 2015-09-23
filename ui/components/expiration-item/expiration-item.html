@@ -24,8 +24,8 @@
           id="reload"
           icon="refresh"
           title="Reload"
-          on-click="_reload"
-          ></paper-icon-button>
+          on-click="_reload">
+        </paper-icon-button>
         <plain-text class="error" text="[[_loadErr]]"></plain-text>
       </template>
 
@@ -41,14 +41,14 @@
         </template>
         <local-date
           date-string="[[_exp.expires_at]]"
-          hide-millis
-          ></local-date>
+          hide-millis>
+        </local-date>
         <paper-icon-button
           id="extend"
           icon="event"
           title="Change…"
-          on-click="_openDialog"
-          ></paper-icon-button>
+          on-click="_openDialog">
+        </paper-icon-button>
 
         <template is="dom-if" if="[[_actionInFlight]]" restamp>
           <loading-overlay></loading-overlay>
@@ -59,8 +59,7 @@
     <paper-dialog
       id="dialog"
       with-backdrop
-      on-iron-overlay-closed="_dialogClosed"
-      >
+      on-iron-overlay-closed="_dialogClosed">
       <h2>Change Expiration</h2>
       <div>
         <input type="date" value="{{_dateStr::input}}">

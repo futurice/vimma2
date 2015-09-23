@@ -2,9 +2,9 @@ Polymer({
     is: 'expiration-item',
 
     properties: {
-        expid: {
+        vm: {
             type: Number,
-            observer: '_expidChanged'
+            observer: 'vmChanged'
         },
 
         noExplanation: {
@@ -23,40 +23,11 @@ Polymer({
         _timeStr: String
     },
 
-    _expidChanged: function(newV, oldV) {
+    vmChanged: function(newV, oldV) {
         this._reload();
     },
 
     _reload: function() {
-        var token = {};
-        this._loadingToken = token;
-        this._loading = true;
-
-        this._actionInFlight = false;
-        this._actionErr = '';
-
-        var success = (function(resArr) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._exp = resArr[0];
-            this._loadErr = '';
-            this._loading = false;
-            this._setExpiryClass();
-        }).bind(this);
-
-        var fail = (function(err) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._loadErr = err;
-            this._loading = false;
-        }).bind(this);
-
-        apiGet([vimmaApiExpirationDetailRoot + this.expid + '/'],
-                success, fail);
     },
 
     _openDialog: function() {
@@ -89,43 +60,8 @@ Polymer({
         minute = parseInt(parts[1], 10);
 
         var exp = new Date(year, month-1, day, hour, minute);
-
-        var token = this._loadingToken;
-        this._actionInFlight = true;
-        $.ajax({
-            url: vimmaEndpointSetExpiration,
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            headers: {
-                'X-CSRFToken': $.cookie('csrftoken')
-            },
-            data: JSON.stringify({
-                id: this.expid,
-                timestamp: Math.floor(exp.valueOf() / 1000)
-            }),
-            complete: (function() {
-                if (this._loadingToken != token) {
-                    return;
-                }
-
-                this._actionInFlight = false;
-            }).bind(this),
-            success: (function() {
-                if (this._loadingToken != token) {
-                    return;
-                }
-
-                this._reload();
-            }).bind(this),
-            error: (function() {
-                if (this._loadingToken != token) {
-                    return;
-                }
-
-                var errorText = getAjaxErr.apply(this, arguments);
-                this._actionErr = errorText;
-            }).bind(this)
-        });
+        var timestamp = Math.floor(exp.valueOf() / 1000)
+        // TODO: submit expiration
     },
     _setExpiryClass: function() {
         var d = new Date(this._exp.expires_at).valueOf(),

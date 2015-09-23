@@ -2,9 +2,9 @@ Polymer({
     is: 'power-log',
 
     properties: {
-        vmid: {
-            type: String,
-            observer: '_vmidChanged'
+        vm: {
+            type: Object,
+            observer: 'vmChanged'
         },
 
         _showOnlyTransitions: {
@@ -28,14 +28,13 @@ Polymer({
         }
     },
 
-    _vmidChanged: function(newV, oldV) {
+    vmChanged: function(newV, oldV) {
         this._reload();
     },
 
     _reload: function() {
         this._url = null;
-        this._url =  vimmaApiPowerLogList +
-            '?vm=' + encodeURIComponent(this.vmid);
+        this._url = url(this.vm.content_type.app_label + 'powerlog-list') + '?vm=' + encodeURIComponent(this.vm.id);
     },
 
     _urlChanged: function(newV, oldV) {
