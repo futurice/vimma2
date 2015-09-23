@@ -32,8 +32,8 @@
   }
 
   function compareNameAsc(a, b) {
-    a = a.getName().toLowerCase();
-    b = b.getName().toLowerCase();
+    a = a.name.toLowerCase();
+    b = b.name.toLowerCase();
     return compare(a, b);
   }
 
@@ -121,10 +121,6 @@
        * started last applies its result, regardles of the order in which
        * the ‘reload’ operations finish.
        */
-      _loadingToken: Object,
-      _loading: Boolean,
-      _error: String, // empty string if no error
-      _vms: Array, // all the VM models, in arbitrary order
       _order: {
         type: String,
         value: orderNameAsc
@@ -161,9 +157,9 @@
         type: String,
         computed: '_computeExpiryClass(_order)'
       },
-      _sortedVms: {
+      sortedVms: {
         type: Array,
-        computed: '_sort(_vms, _order)'
+        computed: '_sort(vms, _order)'
       }
     },
 
@@ -181,30 +177,6 @@
     },
 
     reload: function() {
-      var token = {};
-      this._loadingToken = token;
-      this._loading = true;
-
-      var success = (function(vms) {
-        if (this._loadingToken != token) {
-          return;
-        }
-
-        this._vms = vms;
-        this._error = '';
-        this._loading = false;
-      }).bind(this);
-
-      var fail = (function(err) {
-        if (this._loadingToken != token) {
-          return;
-        }
-
-        this._error = err;
-        this._loading = false;
-      }).bind(this);
-
-      //this.$.vdm.loadAllVMs(this.destroyed, success, fail);
     },
 
     _destroyedChanged: function(newV, oldV) {
@@ -229,9 +201,6 @@
     _getExpiryDate: function(vm) {
       return vm.getExpiryDate();
     },
-    _getName: function(vm) {
-      return vm.getName();
-    },
     _getProjectName: function(vm) {
       return vm.getProjectName();
     },
@@ -240,7 +209,7 @@
     },
 
     _sort: function(vms, order) {
-      return vms.slice().sort(compareFuncs[order]);
+      return vms.results.slice().sort(compareFuncs[order]);
     },
     _toggleOrder: function(default_, alternate) {
       if (this._order == default_) {

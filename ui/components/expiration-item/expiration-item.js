@@ -12,12 +12,6 @@ Polymer({
             value: false
         },
 
-        _loadingToken: Object,  // same logic as in <vm-list>
-        _loading: Boolean,
-        _loadErr: String,   // empty string if no error
-        _actionInFlight: Boolean,
-        _actionErr: String,
-
         _exp: Object,
         _dateStr: String,
         _timeStr: String

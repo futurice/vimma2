@@ -9,14 +9,6 @@ Polymer({
             observer: '_vmidChanged'
         },
 
-        _loadingToken: Object,  // same logic as in <vm-list>
-        _loading: Boolean,
-        _loadErr: String,
-        _vm: Object,
-
-        _actionInFlight: Boolean,
-        _actionErr: String,
-
         _showNewOverride: {
             type: Boolean,
             value: false

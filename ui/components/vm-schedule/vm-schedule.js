@@ -9,13 +9,6 @@ Polymer({
       observer: '_vmidChanged'
     },
 
-    _loadingToken: Object,  // same logic as in <vm-list>
-    _loading: Boolean,
-    _loadErr: String,
-    _vm: {
-      type: Array,
-      observer: '_vmChanged'
-    },
     _schedules: Array,
 
     _newSchedId: Number,
@@ -23,10 +16,7 @@ Polymer({
     _unsavedChanges: {
       type: Boolean,
       computed: '_computeUnsavedChanges(_vm, _newSchedId)'
-    },
-
-    _actionInFlight: Boolean,
-    _actionErr: String
+    }
   },
 
   scheduleUrl: function() {

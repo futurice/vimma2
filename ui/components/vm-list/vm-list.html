@@ -92,7 +92,7 @@
     </paper-icon-button>
   </div>
 
-  <template is="dom-repeat" items="[[vms.results]]">
+  <template is="dom-repeat" items="[[sortedVms]]">
     <vm-detail
       vmid="[[item.id]]"
       name="[[name]]"
