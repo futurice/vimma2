@@ -7,8 +7,8 @@ Polymer({
       this.fire('vm-detail-created', {});
     },
 
-    _vmUrl: function(vmid) {
-      return '/api/dummy/vm/'+vmid+'/';
+    vmUrl: function(name, vmid) {
+      return url(name+'vm-detail', [vmid]);
     },
 
     properties: {
@@ -136,29 +136,7 @@ Polymer({
         if (!confirm('Destroy VM: ‘' + this.getName() + '’?')) {
             return;
         }
-
-        this._actionInFlight = true;
-        $.ajax({
-            url: vimmaEndpointDestroyVM,
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            headers: {
-                'X-CSRFToken': $.cookie('csrftoken')
-            },
-            data: JSON.stringify({
-                vmid: this._vm.vm.id
-            }),
-            complete: (function() {
-                this._actionInFlight = false;
-            }).bind(this),
-            success: (function(data) {
-                this._actionError = '';
-            }).bind(this),
-            error: (function() {
-                var errorText = getAjaxErr.apply(this, arguments);
-                this._actionError = errorText;
-            }).bind(this)
-        });
+        // TODO: vm/destroy
     },
 
     _reboot: function(ev) {
@@ -166,29 +144,7 @@ Polymer({
         if (!confirm('Reboot VM: ‘' + this.getName() + '’?')) {
             return;
         }
-
-        this._actionInFlight = true;
-        $.ajax({
-            url: vimmaEndpointRebootVM,
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            headers: {
-                'X-CSRFToken': $.cookie('csrftoken')
-            },
-            data: JSON.stringify({
-                vmid: this._vm.vm.id
-            }),
-            complete: (function() {
-                this._actionInFlight = false;
-            }).bind(this),
-            success: (function(data) {
-                this._actionError = '';
-            }).bind(this),
-            error: (function() {
-                var errorText = getAjaxErr.apply(this, arguments);
-                this._actionError = errorText;
-            }).bind(this)
-        });
+        // TODO: vm/reboot
     },
 
     _toggle: function() {
@@ -239,15 +195,5 @@ Polymer({
             verb = 'Show';
         }
         return verb + ' ' + sectionName;
-    },
-
-    _unknownVMType: function(vmType) {
-        switch (vmType) {
-            case 'dummy':
-            case 'aws':
-                return false;
-            default:
-                return true;
-        }
     }
 });

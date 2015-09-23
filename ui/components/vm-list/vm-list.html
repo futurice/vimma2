@@ -18,14 +18,14 @@
     auto
     id="vmAjax"
     url="[[vmUrl]]"
-    last-response="{{dummyvms}}">
+    last-response="{{vms}}">
   </iron-ajax>
 
   <div id="top-bar">
     <div id="top-content">
       <h1 on-click="_toggle" title="Expand/Collapse">
         <iron-icon icon="[[_headingIcon]]"></iron-icon>
-        <span>[[dummyvms.results.length]]<!-- --> <span>[[_sayTopBarOne(destroyed)]]</span></span>
+        <span>[[vms.results.length]]<!-- --> <span>[[_sayTopBarOne(destroyed)]]</span></span>
       </h1>
     </div>
 
@@ -92,9 +92,10 @@
     </paper-icon-button>
   </div>
 
-  <template is="dom-repeat" items="[[dummyvms.results]]">
+  <template is="dom-repeat" items="[[vms.results]]">
     <vm-detail
       vmid="[[item.id]]"
+      name="[[name]]"
       on-vm-expanded="_vmExpanded"
       on-vm-collapsed="_vmCollapsed">
     </vm-detail>

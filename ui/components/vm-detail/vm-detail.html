@@ -17,7 +17,7 @@
 <link rel="import" href="../vm-schedule/vm-schedule.html">
 <link rel="import" href="aws-vm-advanced-details.html">
 
-<dom-module id="vm-detail">
+<dom-module id="vm-detail" name="">
 <link rel="import" type="css" href="../../css/component-common.css">
 <link rel="import" type="css" href="vm-detail.css">
 
@@ -25,7 +25,7 @@
   <iron-ajax
     auto
     id="vmAjax"
-    url="[[_vmUrl(vmid)]]"
+    url="[[vmUrl(name, vmid)]]"
     loading="{{loading}}"
     last-response="{{vm}}">
   </iron-ajax>
@@ -148,11 +148,9 @@
           </template>
         </template>
 
-        <h3
-          class="section-toggle"
+        <h3 class="section-toggle"
           on-click="_toggleScheduleAndExpiry"
-          title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]"
-          >
+          title$="[[_getSectionTooltip(_showScheduleAndExpiry, 'Schedule and Expiration')]]">
           <iron-icon
             icon="[[_getSectionIcon(_showScheduleAndExpiry)]]"></iron-icon>
           Schedule and Expiration
@@ -164,61 +162,36 @@
           </expiration-item>
         </template>
 
-        <h3
-          class="section-toggle"
+        <h3 class="section-toggle"
           on-click="_toggleFirewallRules"
-          title$="[[_getSectionTooltip(_showFirewallRules, 'Firewall Rules')]]"
-          >
+          title$="[[_getSectionTooltip(_showFirewallRules, 'Firewall Rules')]]">
           <iron-icon
             icon="[[_getSectionIcon(_showFirewallRules)]]"></iron-icon>
           Firewall Rules
         </h3>
         <template is="dom-if" if="[[_showFirewallRules]]" restamp>
           <template is="dom-if" restamp
-            if="[[_equal(name, 'dummy')]]">
-             VMs have no firewall rules.
-          </template>
-
-          <template is="dom-if" restamp
             if="[[_equal(name, 'aws')]]">
             <aws-firewall-rules vmid="[[vm.id]]"></aws-firewall-rules>
           </template>
-
-          <template is="dom-if" if="[[_unknownVMType(name)]]">
-            Unknown VM type: <span>[[name]]</span>.
-          </template>
         </template>
 
-        <h3
-          class="section-toggle"
+        <h3 class="section-toggle"
           on-click="_toggleAdvancedDetails"
-          title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]"
-          >
+          title$="[[_getSectionTooltip(_showAdvancedDetails, 'Advanced Details')]]">
           <iron-icon
             icon="[[_getSectionIcon(_showAdvancedDetails)]]"></iron-icon>
           Advanced Details
         </h3>
         <template is="dom-if" if="[[_showAdvancedDetails]]" restamp>
-          <template is="dom-if" restamp
-            if="[[_equal(name, 'dummy')]]">
-             VMs have no advanced details.
-          </template>
-
-          <template is="dom-if" restamp
-            if="[[_equal(name, 'aws')]]">
+          <template is="dom-if" restamp if="[[_equal(name, 'aws')]]">
             <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
-          </template>
-
-          <template is="dom-if" if="[[_unknownVMType(name)]]">
-            Unknown VM type: <span>[[name]]</span>.
           </template>
         </template>
 
-        <h3
-          class="section-toggle"
+        <h3 class="section-toggle"
           on-click="_toggleLogs"
-          title$="[[_getSectionTooltip(_showLogs, 'logs')]]"
-          >
+          title$="[[_getSectionTooltip(_showLogs, 'logs')]]">
           <iron-icon icon="[[_getSectionIcon(_showLogs)]]"></iron-icon>
           Logs
         </h3>
@@ -226,11 +199,9 @@
           <audit-display vmid="[[vm.id]]"></audit-display>
         </template>
 
-        <h3
-          class="section-toggle"
+        <h3 class="section-toggle"
           on-click="_togglePowerLog"
-          title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]"
-          >
+          title$="[[_getSectionTooltip(_showPowerLog, 'Power Chart')]]">
           <iron-icon icon="[[_getSectionIcon(_showPowerLog)]]"></iron-icon>
           Power Chart
         </h3>
