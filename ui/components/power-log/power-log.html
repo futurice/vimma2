@@ -3,7 +3,6 @@
 <link rel="import" href="/static/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/static/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/static/bower_components/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="../loading-overlay/loading-overlay.html">
 <link rel="import" href="../plain-text/plain-text.html">
 
 <dom-module id="power-log">
@@ -11,6 +10,13 @@
   <link rel="import" type="css" href="power-log.css">
 
   <template>
+
+    <iron-ajax
+      id="powerlogajax"
+      url="[[powerUrl]]"
+      last-response="{{powerlogs}}">
+    </iron-ajax>
+
     <div id="main">
       <template is="dom-if" if="[[!_loading]]">
         <template is="dom-if" if="[[_error]]">
@@ -49,8 +55,6 @@
       </div>
 
       <div id="container"></div>
-
-      <loading-overlay hidden$="[[!_loading]]"></loading-overlay>
     </div>
   </template>
 </dom-module>

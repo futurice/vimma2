@@ -12,61 +12,20 @@ Polymer({
             value: false
         },
 
-        _url: {
-            type: String,
-            observer: '_urlChanged'
-        },
-
-        _loadingToken: Object,  /* same logic as in <vm-list> */
-        _loading: Boolean,
-        _error: String, // empty string if no error
-        _apiData: Object,
         _chartData: {
             type: Object,
-            computed: '_computeChartData(_apiData, _showOnlyTransitions)',
+            computed: '_computeChartData(powerlogs, _showOnlyTransitions)',
             observer: '_chartDataChanged'
         }
     },
 
     vmChanged: function(newV, oldV) {
-        this._reload();
+        this.reload();
     },
 
-    _reload: function() {
-        this._url = null;
-        this._url = url(this.vm.content_type.app_label + 'powerlog-list') + '?vm=' + encodeURIComponent(this.vm.id);
-    },
-
-    _urlChanged: function(newV, oldV) {
-        if (!newV) {
-            return;
-        }
-
-        var token = {};
-        this._loadingToken = token;
-        this._loading = true;
-        this._error = '';
-
-        var success = (function(resArr) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._apiData = resArr[0];
-            this._error = '';
-            this._loading = false;
-        }).bind(this);
-
-        var fail = (function(err) {
-            if (this._loadingToken != token) {
-                return;
-            }
-
-            this._error = err;
-            this._loading = false;
-        }).bind(this);
-
-        apiGet([newV], success, fail);
+    reload: function() {
+        this.powerUrl = url(this.vm.content_type.app_label + 'powerlog-list') + '?vm=' + encodeURIComponent(this.vm.id);
+        this.$.powerlogajax.generateRequest();
     },
 
     _computeChartData: function(apiData, showOnlyTransitions) {
@@ -143,9 +102,11 @@ Polymer({
     },
 
     _loadOlder: function() {
-        this._url = this._apiData.next;
+        this.powerUrl = this.powerlogs.next;
+        this.$.powerlogajax.generateRequest();
     },
     _loadNewer: function() {
-        this._url = this._apiData.previous;
+        this.powerUrl = this.powerlogs.previous;
+        this.$.powerlogajax.generateRequest();
     }
 });
