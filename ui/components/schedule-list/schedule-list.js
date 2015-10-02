@@ -4,14 +4,15 @@ Polymer({
     behaviors: [VimmaBehaviors.Equal],
 
     properties: {
-        _url: {
+        url: {
             type: String,
-            readOnly: true,
-            value: vimmaApiScheduleList
+            value: url('schedule-list')
         }
     },
     _scheduleExpanded: function(ev) {
     },
     _scheduleCollapsed: function(ev) {
+    },
+    _scheduleDeleted: function(ev) {
     }
 });

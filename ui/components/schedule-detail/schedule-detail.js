@@ -1,9 +1,5 @@
 Polymer({
     is: 'schedule-detail',
-    
-    ready: function() {
-      this.$.form._requestBot.headers = {'X-CSRFToken': $.cookie('csrftoken')};
-    },
 
     csrfTokenHeader: function() {
       return JSON.stringify({'X-CSRFToken': $.cookie('csrftoken')});
@@ -16,50 +12,40 @@ Polymer({
             type: Number
         },
 
-        _schedule: {
-            type: Object
-        },
-
         schedule: {
             type: Object,
             notify: true
         },
 
-        _scheduleUrl: {
+        scheduleDetailUrl: {
             type: String,
             computed: '_computeScheduleUrl(scheduleId)'
         },
 
-        _tzUrl: {
+        tzUrl: {
             type: String,
             readOnly: true,
-            value: vimmaApiTimeZoneList
+            value: url('timezone-list')
         },
 
         _error: {
             type: String
-        },
-
-        _unsavedChanges: {
-            type: Boolean,
-            computed: '_computeUnsavedChanges(schedule.*)'
-        },
-        class: {
-            type: String,
-            computed: '_getHostClass(_unsavedChanges)',
-            reflectToAttribute: true
         }
+
     },
     observers: [
-      '_scheduleChanged(schedule)'
     ],
 
     parse: function(value) {
       return JSON.parse(value);
     },
 
+    coerce: function(val) {
+      return !!val;
+    },
+
     _computeScheduleUrl: function(scheduleId) {
-        return vimmaApiScheduleDetailRoot + scheduleId + '/';
+        return url('schedule-detail', [scheduleId]);
     },
 
     _tzName: function(tzArray, tzId) {
@@ -77,46 +63,23 @@ Polymer({
             return;
         }
         this.$.deleteButtonAjax.generateRequest();
+        this.fire('schedule-deleted', {schedule: this.schedule})
     },
 
     submitForm: function() {
-      f = document.getElementById('form');
+      f = document.getElementById('schedule-form');
+      f._requestBot.headers = {
+        'X-CSRFToken': $.cookie('csrftoken'),
+        'X-HTTP-Method-Override': 'PATCH'};
       f.submit();
-        // TODO: form-errors
+      // TODO: form-errors
     },
 
     toggle: function() {
         this.$.collapse.toggle();
     },
 
-    _scheduleChanged: function(schedule) {
-      this._schedule = clone(this.schedule);
-    },
-
-    _discardChanges: function() {
-      this.schedule = this._schedule;
-    },
-
-    _computeUnsavedChanges: function(schedule) {
-        if(!this._schedule) {
-          // TODO: _schedule should be available at this point
-          return false;
-        }
-        if(schedule.base && schedule.value) {
-          // computed:.* changes propagate as {base:,value:,?:}
-          schedule = schedule.value;
-        }
-        return !sameModels(schedule, this._schedule);
-    },
-
     timezoneSelected: function(ev) {
         this.set('schedule.timezone', this.timezones.results[ev.target.selectedIndex]['id']);
-    },
-
-    _getHostClass: function(unsavedChanges) {
-        if (unsavedChanges) {
-            return 'unsaved';
-        }
-        return '';
     }
 });

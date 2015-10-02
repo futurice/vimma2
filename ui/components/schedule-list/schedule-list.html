@@ -12,7 +12,7 @@
     <iron-ajax
       auto
       id="ajax"
-      url="{{_url}}"
+      url="{{url}}"
       handle-as="json"
       last-response="{{pageData}}">
     </iron-ajax>
@@ -22,8 +22,8 @@
         schedule-id="[[item.id]]"
         on-schedule-expanded="_scheduleExpanded"
         on-schedule-collapsed="_scheduleCollapsed"
-        on-schedule-deleted="_scheduleDeleted"
-        ></schedule-detail>
+        on-schedule-deleted="_scheduleDeleted">
+      </schedule-detail>
     </template>
 
   </template>

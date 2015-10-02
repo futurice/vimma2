@@ -23,7 +23,7 @@
     <iron-ajax
       auto
       id="ajax-schedule"
-      url="[[_scheduleUrl]]"
+      url="[[scheduleDetailUrl]]"
       handle-as="json"
       last-response="{{schedule}}">
     </iron-ajax>
@@ -31,7 +31,7 @@
     <iron-ajax
       auto
       id="ajax-timezone"
-      url="[[_tzUrl]]"
+      url="[[tzUrl]]"
       handle-as="json"
       last-response="{{timezones}}">
     </iron-ajax>
@@ -47,17 +47,16 @@
       <iron-ajax
         id="deleteButtonAjax"
         method="DELETE"
-        url="[[_scheduleUrl]]"
+        url="[[scheduleDetailUrl]]"
         headers$="[[csrfTokenHeader()]]">
-        <paper-icon-button icon="delete" title="Delete" on-click="_delete">
-        </paper-icon-button>
       </iron-ajax>
-
+      <paper-icon-button icon="delete" title="Delete" on-click="_delete">
+      </paper-icon-button>
     </div>
 
     <iron-collapse id="collapse">
       <div id="details">
-      <form is="iron-form" id="form" method="post" content-type="application/json" action="[[_scheduleUrl]]">
+      <form is="iron-form" id="schedule-form" method="post" content-type="application/json" action="[[scheduleDetailUrl]]">
 
         <paper-input
           name="name"
@@ -79,7 +78,7 @@
 
         <matrix-editor value="{{schedule.matrix}}"></matrix-editor>
 
-        <paper-toggle-button id="is-special" name="is_special" checked="{{schedule.is_special}}"></paper-toggle-button>
+        <paper-toggle-button name="is_special" value="{{schedule.is_special}}" checked="{{schedule.is_special}}"></paper-toggle-button>
 
         <label for="is-special">
           Using this schedule requires special permissions
