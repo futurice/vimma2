@@ -1,5 +1,4 @@
-#django==1.8.3
-git+https://github.com/django/django/#egg=django
+git+https://github.com/django/django.git@1.9a1#egg=django
 psycopg2==2.6.1
 djangorestframework==3.2.3
 markdown==2.6.2

@@ -24,7 +24,7 @@ Polymer({
     },
 
     reload: function() {
-        this.powerUrl = url(this.vm.content_type.app_label + 'powerlog-list') + '?vm=' + encodeURIComponent(this.vm.id);
+        this.powerUrl = vmurl(this.vm, 'powerlog-list', {vm: this.vm.id});
         this.$.powerlogajax.generateRequest();
     },
 

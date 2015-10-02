@@ -369,6 +369,7 @@ class AuditViewSet(viewsets.ReadOnlyModelViewSet):
         min_lvl = self.request.query_params.get('min_level', None)
         if min_lvl is not None:
             queryset = queryset.filter(level__gte=min_lvl)
+
         return queryset
 
 class PowerLogViewSet(viewsets.ReadOnlyModelViewSet):

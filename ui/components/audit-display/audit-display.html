@@ -17,7 +17,7 @@
     <iron-ajax
       id="ajax"
       url="[[auditUrl(vm)]]"
-      params='{"page":"1", "min_level":"1-INFO"}'
+      params='[[defaultParams(vm)]]'
       handle-as="json"
       last-response="{{pageData}}"
       auto>

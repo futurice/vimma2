@@ -116,20 +116,15 @@
           Details
         </h3>
         <template is="dom-if" if="[[_showBasicDetails]]" restamp>
-          <template is="dom-if"
-            if="[[_any(vm.destroy_request_at, vm.destroyed_at)]]"
-            restamp>
+          <template is="dom-if" if="[[_any(vm.destroy_request_at, vm.destroyed_at)]]">
             <div id="destruction-details">
               Destruction requested
-              <template is="dom-if" if="[[vm.destroy_request_at]]"
-                restamp>
+              <template is="dom-if" if="[[vm.destroy_request_at]]" restamp>
                 on
-                <local-date
-                  date-string="[[vm.destroy_request_at]]"
-                  hide-millis></local-date>
+                <local-date date-string="[[vm.destroy_request_at]]" hide-millis>
+                </local-date>
               </template>
-              <template is="dom-if" if="[[vm.destroy_request_by]]"
-                restamp>
+              <template is="dom-if" if="[[vm.destroy_request_by]]" restamp>
                 by <span>[[vm.destroy_request_by.username]]</span>
               </template>
               <br>
@@ -145,7 +140,7 @@
             </div>
           </template>
 
-          <template is="dom-if" restamp if="[[_equal(name, 'aws')]]">
+          <template is="dom-if" if="[[name=='aws']]" restamp>
             <aws-vm-advanced-details vm="[[vm]]"></aws-vm-advanced-details>
           </template>
         </template>
@@ -170,8 +165,7 @@
           Firewall Rules
         </h3>
         <template is="dom-if" if="[[_showFirewallRules]]" restamp>
-          <template is="dom-if" restamp
-            if="[[_equal(name, 'aws')]]">
+          <template is="dom-if" restamp if="[[_equal(name, 'aws')]]">
             <aws-firewall-rules vm="[[vm]]"></aws-firewall-rules>
           </template>
         </template>

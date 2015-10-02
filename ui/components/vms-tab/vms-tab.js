@@ -5,10 +5,17 @@ Polymer({
       providers: {
         type: Array,
         value: vimmaProviders,
+        notify: true
+      },
+      _vmCreated: {
+        type: Boolean,
+        value: undefined,
+        notify: true
       }
     },
 
-    _vmCreated: function(ev) {
-        this.$.list_alive.reload();
+    vmCreated: function(ev) {
+        // propagate event form <vm-list>
+        this._vmCreated = ev;
     }
 });

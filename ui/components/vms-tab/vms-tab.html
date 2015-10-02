@@ -7,11 +7,11 @@
   <link rel="import" type="css" href="vms-tab.css">
 
   <template>
-    <create-vm on-vm-created="_vmCreated"></create-vm>
+    <create-vm on-vm-created="vmCreated"></create-vm>
 
-    <template is="dom-repeat" items="[[providers]]">
+    <template id="vmList" is="dom-repeat" items="{{providers}}">
       <h2>[[item]]</h2>
-      <vm-list id="list_alive" name="[[item]]" expanded></vm-list>
+      <vm-list name="[[item]]" expanded vm-created="{{_vmCreated}}"></vm-list>
     </template>
 
   </template>

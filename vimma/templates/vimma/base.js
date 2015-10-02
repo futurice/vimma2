@@ -72,6 +72,10 @@ var indexUrl = '{% url "index" %}',
 
     _dummy_end;
 
+function vmurl(vm, name, params) {
+  return url(vm.content_type.app_label + name) + '?' + $.param(params);
+}
+
 function uriparams(uri, name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"), results = regex.exec(uri);

@@ -6,6 +6,9 @@ Polymer({
   observers: [
   ],
 
+  listeners: {'iron-form-response': 'formResponse'},
+
+
   properties: {
     _expanded: {
       type: Boolean,
@@ -28,16 +31,6 @@ Polymer({
       value: vimmaApiProjectList
     },
 
-    providersDummyUrl: {
-      type: String,
-      value: vimmaApiDummyProviderList
-    },
-
-    providersAwsUrl: {
-      type: String,
-      value: vimmaApiAwsProviderList
-    },
-
     providers: {
       type: Array,
       computed: 'computeProviders(providersDummy, providersAws)'
@@ -47,7 +40,16 @@ Polymer({
       type: String,
       value: vimmaApiScheduleList
     },
-    schedules: Array
+    schedules: Array,
+    provider_type: String
+  },
+
+  providersDummyUrl: function() {
+    return url('dummyprovider-list');
+  },
+
+  providersAwsUrl: function() {
+    return url('awsprovider-list');
   },
 
   computeProviders: function(dummy, aws) {
@@ -66,7 +68,8 @@ Polymer({
     this.$$('#provider').value = k.currentTarget.dataItem.id;
     this.$$('#config').value = k.currentTarget.dataConfig.id;
     this.chosen(k.currentTarget, '.provider-container div.box')
-    this.createUrl = url(k.currentTarget.dataConfig.content_type.app_label+'vm-create');
+    this.provider_type = k.currentTarget.dataConfig.content_type.app_label;
+    this.createUrl = url(this.provider_type+'vm-create');
   },
 
   chosen: function(el, container) {
@@ -86,7 +89,15 @@ Polymer({
     f = this.$$('#create-vm-form');
     f._requestBot.headers = {'X-CSRFToken': $.cookie('csrftoken')};
     f.submit();
-    // TODO: listen to iron-form-response to fire vm-created
-    this.fire('vm-created');
-  }
+  },
+
+  formResponse: function(ev) {
+    // spread news of new vm in the fold
+    this.fire('vm-created', {
+      provider: this.provider_type,
+      ev: ev,
+      form: this.$$('#create-vm-form')});
+    // close create dialog
+    this._toggle();
+  },
 });

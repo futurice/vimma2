@@ -115,12 +115,6 @@
         type: String,
         computed: '_computeHeadingIcon(expanded)'
       },
-      /* Every ‘reload’ operation sets this token to a new object. When
-       * it completes (with either error or success) it does nothing if
-       * this token has changed. This way only the ‘reload’ operation
-       * started last applies its result, regardles of the order in which
-       * the ‘reload’ operations finish.
-       */
       _order: {
         type: String,
         value: orderNameAsc
@@ -160,6 +154,10 @@
       sortedVms: {
         type: Array,
         computed: '_sort(vms, _order)'
+      },
+      newVm: {
+        type: Object,
+        computed: '_created(vmCreated, name)'
       }
     },
 
@@ -173,14 +171,21 @@
     },
 
     ready: function() {
-      this.reload();
+    },
+
+    _created: function(ev, name) {
+      if(ev.detail.provider==name) {
+        this.reload();
+        // TODO: could highlight the newly created VM
+      }
     },
 
     reload: function() {
+      this.$.vmAjax.generateRequest();
     },
 
     _destroyedChanged: function(newV, oldV) {
-      this.reload();
+      //this.reload();
     },
 
     _toggle: function() {

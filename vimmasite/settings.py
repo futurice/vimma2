@@ -7,7 +7,7 @@ import time
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
-TEMPLATE_DEBUG = DEBUG
+
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 SECRET_KEY = os.getenv('SECRET_KEY', '')
 
@@ -25,6 +25,20 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+TEMPLATES = [{
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'DIRS': [],
+    'APP_DIRS': True,
+    'OPTIONS': {
+        'context_processors': [
+            'django.contrib.auth.context_processors.auth',
+            'django.template.context_processors.i18n',
+            'django.template.context_processors.media',
+            'django.template.context_processors.static',
+            'django.template.context_processors.tz',],
+        'debug': DEBUG,}
+}]
 
 INSTALLED_APPS = (
     'django.contrib.admin',

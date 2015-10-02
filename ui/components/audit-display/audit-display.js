@@ -22,6 +22,14 @@ Polymer({
     }
   },
 
+  defaultParams: function(vm) {
+    p = {page:"1", min_level:"1-INFO"};
+    if(vm) {
+      p = $.extend({}, p, {object_content_type: vm.content_type.id, object_id: vm.id});
+    }
+    return p;
+  },
+
   auditUrl: function(vm, name) {
     if(vm) {
       return url('audit-list');
